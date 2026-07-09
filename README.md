@@ -1,8 +1,16 @@
 # shinaps-skills
 
-shinaps-ai の agent 向け workflow skill 集。Claude Code plugin として配布。
+shinaps-ai と統合した開発 workflow skill 集。Claude Code plugin として配布。
 
 **Overview**: plugin 名は `shinaps` (skill レジストリでの namespace prefix)、shinaps-ai MCP server 名は `shinaps-ai`。同じ ecosystem 内で 2 表記が並ぶが、レイヤーが違う (plugin/skill と MCP server) のでプレフィックスの意味論も別と割り切って良い。
+
+## 設計の核
+
+- **rule 照合 + memory 記録 + セルフレビューが workflow に bake**: AI の instruction 遵守度に依存しない
+- **EnterPlanMode は一切使わない**: bypassPermissions モード (リモート実行など) でも全フェーズが走り切る
+- **不明な論点は必ず AskUserQuestion で確認**: 「わからないまま自動進行」より「ユーザーに聞く」を優先
+- **subagent は shinaps MCP を叩かない**: rule 全文は Skill 側から prompt 経由で渡す (credit 最適化)
+- **実装はメインスレッドが担う**: 計画 / レビューフェーズの subagent 委譲は維持しつつ、実装フェーズは explorer / architect / plan-review で築いた文脈を活かしてメインが直接 Edit/Write
 
 ## Prerequisites
 
@@ -34,12 +42,16 @@ shinaps-ai の agent 向け workflow skill 集。Claude Code plugin として配
 /plugin install shinaps@shinaps-skills
 ```
 
-`marketplace add` は repo 内の `.claude-plugin/marketplace.json` を読み、そこに列挙された plugin 一覧をレジストリに登録する。`install shinaps@shinaps-skills` は「marketplace `shinaps-skills` から plugin `shinaps` を入れる」の意味。Install 後、Skill レジストリに以下 4 skill が登録される:
+`marketplace add` は repo 内の `.claude-plugin/marketplace.json` を読み、そこに列挙された plugin 一覧をレジストリに登録する。`install shinaps@shinaps-skills` は「marketplace `shinaps-skills` から plugin `shinaps` を入れる」の意味。Install 後、Skill レジストリに以下 8 skill が登録される:
 
-- `/shinaps:update-context`
-- `/shinaps:init`
-- `/shinaps:extract-rules`
-- `/shinaps:refine`
+- `/shinaps:spec` — 対話ヒアリング + フィジビリ調査で仕様を詰める
+- `/shinaps:dev` — 計画策定 + 実装 + セルフレビュー一気通貫
+- `/shinaps:review` — 差分 / PR / パス指定の単独レビュー
+- `/shinaps:debug` — 根本原因調査
+- `/shinaps:refine` — セルフレビュー直前 (diff mode) / plan 確定直前 (plan mode) の並列 rule 照合
+- `/shinaps:update-context` — session 開始時の CLAUDE.md 管理領域同期 (silent)
+- `/shinaps:init` — 新規 scope に managed region 配置
+- `/shinaps:extract-rules` — 過去 PR review から userRules 一括生成
 
 user が直接叩くことも、AI が description matching で自動発火することもできる。
 
@@ -51,19 +63,62 @@ npx skills add sh1n4ps/shinaps-skills -a codex -g
 
 **注意 (Codex CLI の非対称性)**:
 
-- Codex CLI では `shinaps:` namespace prefix は付与されず、`update-context` / `init` / `extract-rules` / `refine` の平名で登録される可能性が高い (Codex 側の namespace 概念は非公式)
+- Codex CLI では `shinaps:` namespace prefix は付与されず、`dev` / `spec` / `review` / `debug` / `refine` などの平名で登録される可能性が高い (Codex 側の namespace 概念は非公式)
 - 既存の同名 skill と衝突する可能性がある — 衝突時は user 側で個別 skill を rename すること
 - skills.sh CLI は Codex global を `~/.codex/skills/` に書き込むが、Codex 公式 docs は `~/.agents/skills/` を示している (path 不整合の実測は環境依存)
 - SKILL.md 本文の `${CLAUDE_SKILL_DIR}` などの Claude Code 固有 syntax は使わず portable に書いてあるので、Codex 側でも読み進められる想定
 
-## Skills
+## Skills (詳細)
+
+### Workflow skills (4)
+
+| Skill | 用途 |
+|---|---|
+| `shinaps:spec` | ざっくり要望をヒアリング → 既存実装調査 (shinaps-explorer) → フィジビリ調査 (shinaps-tech-surveyor + shinaps-survey-validator) → 必要ならプロトタイプ → 構造化 spec.md 作成。そのまま `shinaps:dev` に橋渡し可能 |
+| `shinaps:dev` | 計画策定 (shinaps-architect) → plan-review + refine plan mode 並列 (shinaps-plan-reviewer + `Skill(shinaps:refine, plan:...)`) → メインスレッドが直接実装 → セルフレビュー + refine diff mode 並列 (shinaps-reviewer + `Skill(shinaps:refine)`) → Critical 自動修正まで一気通貫 |
+| `shinaps:review` | 差分 (branch) / PR / パスの単独レビュー。shinaps-reviewer + shinaps-tech-surveyor を並列起動 → shinaps-review-validator で妥当性検証。確定指摘は `shinaps:dev` へ橋渡し可能、PR モードでは PR コメント投稿も可 |
+| `shinaps:debug` | 症状から根本原因を追跡 (shinaps-debugger) → 実コード検証で分類 (shinaps-debug-validator) → 必要なら外部情報深掘り (shinaps-tech-surveyor + shinaps-survey-validator) → 修正実装は `shinaps:dev` へ橋渡し可能 |
+
+### Support skills (4)
 
 | Skill | 用途 |
 |---|---|
 | `shinaps:update-context` | session 開始時に AI が自動発火 (silent sync)。CLAUDE.md / AGENTS.md の shinaps-ai managed region を最新 snippet で overwrite |
 | `shinaps:init` | 新規 scope (別 repo / global) に managed region の marker を明示配置。user 意思決定 (scope 選択) を伴う明示発火 |
 | `shinaps:extract-rules` | 過去 PR のレビューコメントから userRules を bulk 生成。新規リポジトリ着手時や userRules が空 / 少ないとき (5 件未満) に提案・起動 |
-| `shinaps:refine` | セルフレビュー直前に diff を並列 subagent で rule 照合。Violation / Improvement / Question に分類し、自明な修正は自動適用、判断が必要なものだけ 4 択 AskUserQuestion で処理 |
+| `shinaps:refine` | rule 照合を並列 subagent で行う共通スキル。**diff mode** (`git diff HEAD` / PR / commit range を対象) と **plan mode** (`plan:<path>` で plan.md を対象) の 2 mode をサポート。diff mode は自明な修正を Edit で自動適用 + 判断要は 4 択 AskUserQuestion、plan mode は findings 一覧を返して終了 (plan.md への反映は呼び出し元の責務) |
+
+## Subagents (11)
+
+| Subagent | 役割 |
+|---|---|
+| `shinaps-explorer` | コードベース探索、必読ファイル抽出 |
+| `shinaps-architect` | 実装ブループリント策定 (複数観点 → 単一案収束) |
+| `shinaps-plan-reviewer` | architect 案の批判 + 修正版最終 plan (confidence 閾値 70) |
+| `shinaps-reviewer` | logic / design / security / performance / maintainability / rule 統合レビュー (confidence 閾値 80) |
+| `shinaps-review-validator` | reviewer 指摘の実コード検証 (confirmed / false positive / partial / out-of-scope 分類) |
+| `shinaps-refine-agent` | rule 照合の並列 dispatch (diff + plan 両モード対応、Violation / Improvement / Question 分類) |
+| `shinaps-spec-writer` | ヒアリング + 調査結果を spec.md 構造化 |
+| `shinaps-tech-surveyor` | 外部技術調査 (WebSearch + WebFetch で 3-5 候補比較) |
+| `shinaps-survey-validator` | tech-surveyor の出典を WebFetch で再確認 |
+| `shinaps-debugger` | 症状から根本原因の仮説立案 (コードトレース + WebSearch + GitHub Issue) |
+| `shinaps-debug-validator` | 仮説の実コード検証 (root-cause / contributing-factor / red-herring / needs-reproduction 分類) |
+
+全 subagent の frontmatter は `name` / `description` / `model` / `permissionMode: bypassPermissions` / `effort` / `color` の 6 項目統一。**subagent 内では shinaps MCP を直接叩かず、rule 全文は Skill 側から prompt 経由で渡す** 原則を全 system prompt に明記 (credit 最適化)。
+
+## 出力ディレクトリ
+
+各 skill は `.claude/shinaps/` 配下にタイムスタンプ付きディレクトリを作る:
+
+```
+.claude/shinaps/
+├── {ts}-{slug}/               ← shinaps:dev の作業ディレクトリ
+├── specs/{ts}-{slug}/         ← shinaps:spec の作業ディレクトリ (dev が spec.md を再利用)
+├── reviews/{ts}-{mode}/       ← shinaps:review の作業ディレクトリ (dev が review-validated.md を再利用)
+└── debug/{ts}-{slug}/         ← shinaps:debug の作業ディレクトリ (dev が debug-validated.md を再利用)
+```
+
+生レポート (explorer / architect / plan-reviewer / reviewer / refine / tech-surveyor / survey-validator / debugger / debug-validator の応答) は `raw/` 配下に全文保存する規約。
 
 ## License
 

@@ -1,0 +1,193 @@
+---
+name: spec
+description: ざっくりした要望を入力に、対話的なヒアリング + 既存実装調査 (shinaps-explorer) + フィジビリティ調査 (shinaps-tech-surveyor で外部情報 + shinaps-survey-validator で出典検証 + 採用候補決定 + 必要ならプロトタイプ実装) + 技術選定を行い、「ほぼ実現できる」と確信できるレベルまで仕様を詰めて仕様書 (spec.md) を作成するスキル。spec 段階で実現可能性をしっかり検証することで /shinaps:dev での差し戻しをほぼゼロにする。shinaps-spec-writer で構造化し、そのまま /shinaps:dev へ橋渡しできる
+argument-hint: <ざっくりした要望（省略可）>
+---
+
+## 引数仕様
+
+| 呼び出し | 動作 |
+|---|---|
+| `/shinaps:spec <要望>` | 引数を初期要望として受領、ヒアリング開始 |
+| `/shinaps:spec` | 引数なしの場合は `AskUserQuestion` でまず「何がしたいか」を聞く |
+
+## 使用エージェント
+
+| エージェント | subagent_type | 役割 |
+|---|---|---|
+| Shinaps Explorer | `shinaps-explorer` | 既存コードベース調査 |
+| Shinaps Tech Surveyor | `shinaps-tech-surveyor` | フィジビリティ調査 (外部情報 + 候補比較) |
+| Shinaps Survey Validator | `shinaps-survey-validator` | tech-surveyor の主張を出典 URL で検証 |
+| Shinaps Spec Writer | `shinaps-spec-writer` | ヒアリング + 調査結果を構造化 spec.md に整理 |
+
+ヒアリング自体はメインエージェントが `AskUserQuestion` を使って進める。
+
+## ディレクトリ規約
+
+```
+.claude/shinaps/specs/{YYYYMMDD-HHMMSS}-{slug}/
+├── spec.md                ← shinaps-spec-writer が作成 (dev には spec.md パスを直接渡す)
+├── interview-log.md       ← ヒアリングのやりとり記録
+├── raw/                   ← 調査エージェントの生レポート (dev が再利用)
+│   ├── explorer.md        ← 既存実装調査 (実施時のみ、dev が再利用)
+│   ├── survey.md          ← フィジビリティ調査一次レポート (実施時のみ)
+│   └── survey-validated.md ← 検証済み調査 (実施時のみ)
+└── prototype/             ← プロトタイプ実装 (実施時のみ、隔離スペース)
+    ├── {試したコード一式}
+    └── prototype-report.md ← 実験結果サマリ
+```
+
+`{slug}` は要望の短い英語スラッグ (kebab-case, 30 文字以内)。
+
+## 実行フロー
+
+### Phase 1: 初期要望の受領
+
+1. 引数があればそのまま初期要望として受領
+2. 引数がなければ `AskUserQuestion` で「どんなことを実現したいか」を聞く
+3. **`list_recent_work({ repoOwner, repoName })` を必ず呼ぶ** → 直近 5-10 件を 1 行サマリ化して保持 (Phase 3 / 6 の subagent prompt に埋め込む用)
+4. 受領した要望を `interview-log.md` の冒頭に Write
+
+### Phase 2: 段階的ヒアリング
+
+**ヒアリング前の準備**: `list_search_facets()` + 予備 `search_rules({ repoOwner, repoName, ...推定 facet })` を呼び、rule カタログを頭に入れる (制約セクションを rule 起点で組み立てるため)。
+
+メインエージェントがインタビュアーとして、以下の観点を順次 `AskUserQuestion` で確認する。**1 観点ずつ**、回答を踏まえて次の質問を決める。回数に制限なし、不明な点は必ず聞く。
+
+#### ヒアリング観点 (順序)
+
+1. **機能要件の核**: 「具体的にどういう操作・機能が必要か」
+2. **想定ユーザー**: 「誰が使うのか (役割・知識レベル)」
+3. **スコープの境界**: 「どこまでをやり、どこからはやらないか」
+4. **優先度**: 「必須 / 重要 / あると良い をどう分けるか」
+5. **制約**: 「技術スタック / 期限 / 既存システムとの関係 など」
+6. **非機能要件**: 「パフォーマンス・セキュリティ・可用性で気にする点はあるか」 (該当時のみ)
+7. **受け入れ条件**: 「どうなったら完成と言えるか」
+
+#### ヒアリングの進め方
+
+- 各回答を `interview-log.md` に追記する
+- 既に明確な観点はスキップ
+- 回答が曖昧 / 追加情報が必要な場合は深掘り質問を遠慮なく重ねる
+- ユーザーが「お任せ」を選んだ項目は仕様書で `[未解決]` マークを付ける
+- ユーザーから「もう十分」と意思表示があれば Phase 3 へ
+- 観点 1〜7 を一通り終えたら自動的に Phase 3 へ
+
+### Phase 3: 既存実装調査 (フィジビリ調査)
+
+`AskUserQuestion` で「既存コードベースを調査するか」を確認 (Recommended: Yes)。
+スキップする選択肢: 「新規プロジェクト / 既存に関連実装が無いことが明白」な場合。
+
+実施する場合:
+
+1. `shinaps-explorer` を起動 (必要なら領域を分けて複数並列)
+2. **プロンプトに含める情報**:
+   - Phase 1-2 で確定した要望と機能要件
+   - **Phase 1 で作成した memory events 要約**
+   - 「実装したい機能に関連する既存コード・抽象化レイヤー・規約を調査せよ。**仕様策定の参考になる範囲で深さ重視**」
+3. 生レポートをメインが Write で `raw/explorer.md` (並列時は `raw/explorer-{n}.md`) に全文保存
+4. 結果を踏まえて Phase 2 に戻って追加ヒアリングが必要か判断
+   - 既存パターンと食い違う要望があれば `AskUserQuestion` で「合わせる / 上書きする」を確認
+
+### Phase 4: フィジビリティ調査 (外部情報 + 必要ならプロトタイプ)
+
+「実現できそうか」「どんなアプローチがあるか」「ハマりどころは何か」を確認するフェーズ。2 段階に分かれる。
+
+#### 4-A: 外部情報調査 + 技術選定
+
+`AskUserQuestion` で「外部情報を調査するか」を確認 (Recommended: Yes)。スキップする選択肢: 「既存スタック内で完結 / 自明な実装」な場合。
+
+このフェーズはフィジビリティ調査と技術選定の両方を担う。
+
+実施する場合:
+
+1. `shinaps-tech-surveyor` を起動
+2. **プロンプトに含める情報**:
+   - Phase 1-2 の要望と機能要件
+   - Phase 3 の explorer 結果 (実施した場合)
+   - プロジェクト `CLAUDE.md` の関連抜粋 (既存スタック制約があれば)
+   - **Phase 2 前準備で取得した `search_rules` 結果 (userRules + officialRules 全文)**
+   - 「この機能を実装する際の関連ライブラリ / 公式推奨パターン / 知られた落とし穴 / 似たユースケースの実装例を WebSearch / WebFetch で調査せよ。**実現可能性を判断する材料を集めると同時に、複数候補がある場合は観点別に比較すること**。既存スタック + rule カタログ整合性を最初の予選条件に」
+3. 生レポートをメインが Write で `raw/survey.md` に全文保存
+4. `shinaps-survey-validator` を起動 (プロンプトに search_rules 結果も渡す)、メインが Write で `raw/survey-validated.md` に全文保存
+5. **採用候補の決定**:
+   - 候補が 1 つしかない / 推奨が明確 → そのまま採用としてメインが採用理由・注意点を整理
+   - 候補が複数で判断が割れる → `AskUserQuestion` で「どの候補を採用するか」を選ばせる
+6. 採用が決まったら、Phase 6 で spec.md に反映するための情報をメモしておく:
+   - 採用候補名 + バージョン
+   - 選定理由 (要件・制約に照らした 1〜2 文)
+   - 採用時の注意点 (バージョン互換性、依存、ライセンス、運用上の注意など)
+
+#### 4-B: プロトタイプ実装 (任意)
+
+`AskUserQuestion` で「実現可能性を確かめるプロトタイプを試すか」を確認 (Recommended: No、ただし以下に該当するなら Yes 推奨):
+- 不確定な技術要素がある (新規ライブラリ / 試したことのない API / パフォーマンス懸念)
+- 4-A で「実装パターンが複数提示されたがどれが筋か不明」
+- 「動かしてみないと分からない」と感じる論点がある
+
+実施する場合:
+
+1. **隔離スペース** `.claude/shinaps/specs/{ts}-{slug}/prototype/` を作成 (既存コードベースを汚さない)
+2. 必要最小限のコードを書いて動かす:
+   - 既存コードベースに統合する必要があれば最小の touch のみ
+   - 主目的は「動くか / 期待した振る舞いか / どこで詰まるか」を確認すること
+3. 結果を `prototype/prototype-report.md` に記録
+
+4-A / 4-B どちらかでも実施した場合、結果を踏まえて Phase 2 に戻って追加ヒアリングが必要か判断:
+- フィジビリ調査で「ユーザー要望が実現困難 / 想定より大規模」と分かれば `AskUserQuestion` で「スコープ縮小 / 別アプローチ / そのまま進める」を確認
+
+### Phase 5: ヒアリングログ整理
+
+`interview-log.md` を最終形式に整える (Q&A 形式で、元の要望 / 質問 / 回答 / 調査結果パスを含む)。
+
+### Phase 6: shinaps-spec-writer 起動
+
+`shinaps-spec-writer` を 1 体起動。
+
+**プロンプトに含める情報**:
+- 元の要望
+- `interview-log.md` 全文
+- `raw/explorer.md` 全文 (実施時のみ)
+- `raw/survey-validated.md` 全文 (実施時のみ)
+- Phase 4-A で決定した採用候補・選定理由・注意点 (実施時のみ)
+- プロジェクトコンテキスト (CLAUDE.md の関連部分)
+- **Phase 2 前準備で取得した `search_rules` 結果 (userRules + officialRules 全文)**
+- 「ヒアリングと調査結果を統合した構造化された仕様書を作成せよ。既存実装の状況・技術的方向性・採用技術 (あれば) も spec.md に反映すること。CLAUDE.md + rule カタログを制約セクションに集約すること」
+
+**記録先**: メインが Write で `.claude/shinaps/specs/{ts}-{slug}/spec.md`
+
+### Phase 7: 仕様書サマリ提示
+
+`spec.md` の主要セクション (要望の本質 / 機能要件 / スコープ / 制約 / 受け入れ条件 / 未解決の論点) を要約してテキスト出力する。
+
+ユーザーから修正要望があれば Phase 2 または Phase 3 / 4 に戻る。
+修正要望が無ければ Phase 8 へ。
+
+### Phase 8: 次アクション選択
+
+`AskUserQuestion` で次のアクションを確認:
+
+- **`/shinaps:dev` に進む (橋渡し)**: 仕様書を入力に「計画策定 → 実装 → セルフレビュー」を一気通貫実行
+- **ローカル保存のみで終了**
+
+### Phase 9: /shinaps:dev への橋渡し (選択時)
+
+中間ファイル (旧 `plan-handoff.md`) は生成しない。`Skill` ツールで `shinaps:dev` を起動し、引数に **`spec.md` のパスを直接渡す**。
+
+dev 側の Phase 1 で spec.md を Read してタスク詳細・採用技術・既存実装との関係を取り込み、Phase 2 で同ディレクトリ配下の `raw/explorer.md` をそのまま再利用する (= dev は explorer を改めて起動しない)。これにより spec ↔ dev の二重 explorer を削減する。
+
+引数例:
+
+```
+Skill(skill="shinaps:dev", args="以下の仕様書を実装する。詳細は .claude/shinaps/specs/{ts}-{slug}/spec.md を参照: {1 行サマリ}")
+```
+
+## 動作原則
+
+- **EnterPlanMode は使わない**: bypassPermissions モードと両立させるため
+- **不明な論点は必ず AskUserQuestion で確認**: 回数に制限なし
+- **未解決は隠さない**: 答えが出なかった項目は仕様書で `[未解決]` 明示
+- **生レポート保存厳守**: ヒアリングログ・仕様書・調査結果は全文保存 (メインが Write)
+- **subagent は文字列応答のみ**: ファイル書き込みは必ずメインが担当
+- **フィジビリ調査は spec で済ませる**: dev での差し戻しを減らすため、Phase 3/4 の調査を惜しまない
+- **rule カタログを制約に反映**: `search_rules` 結果を spec.md の制約セクションに集約

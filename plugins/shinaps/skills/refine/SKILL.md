@@ -1,31 +1,48 @@
 ---
 name: refine
-description: 現在の uncommitted 変更 (`git diff HEAD` または `gh pr diff`) を search_rules と 1 件ずつ照合し、Violation / Improvement / Question に分類する skill。3-5 カテゴリに束ねて Agent tool で並列 subagent dispatch → findings 集約 → 自明な修正は Edit で自動適用、判断が必要なものだけ 4 択 AskUserQuestion (修正する / 許容する / ルール側を直す / 後回し) で 1 件ずつ処理。セルフレビュー直前に発火。shinaps-ai server 未登録時は search_rules 呼び出しが自動で失敗して abort する。
-argument-hint: [<PR URL> | <commit SHA> | <range>] (省略時は git diff HEAD)
+description: 現在の uncommitted 変更 (`git diff HEAD` または `gh pr diff`) または計画テキスト (plan.md) を search_rules と 1 件ずつ照合し、Violation / Improvement / Question に分類する skill。3-5 カテゴリに束ねて Agent tool で shinaps-refine-agent を並列 dispatch → findings 集約 → diff mode は自明な修正を Edit で自動適用し判断要は 4 択 AskUserQuestion (修正する / 許容する / ルール側を直す / 後回し) で処理、plan mode は findings 一覧を返して終了 (plan.md への反映は呼び出し元の責務)。セルフレビュー直前 (diff mode) または plan-review 時 (plan mode) に発火。shinaps-ai server 未登録時は search_rules 呼び出しが自動で失敗して abort する。
+argument-hint: [<PR URL> | <commit SHA> | <range> | plan:<path>] (省略時は git diff HEAD)
 ---
 
 # shinaps:refine — 規約照合の checkpoint
 
-このスキルは「commit / report 直前の self-review を確実にやる」ためのバッチ照合手順書。CLAUDE.md に「セルフレビュー直前 → search_rules で規約照合」と書かれていても AI (あなた) が頻繁にスキップする現実への対症療法として、ユーザーが手動で発火するためにある。
+このスキルは「commit / report 直前の self-review」および「plan 確定直前の rule 事前照合」を確実にやるためのバッチ照合手順書。CLAUDE.md に「セルフレビュー直前 → search_rules で規約照合」と書かれていても AI (あなた) が頻繁にスキップする現実への対症療法として、ユーザーが手動で発火するためにある。
 
 shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて Claude Code 側のあなたが手元の `git` / `Read` / 既存 MCP tools で実行する (private repo の内容をサーバ境界に渡さない設計)。
+
+## 2 mode サポート
+
+- **diff mode** (デフォルト、後方互換): 対象は git diff (uncommitted / commit range / PR)。findings を集約 → 自明な修正は Edit で自動適用、判断要は 4 択 AskUserQuestion
+- **plan mode**: 対象は plan.md 等の計画テキスト。findings 一覧を返して終了 (plan.md への反映は呼び出し元 = shinaps:dev の Phase 4-C or ユーザーの責務)。plan-review 時に呼び出される想定
 
 ## 全体アーキテクチャ
 
 メインスレッド (あなた) は **オーケストレータ** に徹する:
 
-1. 対象 diff の確定と規約カタログの集約 (Step 0-1)
+1. 入力モードと対象の確定、規約カタログの集約 (Step 0-1)
 2. 規約を意味論的に 3〜5 カテゴリに束ねる (Step 2)
-3. カテゴリごとに reviewer subagent を **並列 dispatch** し、各 agent は自分で該当 diff を取りに行く (Step 3)
-4. 返ってきた findings を集約 → 自明な修正は自動適用し、判断が必要なものだけユーザーに確認 (Step 4-5)
+3. カテゴリごとに `shinaps-refine-agent` を **並列 dispatch** し、各 agent は担当カテゴリと mode に応じて対象を取りに行く (Step 3)
+4. 返ってきた findings を集約 → mode 別に振り分け (Step 4-5)
 
-こうすることで、rule 数が増えても 1 パスの照合密度が落ちない (各 agent は担当カテゴリのルールにフォーカスする) 上に、メインスレッドの context に巨大 diff を積まずに済む (diff は agent 側で必要な部分だけ取得する)。
+こうすることで、rule 数が増えても 1 パスの照合密度が落ちない (各 agent は担当カテゴリのルールにフォーカスする) 上に、メインスレッドの context に巨大 diff / 巨大 plan を積まずに済む (対象は agent 側で必要な部分だけ取得する)。
 
-## Step 0. 対象 diff を確定する (MUST)
+## Step 0. 対象を確定する (MUST)
+
+### 0-0. 入力モードの判定
+
+まず引数を確認し、以下のモードに振り分ける:
+
+- **plan mode**: 引数が `plan:<path>` 形式 (例: `plan:.claude/shinaps/20260709-120000-foo/plan.md`)
+  - `<path>` 部分を絶対 path または repo 相対 path として解釈 → 存在確認 (不在ならエラー終了: 「plan.md が見つかりません: <path>」)
+  - Step 0-1 (diff 確定ロジック) は完全に迂回
+  - Step 3 で各 agent に渡す「対象取得コマンド」は `Read <plan.md 絶対 path>` の 1 行
+- **diff mode** (デフォルト、`plan:` プレフィックス無し): 従来通り以下のロジックで diff を確定
+
+### 0-1. diff 確定 (diff mode 時のみ)
 
 以下の優先順位で対象 diff を決める:
 
-1. **ユーザーが対象を明示していたらそれを最優先**。/refine と一緒に PR URL / commit SHA / range を書いてくることがある:
+1. **ユーザーが対象を明示していたらそれを最優先**。`/shinaps:refine` と一緒に PR URL / commit SHA / range を書いてくることがある:
    - **PR URL** (例: `https://github.com/owner/repo/pull/123`) → `gh pr diff 123 --repo owner/repo` で diff を取得。カレント repo と同じなら `--repo` は省略可。以降の diff コマンドは `gh pr diff 123 --repo owner/repo` (patch 出力) を使い、ファイル一覧が欲しいときは `gh pr diff 123 --repo owner/repo --name-only` を使う (`git diff --stat` の代替)
    - **commit SHA / range** (例: `abc123` / `main..feature` / `HEAD~3..HEAD`) → 以降の `git diff` の引数を `<指定範囲>` に置換する (`git diff <range>`, `git diff --stat <range>`, `git diff <range> -- <path>`)
 2. 明示指定がなければ `git diff HEAD` (= staged + unstaged の合計、ローカル差分全部)
@@ -63,33 +80,49 @@ AGENTS.md / CLAUDE.md 側の記述も **同じカテゴリ体系に振り分け�
 
 分類が終わったら、ユーザーに「以下 N カテゴリで並列レビューします」と 1 行で報告 (どのカテゴリに何件 rule が入ったか)。
 
-## Step 3. カテゴリごとに reviewer subagent を並列 dispatch (MUST)
+## Step 3. カテゴリごとに shinaps-refine-agent を並列 dispatch (MUST)
 
-`Agent` tool を **同一メッセージ内で複数呼び出す** ことで全カテゴリを並列起動する (subagent_type は `general-purpose`)。1 メッセージ内に含めることが並列実行の必須条件。
+`Agent` tool を **同一メッセージ内で複数呼び出す** ことで全カテゴリを並列起動する (`subagent_type` は `shinaps-refine-agent`)。1 メッセージ内に含めることが並列実行の必須条件。
+
+subagent 側は system prompt で mode 分岐 / finding severity 解釈 / JSON 返却フォーマット / credit 最適化原則を既に持っているので、Skill 側は必要最小限の情報だけ渡せばよい。
 
 ### 各 agent への prompt テンプレ
 
 各 agent には以下を渡す (カテゴリごとに埋める):
 
+- **モード**: `diff` または `plan` (subagent の分岐に使う)
 - **担当カテゴリ名** と、そのカテゴリに属する **rule 全件** (title / why / recommend / avoid / source_urls を full text で。id も添えて後で record_memory / update_rule するとき参照できるように)
 - そのカテゴリに関連する **AGENTS.md / CLAUDE.md / docs の該当節** (全文でよい、agent 側で context 消費するので原文をそのまま貼る)
 - **repo root の絶対 path**
-- **対象取得コマンド** (Step 0 で確定した対象に応じて、以下 3 種のうちいずれか 1 組を具体コマンドとして埋め込む):
-  - ローカル diff: `git diff HEAD` / `git diff --stat HEAD` / `git diff HEAD -- <path>`
-  - commit range: `git diff <range>` / `git diff --stat <range>` / `git diff <range> -- <path>` (例: `main..feature`, `HEAD~3..HEAD`)
-  - PR: `gh pr diff <n> --repo owner/repo` / `gh pr diff <n> --repo owner/repo --name-only` / `gh pr diff <n> --repo owner/repo -- <path>` (owner/repo 込みで固定して渡す。agent が自分で解決しないよう完全形にする)
+- **対象取得コマンド** (Step 0 で確定したモード / 対象に応じて、以下のうちいずれか 1 組を具体コマンドとして埋め込む):
+  - **diff mode - ローカル**: `git diff HEAD` / `git diff --stat HEAD` / `git diff HEAD -- <path>`
+  - **diff mode - commit range**: `git diff <range>` / `git diff --stat <range>` / `git diff <range> -- <path>` (例: `main..feature`, `HEAD~3..HEAD`)
+  - **diff mode - PR**: `gh pr diff <n> --repo owner/repo` / `gh pr diff <n> --repo owner/repo --name-only` / `gh pr diff <n> --repo owner/repo -- <path>` (owner/repo 込みで固定して渡す。agent が自分で解決しないよう完全形にする)
+  - **plan mode**: `Read <plan.md 絶対 path>` (単一コマンド)
 
-### 各 agent が踏む手順 (prompt 内に明記する)
+### 各 agent が踏む手順 (mode 別、prompt 内に明記する)
 
-1. 上記の「ファイル一覧コマンド」(`--stat` or `--name-only`) を repo root で実行し、変更ファイル一覧を把握する
+**diff mode**:
+
+1. 「ファイル一覧コマンド」(`--stat` or `--name-only`) を repo root で実行し、変更ファイル一覧を把握する
 2. 担当カテゴリのルールに **関連しそうなファイル** を選ぶ (拡張子 / パス / 変更行数から判断)。カテゴリと明らかに無関係なファイル (例: "testing & mocks" 担当が `docs/*.md` を見る) はスキップして良い
 3. 選んだファイルごとに「詳細取得コマンド」を `<path>` に差し替えて実行し、hunk を取得
-4. 必要なら周辺コードを `Read` して「なぜこの変更が入ったか」の文脈を掴む (差分だけでは判断が付かない箇所限定)
-5. 各 hunk を担当カテゴリのルールと突き合わせ、findings を分類する:
-   - **Violation**: 明確に既存規約に違反している
-   - **Improvement**: 違反ではないが、規約の趣旨からするとこうした方が良い
-   - **Question**: 規約が曖昧 or 規約に載っていない判断 (= 新しい rule を立てるべきか確認したい)
-6. 各 finding には **根拠** を必ず添える: どの rule (id + title) / どの docs のどの節、を引用する。根拠なしの「なんとなくこう思う」は report しない (ノイズになる)
+4. 必要なら周辺コードを `Read` して「なぜこの変更が入ったか」の文脈を掴む
+5. 各 hunk を担当カテゴリのルールと突き合わせ、findings を分類する
+
+**plan mode**:
+
+1. `Read <plan.md 絶対 path>` で plan.md を全文取得する
+2. 担当カテゴリのルールに **関連する記述** を選ぶ (該当節・見出し・具体的な設計判断)
+3. 各記述を担当カテゴリのルールと突き合わせ、findings を分類する
+
+**共通の finding 分類基準** (subagent 側の system prompt で mode 別に解釈済み):
+
+- **Violation**: 現在の対象が rule に既に反している
+- **Improvement**: 違反ではないが規約の趣旨に沿った改善余地がある / plan mode では将来違反の可能性
+- **Question**: 規約が曖昧 or 規約に載っていない判断
+
+**共通**: 各 finding には **根拠** を必ず添える (rule id + title / docs 引用)。根拠なしは report しない。
 
 ### Agent の返却フォーマット (JSON 構造で返させる)
 
@@ -114,7 +147,7 @@ AGENTS.md / CLAUDE.md 側の記述も **同じカテゴリ体系に振り分け�
 }
 ```
 
-**Info レベルは含めない** (CLAUDE.md / zeus:dev Phase 7 と整合させて Critical / Warning 相当だけを扱う)。findings が 0 件でも空配列で返す。
+**Info レベルは含めない** (Critical / Warning 相当だけを扱う)。findings が 0 件でも空配列で返す。**mode field は返却フォーマットに含めない** (Skill 側で既知、schema evolution コスト回避)。
 
 ## Step 4. findings を集約する
 
@@ -126,11 +159,21 @@ AGENTS.md / CLAUDE.md 側の記述も **同じカテゴリ体系に振り分け�
 
 集約結果の総数と内訳を 1 行で報告してから Step 5 に進む。
 
-## Step 5. 自明な修正は自動適用、判断が必要なものだけ確認する
+## Step 5. mode 別振り分け
+
+**Mode ごとに Step 5 の挙動が分岐する** ので、まず入力モードを確認する。
+
+### plan mode の場合 (単純)
+
+**findings 一覧を集約したまま Step 6 のサマリに渡して skill 終了**。plan.md への Edit は行わず、AskUserQuestion も発火しない。plan.md への反映判断は **呼び出し元 (shinaps:dev Phase 4-C または手動発火時のユーザー)** の責務。
+
+具体的には Step 6 のサマリに findings 全件を Markdown 表 or JSON 形式でそのまま含めて返す (呼び出し元がそのまま消費できる形で)。
+
+### diff mode の場合
 
 集約後の finding を「自明な修正」と「判断が必要なもの」の 2 群に振り分ける。
 
-### 自明な修正 (auto-apply)
+### 自明な修正 (auto-apply、diff mode のみ)
 
 修正方法が一意で設計判断を伴わない finding は、ユーザーに確認せず `Edit` / `Write` で即修正する:
 
@@ -140,7 +183,7 @@ AGENTS.md / CLAUDE.md 側の記述も **同じカテゴリ体系に振り分け�
 
 自動修正を終えたら型 / lint / test を回して green を確認する。修正内容は Step 6 のサマリで「何をどう直したか」を file 単位で必ず一覧報告する (ユーザーが事後確認できるように)。
 
-### 判断が必要なもの (要確認)
+### 判断が必要なもの (要確認、diff mode のみ)
 
 以下に該当する finding は `AskUserQuestion` で確認する。**迷ったら確認側に倒す**:
 
@@ -157,10 +200,13 @@ AGENTS.md / CLAUDE.md 側の記述も **同じカテゴリ体系に振り分け�
 
 **提示順は Violation → Improvement → Question**。件数が少なければ 1 回の `AskUserQuestion` に複数 question をまとめてよい (各 finding には前提説明を添える)。
 
-## Step 6. 完了サマリ
+## Step 6. 完了サマリ (mode 明示)
 
-処理が一巡したら、最後にユーザーへ箇条書きでサマリ報告:
+処理が一巡したら、最後にユーザーへ mode を明示して箇条書きでサマリ報告する。
 
+### diff mode の場合
+
+- 「refine を diff mode で実行」を冒頭に明示
 - 走らせたカテゴリ数と各カテゴリの finding 件数
 - 検出 / 処理した finding の総数と内訳 (自動修正 X 件 / 確認の上修正 Y 件 / 許容 Z 件 / rule 更新 W 件 / 後回し V 件)
 - **自動修正した内容の一覧** (file + 1 行の何をどう直したか。ユーザーが事後確認する唯一の接点なので省略しない)
@@ -168,6 +214,16 @@ AGENTS.md / CLAUDE.md 側の記述も **同じカテゴリ体系に振り分け�
 - まだ未処理の Question / 後回しの TaskCreate id を列挙
 
 この後 user は通常 `git add` / commit に進む想定なので、refine 自体は commit しない (ユーザー操作の自然な境界を奪わない)。
+
+### plan mode の場合
+
+- 「refine を plan mode で実行 (対象: <plan.md path>)」を冒頭に明示
+- 走らせたカテゴリ数と各カテゴリの finding 件数
+- 集約 findings の内訳 (Violation X 件 / Improvement Y 件 / Question Z 件)
+- **findings 全件を Markdown 表または JSON 形式でそのまま出力** (呼び出し元がそのまま消費できる形で。各 finding には file / line / severity / summary / detail / rule_id / rule_title / evidence を含める)
+- 「plan.md への反映判断は呼び出し元 (shinaps:dev Phase 4-C or ユーザー) に委譲」を明示
+
+plan mode では refine 自体は plan.md を Edit しない (呼び出し元との責務境界を明確にする)。
 
 ## 注意点
 

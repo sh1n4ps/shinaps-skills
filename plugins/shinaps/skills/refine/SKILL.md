@@ -1,7 +1,7 @@
 ---
 name: refine
 description: 現在の uncommitted 変更 (`git diff HEAD` または `gh pr diff`) または計画テキスト (plan.md) を search_rules と 1 件ずつ照合し、Violation / Improvement / Question に分類する skill。3-5 カテゴリに束ねて Agent tool で shinaps-refine-agent を並列 dispatch → findings 集約 → diff mode は自明な修正を Edit で自動適用し判断要は 4 択 AskUserQuestion (修正する / 許容する / ルール側を直す / 後回し) で処理、plan mode は findings 一覧を返して終了 (plan.md への反映は呼び出し元の責務)。セルフレビュー直前 (diff mode) または plan-review 時 (plan mode) に発火。shinaps-ai server 未登録時は search_rules 呼び出しが自動で失敗して abort する。
-argument-hint: [<PR URL> | <commit SHA> | <range> | plan:<path>] (省略時は git diff HEAD)
+argument-hint: "[<PR URL> | <commit SHA> | <range> | plan:<path>] (省略時は git diff HEAD)"
 ---
 
 # shinaps:refine — 規約照合の checkpoint

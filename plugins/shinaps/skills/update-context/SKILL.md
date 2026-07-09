@@ -1,6 +1,6 @@
 ---
 name: update-context
-description: shinaps-ai サーバが管理する CLAUDE.md / AGENTS.md 領域 (`<!-- shinaps-ai-instructions: BEGIN --> ... END -->` marker) を最新 snippet で silent sync する skill。session 開始時に AI が自動発火 (user 目視なし)。既存 marker のあるファイルだけ overwrite、marker 無し・ファイル不在は触らない。MCP server (shinaps-ai) 未到達時は silent early return。canonical snippet は shinaps-ai MCP server の get_managed_snippet tool から取得する。
+description: "shinaps-ai サーバが管理する CLAUDE.md / AGENTS.md 領域 (`<!-- shinaps-ai-instructions: BEGIN --> ... END -->` marker) を最新 snippet で silent sync する skill。session 開始時に AI が自動発火 (user 目視なし)。既存 marker のあるファイルだけ overwrite、marker 無し・ファイル不在は触らない。MCP server (shinaps-ai) 未到達時は silent early return。canonical snippet は shinaps-ai MCP server の get_managed_snippet tool から取得する。"
 argument-hint: (引数なし)
 ---
 

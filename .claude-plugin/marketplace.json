@@ -1,0 +1,33 @@
+{
+  "name": "shinaps-skills",
+  "owner": {
+    "name": "shinaps",
+    "email": "ryuta@shinaps.jp"
+  },
+  "metadata": {
+    "description": "shinaps-ai の agent 向け workflow skill を配布するマーケットプレイス"
+  },
+  "plugins": [
+    {
+      "name": "shinaps",
+      "source": "./plugins/shinaps",
+      "description": "shinaps-ai の agent 向け workflow skill 集。session 開始時の CLAUDE.md 管理領域同期 (update-context) / 初回 setup (init) / セルフレビュー直前の並列 rule 照合 (refine) / 過去 PR review コメントからの rules 一括抽出 (extract-rules) の 4 skill を bundle。すべて AI self-invoke 前提。事前に shinaps-ai MCP server を .mcp.json に登録すること (https://app.shinaps.ai/mcp または http://localhost:5173/mcp)。plugin 名は shinaps (namespace prefix) だが MCP server 名は shinaps-ai である点に注意。",
+      "version": "0.1.0",
+      "author": {
+        "name": "shinaps",
+        "email": "ryuta@shinaps.jp"
+      },
+      "homepage": "https://github.com/sh1n4ps/shinaps-skills",
+      "repository": "https://github.com/sh1n4ps/shinaps-skills",
+      "license": "MIT",
+      "category": "development",
+      "keywords": [
+        "shinaps",
+        "memory",
+        "rules",
+        "workflow",
+        "mcp"
+      ]
+    }
+  ]
+}

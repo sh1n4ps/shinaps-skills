@@ -31,10 +31,10 @@ shinaps-ai の agent 向け workflow skill 集。Claude Code plugin として配
 
 ```
 /plugin marketplace add sh1n4ps/shinaps-skills
-/plugin install shinaps@sh1n4ps
+/plugin install shinaps@shinaps-skills
 ```
 
-Install 後、Skill レジストリに以下 4 skill が登録される:
+`marketplace add` は repo 内の `.claude-plugin/marketplace.json` を読み、そこに列挙された plugin 一覧をレジストリに登録する。`install shinaps@shinaps-skills` は「marketplace `shinaps-skills` から plugin `shinaps` を入れる」の意味。Install 後、Skill レジストリに以下 4 skill が登録される:
 
 - `/shinaps:update-context`
 - `/shinaps:init`

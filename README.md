@@ -42,15 +42,13 @@ shinaps-ai と統合した開発 workflow skill 集。Claude Code plugin とし�
 /plugin install shinaps@shinaps-skills
 ```
 
-`marketplace add` は repo 内の `.claude-plugin/marketplace.json` を読み、そこに列挙された plugin 一覧をレジストリに登録する。`install shinaps@shinaps-skills` は「marketplace `shinaps-skills` から plugin `shinaps` を入れる」の意味。Install 後、Skill レジストリに以下 8 skill が登録される:
+`marketplace add` は repo 内の `.claude-plugin/marketplace.json` を読み、そこに列挙された plugin 一覧をレジストリに登録する。`install shinaps@shinaps-skills` は「marketplace `shinaps-skills` から plugin `shinaps` を入れる」の意味。Install 後、Skill レジストリに以下 6 skill が登録される:
 
 - `/shinaps:spec` — 対話ヒアリング + フィジビリ調査で仕様を詰める
 - `/shinaps:dev` — 計画策定 + 実装 + セルフレビュー一気通貫
 - `/shinaps:review` — 差分 / PR / パス指定の単独レビュー
 - `/shinaps:debug` — 根本原因調査
 - `/shinaps:refine` — セルフレビュー直前 (diff mode) / plan 確定直前 (plan mode) の並列 rule 照合
-- `/shinaps:update-context` — session 開始時の CLAUDE.md 管理領域同期 (silent)
-- `/shinaps:init` — 新規 scope に managed region 配置
 - `/shinaps:extract-rules` — 過去 PR review から userRules 一括生成
 
 user が直接叩くことも、AI が description matching で自動発火することもできる。
@@ -79,12 +77,10 @@ npx skills add sh1n4ps/shinaps-skills -a codex -g
 | `shinaps:review` | 差分 (branch) / PR / パスの単独レビュー。shinaps-reviewer + shinaps-tech-surveyor を並列起動 → shinaps-review-validator で妥当性検証。確定指摘は `shinaps:dev` へ橋渡し可能、PR モードでは PR コメント投稿も可 |
 | `shinaps:debug` | 症状から根本原因を追跡 (shinaps-debugger) → 実コード検証で分類 (shinaps-debug-validator) → 必要なら外部情報深掘り (shinaps-tech-surveyor + shinaps-survey-validator) → 修正実装は `shinaps:dev` へ橋渡し可能 |
 
-### Support skills (4)
+### Support skills (2)
 
 | Skill | 用途 |
 |---|---|
-| `shinaps:update-context` | session 開始時に AI が自動発火 (silent sync)。CLAUDE.md / AGENTS.md の shinaps-ai managed region を最新 snippet で overwrite |
-| `shinaps:init` | 新規 scope (別 repo / global) に managed region の marker を明示配置。user 意思決定 (scope 選択) を伴う明示発火 |
 | `shinaps:extract-rules` | 過去 PR のレビューコメントから userRules を bulk 生成。新規リポジトリ着手時や userRules が空 / 少ないとき (5 件未満) に提案・起動 |
 | `shinaps:refine` | rule 照合を並列 subagent で行う共通スキル。**diff mode** (`git diff HEAD` / PR / commit range を対象) と **plan mode** (`plan:<path>` で plan.md を対象) の 2 mode をサポート。diff mode は自明な修正を Edit で自動適用 + 判断要は 4 択 AskUserQuestion、plan mode は findings 一覧を返して終了 (plan.md への反映は呼び出し元の責務) |
 

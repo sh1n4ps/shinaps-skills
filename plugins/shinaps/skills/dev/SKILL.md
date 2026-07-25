@@ -1,6 +1,6 @@
 ---
 name: dev
-description: 計画策定 + 実装 + セルフレビューを一気通貫で行う開発ワークフロー。shinaps-explorer でコードベース調査 (spec.md からの handoff なら spec が取った explorer 結果を再利用) → shinaps-architect で実装ブループリント策定 → shinaps-plan-reviewer と Skill(shinaps:refine, plan:<path>) を並列 spawn して plan を批判 + rule 照合 → 修正版最終 plan を返す → メインスレッドが plan.md を直接実装 + 動作確認 (型/lint/test) + implementation.md 執筆 → shinaps-reviewer と Skill(shinaps:refine) を発火してセルフレビュー + rule 照合 → Critical 自動修正までを単一スキルで完走する。実装フェーズをメインスレッドが担うことで、explorer / architect / plan-review で築いた文脈をそのまま実装判断に活用し、レビュー指摘や修正ループでもブレない実装精度を保つ。EnterPlanMode は使わず bypassPermissions モード (リモート実行など) と両立する設計。不明な論点は AskUserQuestion で必ずユーザーに確認する
+description: 計画策定 + 実装 + セルフレビューを一気通貫で行う開発ワークフロー。shinaps-explorer でコードベース調査 (spec.md からの handoff なら spec が取った explorer 結果を再利用) → shinaps-architect で実装ブループリント策定 → shinaps-plan-reviewer が plan を批判して修正版最終 plan を返す → メインスレッドが plan.md を直接実装 + 動作確認 (型/lint/test) + implementation.md 執筆 → shinaps-reviewer と Skill(shinaps:refine) を発火してセルフレビュー + rule 照合 → Critical 自動修正までを単一スキルで完走する。実装フェーズをメインスレッドが担うことで、explorer / architect / plan-review で築いた文脈をそのまま実装判断に活用し、レビュー指摘や修正ループでもブレない実装精度を保つ。EnterPlanMode は使わず bypassPermissions モード (リモート実行など) と両立する設計。不明な論点は AskUserQuestion で必ずユーザーに確認する
 argument-hint: <実装したい機能・解決したい課題>
 ---
 
@@ -28,14 +28,12 @@ argument-hint: <実装したい機能・解決したい課題>
 
 ```
 .claude/shinaps/{YYYYMMDD-HHMMSS}-{slug}/
-├── plan.md                    ← Phase 4-B で確定する最終 plan (plan-reviewer Part 2 + refine findings 反映済み)
-├── plan.md.draft              ← Phase 4 の並列 spawn 用の暫定ファイル (architect 初回案のコピー、Phase 4-B の統合完了時に削除される)
+├── plan.md                    ← Phase 4 で確定する最終 plan (plan-reviewer Part 2)
 ├── raw/                       ← 計画フェーズの生レポート (全文保存)
 │   ├── explorer.md            ← または explorer-1.md, explorer-2.md ... (並列時、または spec handoff で再利用時は既存参照)
 │   ├── architect.md           ← architect の初回案
 │   ├── plan-review.md         ← plan-reviewer の Part 1 (レビュー結果のみ)
-│   ├── refine-plan.md         ← Phase 4 で走らせた Skill(shinaps:refine, plan:<path>) の findings 集約
-│   ├── refine-diff.md         ← Phase 6 で走らせた Skill(shinaps:refine) の findings 集約
+│   ├── refine.md              ← Phase 6 で走らせた Skill(shinaps:refine) の findings 集約
 │   └── architect-revised-{n}.md  ← 差し戻し再策定時のみ (n は 1 始まり)
 ├── implementation.md          ← 実装ログ・変更ファイル一覧・動作確認結果
 ├── review.md                  ← shinaps-reviewer の生レポート
@@ -97,57 +95,33 @@ argument-hint: <実装したい機能・解決したい課題>
 
 **記録先**: メインが Write で `raw/architect.md`
 
-### Phase 4: プランレビュー + refine plan mode (並列 spawn)
+### Phase 4: プランレビュー
 
-**`shinaps-plan-reviewer` と `Skill(shinaps:refine, plan:<path>)` を 1 メッセージ内で並列 spawn する** (workflow に bake された rule 照合 checkpoint)。
+`shinaps-plan-reviewer` を 1 体起動する。
 
-#### 前準備
+**プロンプトに含める情報**:
+- タスク内容
+- Phase 2 の explorer 結果
+- Phase 3 の architect 初回案 (`raw/architect.md` 全文)
+- Phase 2 の search_rules 結果 (userRules + officialRules 全文)
+- 「architect 案を批判的にレビューし、Critical / Warning を反映した修正版最終 plan を Part 2 として返せ。rule はアーキテクチャ / 責務分割 / 依存方向など実装後に気付くと手戻りが大きい設計レベルの違反を拾い、コードレベルの規約 (コメントの WHY / 命名 / import 経路) には踏み込まなくてよい」
 
-- `raw/architect.md` の内容を `plan.md.draft` として Write (refine plan mode に渡す暫定ファイル。最終 plan.md とは別ファイルにすることで、Phase 4-B での plan.md 上書きと分離する)
+計画段階で `Skill(shinaps:refine)` を併走させない理由: rule の大半はコードレベルの規約で、自然言語の plan からは検出できない。plan で拾う価値がある設計レベルの違反は plan-reviewer の担当範囲と重なるため、独立した照合層を挟んでも search_rules の二重取得と agent 起動コストに見合わない。コードレベルの rule 照合は Phase 6 で実装後の実ファイルに対して行う。
 
-#### 1 メッセージ内に以下 2 tool 呼び出しを含める
+#### 統合
 
-1. `Agent(subagent_type="shinaps-plan-reviewer", prompt=<下記>)`:
-   - タスク内容
-   - Phase 2 の explorer 結果
-   - Phase 3 の architect 初回案 (`raw/architect.md` 全文)
-   - Phase 2 の search_rules 結果 (userRules + officialRules 全文)
-   - 「architect 案を批判的にレビューし、Critical / Warning を反映した修正版最終 plan を Part 2 として返せ。rule 適合性は `Skill(shinaps:refine, plan:<path>)` が並列で走っているので、あなたは設計妥当性 / 実装可能性 / リスクに主軸を置き、rule については plan が明らかに違反している場合の Critical だけ拾えばよい」
-
-2. `Skill(skill="shinaps:refine", args="plan:<plan.md.draft 絶対 path>")`:
-   - refine skill 側が Step 0 で plan mode に分岐、Step 1-6 を実行、findings 一覧を返す
-
-#### 並列 dispatch フォールバック
-
-Claude Code の実行エンジンが Skill tool と Agent tool を並列 dispatch できず直列化された場合、以下の **2 段直列 fallback** に切り替える:
-
-1. 先に `shinaps-plan-reviewer` を単独で起動、Part 2 で最終 plan.md を確定 (`plan.md` として Write)
-2. 確定した plan.md に対して `Skill(shinaps:refine, args="plan:<plan.md 絶対 path>")` を単独発火
-
-この場合、refine findings は最終 plan.md を直接指すため、findings 反映ロジックが単純化する (Phase 4-B の照合ステップが不要になり、findings 反映は直接 line 番号ベースで行える)。dogfood で並列 dispatch の挙動を観察し、直列化が観測されたら Phase 4 の実装をこの 2 段直列に恒久移行する。
-
-### Phase 4-B: 統合
-
-両方の応答を待って、メインスレッドで以下の順序で統合:
+応答を受け取ったら、メインスレッドで以下を Write:
 
 1. plan-reviewer Part 1 (レビュー結果のみ) を `raw/plan-review.md` に Write
-2. plan-reviewer Part 2 (修正版最終 plan、Full text) を `plan.md` として Write (これが最終 plan.md の baseline)
-3. refine findings (JSON 配列) を Markdown 化して `raw/refine-plan.md` に Write
-4. `plan.md.draft` を削除 (暫定ファイル、以降不要)
-5. plan.md (最終) を Read し、refine findings の各 finding について:
-   - `summary` / `evidence` を検索キーに plan.md 内で該当節を探す
-   - **該当節が存在する**: Violation なら自動 Edit、Improvement は AskUserQuestion 4 択 (修正 / 許容 / rule 修正 / 後回し)
-   - **該当節が存在しない (plan-reviewer が既に修正済み or 大幅リライトで消失)**: obsolete としてスキップ、`raw/refine-plan.md` に obsolete タグを付けて残す
-6. plan.md への Edit が完了したら、判断ログを `raw/refine-plan.md` の末尾に「反映結果」として追記
+2. plan-reviewer Part 2 (修正版最終 plan、Full text) を `plan.md` として Write (これが最終 plan.md)
 
-### Phase 4-C: 判定別のアクション
+#### 判定別のアクション
 
-| plan-reviewer 判定 | refine findings | アクション |
-|---|---|---|
-| **承認** | 0 件 or Question のみ | Part 2 で確定した plan.md をそのまま Phase 5 へ (Question は Phase 5 実装時に判断) |
-| **承認** | Violation / Improvement あり | Phase 4-B 手順 5 に従って plan.md を Edit (自動 or AskUserQuestion) → Phase 5 へ |
-| **条件付き承認** | 任意 | Part 2 で確定した plan.md に対して Phase 4-B 手順 5 の refine findings 反映 → Phase 5 へ |
-| **差し戻し** | 任意 | `AskUserQuestion` で「再策定する / 指摘を未解決リスクとして明記して進む / タスク見直し」を確認。再策定の場合は Part 1 の差し戻し理由 + refine findings を渡して `shinaps-architect` を再起動、`raw/architect-revised-{n}.md` に保存 → 再度 plan-reviewer + refine plan mode を並列 spawn |
+| plan-reviewer 判定 | アクション |
+|---|---|
+| **承認** | Part 2 で確定した plan.md をそのまま Phase 5 へ |
+| **条件付き承認** | Part 2 で確定した plan.md をそのまま Phase 5 へ (条件は Phase 5 実装時に判断) |
+| **差し戻し** | `AskUserQuestion` で「再策定する / 指摘を未解決リスクとして明記して進む / タスク見直し」を確認。再策定の場合は Part 1 の差し戻し理由を渡して `shinaps-architect` を再起動、`raw/architect-revised-{n}.md` に保存 → 再度 plan-reviewer を起動 |
 
 ### Phase 5: 実装フェーズ (メインスレッド直接実装)
 
@@ -156,7 +130,7 @@ Claude Code の実行エンジンが Skill tool と Agent tool を並列 dispatc
 #### A. 事前整合性チェック
 
 1. `plan.md` を再読し、ビルド順序を `TaskCreate` で展開
-2. Phase 2-4 で確定した必読ファイル・plan-reviewer 指摘・refine findings は既にメイン context に保有済み。再 Read は不要 — 新たに発生した疑問だけ Read で補う
+2. Phase 2-4 で確定した必読ファイル・plan-reviewer 指摘は既にメイン context に保有済み。再 Read は不要 — 新たに発生した疑問だけ Read で補う
 3. 既存実装との衝突や前提の不一致を発見した場合は `AskUserQuestion` で「plan を上書く / 既存に合わせる / Phase 4 に戻って plan-reviewer に再策定させる」を確認
 
 #### B. 実装
@@ -182,9 +156,9 @@ Claude Code の実行エンジンが Skill tool と Agent tool を並列 dispatc
 - 結果を `implementation.md` の「動作確認結果」セクションに記録
 - 自分の実装ミスによる失敗は **3 回まで自己修正**。それを超える場合は `AskUserQuestion` で「さらに修正試行 / Phase 6 のレビュー対象として diff を渡す / Phase 4 に戻って plan-reviewer に再策定させる」を確認
 
-### Phase 6: セルフレビュー + refine diff mode (並列 spawn)
+### Phase 6: セルフレビュー + refine (並列 spawn)
 
-**`shinaps-reviewer` と `Skill(shinaps:refine)` を 1 メッセージ内で並列 spawn する** (Phase 4 と同じ並列パターン + 同じ直列 fallback を採用可能)。
+**`shinaps-reviewer` と `Skill(shinaps:refine)` を 1 メッセージ内で並列 spawn する** (workflow に bake された rule 照合 checkpoint)。
 
 #### 1 メッセージ内に以下 2 tool 呼び出しを含める
 
@@ -196,18 +170,23 @@ Claude Code の実行エンジンが Skill tool と Agent tool を並列 dispatc
    - 「confidence ≥ 80 のみ報告、rule 違反は必ず Critical タグ」
 
 2. `Skill(skill="shinaps:refine")`:
-   - 引数なし → diff mode で `git diff HEAD` を対象に refine が Step 0-6 を実行
+   - 引数なし → `git diff HEAD` で変更ファイルを特定し、それらの現状全文を対象に refine が Step 0-6 を実行
+
+#### 並列 dispatch フォールバック
+
+Claude Code の実行エンジンが Skill tool と Agent tool を並列 dispatch できず直列化された場合は、`shinaps-reviewer` を先に単独起動 → `Skill(shinaps:refine)` を単独発火する 2 段直列に切り替える。どちらも独立に対象を取りに行くので、順序が変わっても結果は変わらない。
 
 #### 記録先
 
 - `review.md`: shinaps-reviewer の生レポート (メインが Write)
-- `raw/refine-diff.md`: refine diff mode の findings 集約 (メインが Write)
+- `raw/refine.md`: refine の findings 集約 (メインが Write)
 
 ### Phase 7: 修正ループ
 
-- **Critical は必ず自動修正** (reviewer Critical + refine Violation、承認不要 — 動作を壊している / 規約違反の指摘)
+- **Critical は必ず自動修正** (reviewer Critical + refine の `scope=changed` な Violation、承認不要 — 動作を壊している / 規約違反の指摘)
 - **Phase 5 サブフェーズ D で検出された動作確認の失敗** も Critical として修正
 - **Warning は `AskUserQuestion` で確認**: 「全部修正 / 個別に確認 / 後回し (Issue 化) / スコープ外として記録」 (reviewer Warning + refine Improvement)
+- **refine の `scope=pre-existing` な finding は自動修正しない**。今回の実装と無関係な差分が commit に混ざるため、Violation でも `AskUserQuestion` で「今回直す / 別タスクにする」を確認する
 - **Info は記録のみで修正しない**
 
 修正を行った場合、`fix-log.md` に「指摘 → 修正内容 → 該当ファイル」を記録。修正判断は `record_memory` を残す。
@@ -232,10 +211,10 @@ Phase 7 で **Critical または Warning を修正した場合のみ**、もう�
 - **EnterPlanMode は使わない**: bypassPermissions モード (リモート実行など) と両立させるため
 - **実装はメインスレッドが担う**: explorer / architect / plan-review で築いた文脈・設計判断の WHY をそのまま実装と修正ループに引き継ぐため。サブエージェント委譲は計画フェーズとレビューフェーズに限定
 - **subagent は文字列応答のみを返す**: raw/*.md への Write / Edit は必ずメインスレッドが担当
-- **rule 照合を各 Phase に bake**: Phase 2 の `search_rules` → Phase 3 の architect prompt 埋め込み → Phase 4 の refine plan mode 並列 → Phase 6 の refine diff mode 並列
+- **rule 照合を各 Phase に bake**: Phase 2 の `search_rules` → Phase 3 の architect prompt 埋め込み → Phase 4 の plan-reviewer (設計レベルの違反) → Phase 6 の refine 並列 (コードレベルの違反)
 - **判断・方針転換で `record_memory`**
 - **不明な論点は必ず AskUserQuestion で確認**: 回数に制限なし。「わからないまま自動進行」より「ユーザーに聞く」を優先
-- **生レポート保存厳守**: explorer / architect / plan-reviewer / reviewer / refine (plan/diff 両モード) の応答は全文保存
+- **生レポート保存厳守**: explorer / architect / plan-reviewer / reviewer / refine の応答は全文保存
 - **Critical は自動修正、Warning は確認**
 - **plan からの逸脱は確認 + 記録**: AskUserQuestion で確認した上で `implementation.md` に経緯を残す
 - **git 操作は自動化しない**: commit / push / PR は別スキルへ案内のみ

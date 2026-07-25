@@ -48,7 +48,7 @@ shinaps-ai と統合した開発 workflow skill 集。Claude Code plugin とし�
 - `/shinaps:dev` — 計画策定 + 実装 + セルフレビュー一気通貫
 - `/shinaps:review` — 差分 / PR / パス指定の単独レビュー
 - `/shinaps:debug` — 根本原因調査
-- `/shinaps:refine` — セルフレビュー直前 (diff mode) / plan 確定直前 (plan mode) の並列 rule 照合
+- `/shinaps:refine` — セルフレビュー直前の並列 rule 照合 (対象ファイルの現状全文を照合)
 - `/shinaps:extract-rules` — 過去 PR review から userRules 一括生成
 
 user が直接叩くことも、AI が description matching で自動発火することもできる。
@@ -73,7 +73,7 @@ npx skills add sh1n4ps/shinaps-skills -a codex -g
 | Skill | 用途 |
 |---|---|
 | `shinaps:spec` | ざっくり要望をヒアリング → 既存実装調査 (shinaps-explorer) → フィジビリ調査 (shinaps-tech-surveyor + shinaps-survey-validator) → 必要ならプロトタイプ → 構造化 spec.md 作成。そのまま `shinaps:dev` に橋渡し可能 |
-| `shinaps:dev` | 計画策定 (shinaps-architect) → plan-review + refine plan mode 並列 (shinaps-plan-reviewer + `Skill(shinaps:refine, plan:...)`) → メインスレッドが直接実装 → セルフレビュー + refine diff mode 並列 (shinaps-reviewer + `Skill(shinaps:refine)`) → Critical 自動修正まで一気通貫 |
+| `shinaps:dev` | 計画策定 (shinaps-architect) → plan-review (shinaps-plan-reviewer) → メインスレッドが直接実装 → セルフレビュー + refine 並列 (shinaps-reviewer + `Skill(shinaps:refine)`) → Critical 自動修正まで一気通貫 |
 | `shinaps:review` | 差分 (branch) / PR / パスの単独レビュー。shinaps-reviewer + shinaps-tech-surveyor を並列起動 → shinaps-review-validator で妥当性検証。確定指摘は `shinaps:dev` へ橋渡し可能、PR モードでは PR コメント投稿も可 |
 | `shinaps:debug` | 症状から根本原因を追跡 (shinaps-debugger) → 実コード検証で分類 (shinaps-debug-validator) → 必要なら外部情報深掘り (shinaps-tech-surveyor + shinaps-survey-validator) → 修正実装は `shinaps:dev` へ橋渡し可能 |
 
@@ -82,7 +82,7 @@ npx skills add sh1n4ps/shinaps-skills -a codex -g
 | Skill | 用途 |
 |---|---|
 | `shinaps:extract-rules` | 過去 PR のレビューコメントから userRules を bulk 生成。新規リポジトリ着手時や userRules が空 / 少ないとき (5 件未満) に提案・起動 |
-| `shinaps:refine` | rule 照合を並列 subagent で行う共通スキル。**diff mode** (`git diff HEAD` / PR / commit range を対象) と **plan mode** (`plan:<path>` で plan.md を対象) の 2 mode をサポート。diff mode は自明な修正を Edit で自動適用 + 判断要は 4 択 AskUserQuestion、plan mode は findings 一覧を返して終了 (plan.md への反映は呼び出し元の責務) |
+| `shinaps:refine` | rule 照合を並列 subagent で行う共通スキル。**対象ファイルの現状全文** を rule と照合する (diff の hunk だけではファイル全体の規約適合を判断できないため)。対象ファイルは path 指定 / `git diff --name-only HEAD` / PR / commit range から決まる。今回の変更箇所 (`changed`) の自明な違反は Edit で自動適用、既存箇所 (`pre-existing`) と判断要は 4 択 AskUserQuestion |
 
 ## Subagents (11)
 
@@ -93,7 +93,7 @@ npx skills add sh1n4ps/shinaps-skills -a codex -g
 | `shinaps-plan-reviewer` | architect 案の批判 + 修正版最終 plan (confidence 閾値 70) |
 | `shinaps-reviewer` | logic / design / security / performance / maintainability / rule 統合レビュー (confidence 閾値 80) |
 | `shinaps-review-validator` | reviewer 指摘の実コード検証 (confirmed / false positive / partial / out-of-scope 分類) |
-| `shinaps-refine-agent` | rule 照合の並列 dispatch (diff + plan 両モード対応、Violation / Improvement / Question 分類) |
+| `shinaps-refine-agent` | rule 照合の並列 dispatch (ファイル現状全文と照合、Violation / Improvement / Question 分類 + changed / pre-existing 切り分け) |
 | `shinaps-spec-writer` | ヒアリング + 調査結果を spec.md 構造化 |
 | `shinaps-tech-surveyor` | 外部技術調査 (WebSearch + WebFetch で 3-5 候補比較) |
 | `shinaps-survey-validator` | tech-surveyor の出典を WebFetch で再確認 |

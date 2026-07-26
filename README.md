@@ -84,7 +84,7 @@ npx skills add sh1n4ps/shinaps-skills -a codex -g
 |---|---|
 | `shinaps:extract-rules` | 過去 PR のレビューコメントから userRules を bulk 生成。新規リポジトリ着手時や userRules が空 / 少ないとき (5 件未満) に提案・起動 |
 | `shinaps:refine` | rule 照合を並列 subagent で行う共通スキル。**対象ファイルの現状全文** を rule と照合する (diff の hunk だけではファイル全体の規約適合を判断できないため)。対象ファイルは path 指定 / `git diff --name-only HEAD` / PR / commit range から決まる。今回の変更箇所 (`changed`) の自明な違反は Edit で自動適用、既存箇所 (`pre-existing`) と判断要は 4 択 AskUserQuestion |
-| `shinaps:commit` | working tree の差分を「コミットメッセージ一言で説明できる範囲」のレビュー単位に分割し、単位ごとに「ステージ → 単独検証 (`git stash --keep-index`) → 人間レビュー → 修正ループ → コミット」を回すコミットモード。`shinaps:dev` 完了後の handoff 先だが、手動で作った差分にも単独発火できる。どのコミットに checkout しても壊れていない履歴を作る |
+| `shinaps:commit` | working tree の差分を「コミットメッセージ一言で説明できる範囲」のレビュー単位に分割し、サイクルごとに「次の単位以外を stash へ退避 → 単位だけの worktree で単独検証 → 人間レビュー → 修正ループ → コミット → stash を全部 pop で戻してコンフリクトをその場で解消」を繰り返すコミットモード。pop のたびに残差分がコミット済み内容と整合した状態へリセットされるため、レビュー指摘の修正を制約なく取り込める。`shinaps:dev` 完了後の handoff 先だが、手動で作った差分にも単独発火できる。どのコミットに checkout しても壊れていない履歴を作る |
 
 ## Subagents (11)
 

@@ -12,7 +12,7 @@
       "name": "shinaps",
       "source": "./plugins/shinaps",
       "description": "shinaps-ai と統合した開発 workflow skill 集。計画策定 + 実装 + セルフレビュー一気通貫の shinaps:dev、ヒアリング + フィジビリ調査で仕様を詰める shinaps:spec、差分 / PR / パス指定を切り替えられる単独レビュー shinaps:review、根本原因を追う shinaps:debug の 4 workflow skill と、セルフレビュー直前の並列 rule 照合 (refine、対象ファイルの現状全文と照合) / 過去 PR review コメントからの rules 一括抽出 (extract-rules) / 差分をレビュー単位に分割して単位ごとに人間レビュー + 単独検証 + 段階コミットを回すコミットモード (commit、dev からの handoff と単独発火の両対応) の 3 支援 skill、合計 7 skill を bundle。11 subagent が Phase ごとに担当する構造で、rule 照合 + memory 記録 + セルフレビューが workflow に bake されている。EnterPlanMode は使わず bypassPermissions モードと両立。事前に shinaps-ai MCP server を .mcp.json に登録すること (https://app.shinaps.ai/mcp または http://localhost:5173/mcp)。plugin 名は shinaps (namespace prefix) だが MCP server 名は shinaps-ai である点に注意。",
-      "version": "0.6.1",
+      "version": "0.6.2",
       "author": {
         "name": "shinaps",
         "email": "ryuta@shinaps.jp"

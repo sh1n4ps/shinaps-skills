@@ -1,6 +1,6 @@
 ---
 name: dev
-description: 計画策定 + 実装 + セルフレビューを一気通貫で行う開発ワークフロー。shinaps-explorer でコードベース調査 (spec.md からの handoff なら spec が取った explorer 結果を再利用) → shinaps-architect で実装ブループリント策定 → shinaps-plan-reviewer が plan を批判して修正版最終 plan を返す → メインスレッドが plan.md を直接実装 + 動作確認 (型/lint/test) + implementation.md 執筆 → shinaps-reviewer と Skill(shinaps:refine) を発火してセルフレビュー + rule 照合 → Critical 自動修正までを単一スキルで完走する。実装フェーズをメインスレッドが担うことで、explorer / architect / plan-review で築いた文脈をそのまま実装判断に活用し、レビュー指摘や修正ループでもブレない実装精度を保つ。EnterPlanMode は使わず bypassPermissions モード (リモート実行など) と両立する設計。不明な論点は AskUserQuestion で必ずユーザーに確認する
+description: 計画策定 + 実装 + セルフレビューを一気通貫で行う開発ワークフロー。shinaps-explorer でコードベース調査 (spec.md からの handoff なら spec が取った explorer 結果を再利用) → shinaps-architect で実装ブループリント策定 → shinaps-plan-reviewer が plan を批判して修正版最終 plan を返す → メインスレッドが plan.md を直接実装 + 動作確認 (型/lint/test) + implementation.md 執筆 → shinaps-reviewer と Skill(shinaps:refine) を発火してセルフレビュー + rule 照合 → Critical 自動修正 → ユーザー承認の上 Skill(shinaps:commit) へ handoff してレビュー単位の分割コミット、までを単一スキルで完走する。実装フェーズをメインスレッドが担うことで、explorer / architect / plan-review で築いた文脈をそのまま実装判断に活用し、レビュー指摘や修正ループでもブレない実装精度を保つ。EnterPlanMode は使わず bypassPermissions モード (リモート実行など) と両立する設計。不明な論点は AskUserQuestion で必ずユーザーに確認する
 argument-hint: <実装したい機能・解決したい課題>
 ---
 
@@ -204,7 +204,16 @@ Phase 7 で **Critical または Warning を修正した場合のみ**、もう�
 - 再レビューでさらに Critical が出た場合は再修正 → 再レビューを Critical が無くなるまで繰り返す
 - 各ラウンドの修正は `fix-log.md` に追記し、ラウンド数が判別できるようにする
 
-修正がなかった場合は再レビューをスキップして終了。
+修正がなかった場合は再レビューをスキップして Phase 9 へ。
+
+### Phase 9: コミットモードへの handoff
+
+全 Phase 完了後、実装内容のサマリ (変更ファイル一覧 + 動作確認結果) を提示した上で、`AskUserQuestion` で確認する:
+
+- **コミットモードへ移行** — `Skill(skill="shinaps:commit", args="<タスク要約>。実装の WHY は {作業ディレクトリ}/implementation.md を参照")` を発火。差分をレビュー単位に分割し、単位ごとに人間レビュー + 単独検証を回しながら段階的にコミットする
+- **コミットせず終了** — working tree に差分を残したまま終了 (ユーザーが手動でコミットする / 後で `/shinaps:commit` を単独発火する)
+
+dev 自身は `git add` / `git commit` を直接実行しない。コミットは必ず shinaps:commit の「単位ごとの人間レビュー」を経由させることで、大きい差分が無レビューのまま履歴に積まれることを防ぐ。
 
 ## 動作原則
 
@@ -217,7 +226,7 @@ Phase 7 で **Critical または Warning を修正した場合のみ**、もう�
 - **生レポート保存厳守**: explorer / architect / plan-reviewer / reviewer / refine の応答は全文保存
 - **Critical は自動修正、Warning は確認**
 - **plan からの逸脱は確認 + 記録**: AskUserQuestion で確認した上で `implementation.md` に経緯を残す
-- **git 操作は自動化しない**: commit / push / PR は別スキルへ案内のみ
+- **コミットは shinaps:commit 経由のみ**: dev 自身は `git add` / `git commit` を実行しない。Phase 9 でユーザー承認の上 `Skill(shinaps:commit)` へ handoff する。push / PR はスコープ外 (別スキルへ案内のみ)
 
 ## 他スキルからの呼び出し
 

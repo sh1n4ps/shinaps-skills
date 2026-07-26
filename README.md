@@ -42,7 +42,7 @@ shinaps-ai と統合した開発 workflow skill 集。Claude Code plugin とし�
 /plugin install shinaps@shinaps-skills
 ```
 
-`marketplace add` は repo 内の `.claude-plugin/marketplace.json` を読み、そこに列挙された plugin 一覧をレジストリに登録する。`install shinaps@shinaps-skills` は「marketplace `shinaps-skills` から plugin `shinaps` を入れる」の意味。Install 後、Skill レジストリに以下 6 skill が登録される:
+`marketplace add` は repo 内の `.claude-plugin/marketplace.json` を読み、そこに列挙された plugin 一覧をレジストリに登録する。`install shinaps@shinaps-skills` は「marketplace `shinaps-skills` から plugin `shinaps` を入れる」の意味。Install 後、Skill レジストリに以下 7 skill が登録される:
 
 - `/shinaps:spec` — 対話ヒアリング + フィジビリ調査で仕様を詰める
 - `/shinaps:dev` — 計画策定 + 実装 + セルフレビュー一気通貫
@@ -50,6 +50,7 @@ shinaps-ai と統合した開発 workflow skill 集。Claude Code plugin とし�
 - `/shinaps:debug` — 根本原因調査
 - `/shinaps:refine` — セルフレビュー直前の並列 rule 照合 (対象ファイルの現状全文を照合)
 - `/shinaps:extract-rules` — 過去 PR review から userRules 一括生成
+- `/shinaps:commit` — 差分をレビュー単位に分割し、単位ごとに人間レビュー + 単独検証を回して段階コミット
 
 user が直接叩くことも、AI が description matching で自動発火することもできる。
 
@@ -73,16 +74,17 @@ npx skills add sh1n4ps/shinaps-skills -a codex -g
 | Skill | 用途 |
 |---|---|
 | `shinaps:spec` | ざっくり要望をヒアリング → 既存実装調査 (shinaps-explorer) → フィジビリ調査 (shinaps-tech-surveyor + shinaps-survey-validator) → 必要ならプロトタイプ → 構造化 spec.md 作成。そのまま `shinaps:dev` に橋渡し可能 |
-| `shinaps:dev` | 計画策定 (shinaps-architect) → plan-review (shinaps-plan-reviewer) → メインスレッドが直接実装 → セルフレビュー + refine 並列 (shinaps-reviewer + `Skill(shinaps:refine)`) → Critical 自動修正まで一気通貫 |
+| `shinaps:dev` | 計画策定 (shinaps-architect) → plan-review (shinaps-plan-reviewer) → メインスレッドが直接実装 → セルフレビュー + refine 並列 (shinaps-reviewer + `Skill(shinaps:refine)`) → Critical 自動修正 → ユーザー承認の上 `shinaps:commit` へ handoff、まで一気通貫 |
 | `shinaps:review` | 差分 (branch) / PR / パスの単独レビュー。shinaps-reviewer + shinaps-tech-surveyor を並列起動 → shinaps-review-validator で妥当性検証。確定指摘は `shinaps:dev` へ橋渡し可能、PR モードでは PR コメント投稿も可 |
 | `shinaps:debug` | 症状から根本原因を追跡 (shinaps-debugger) → 実コード検証で分類 (shinaps-debug-validator) → 必要なら外部情報深掘り (shinaps-tech-surveyor + shinaps-survey-validator) → 修正実装は `shinaps:dev` へ橋渡し可能 |
 
-### Support skills (2)
+### Support skills (3)
 
 | Skill | 用途 |
 |---|---|
 | `shinaps:extract-rules` | 過去 PR のレビューコメントから userRules を bulk 生成。新規リポジトリ着手時や userRules が空 / 少ないとき (5 件未満) に提案・起動 |
 | `shinaps:refine` | rule 照合を並列 subagent で行う共通スキル。**対象ファイルの現状全文** を rule と照合する (diff の hunk だけではファイル全体の規約適合を判断できないため)。対象ファイルは path 指定 / `git diff --name-only HEAD` / PR / commit range から決まる。今回の変更箇所 (`changed`) の自明な違反は Edit で自動適用、既存箇所 (`pre-existing`) と判断要は 4 択 AskUserQuestion |
+| `shinaps:commit` | working tree の差分を「コミットメッセージ一言で説明できる範囲」のレビュー単位に分割し、単位ごとに「ステージ → 単独検証 (`git stash --keep-index`) → 人間レビュー → 修正ループ → コミット」を回すコミットモード。`shinaps:dev` 完了後の handoff 先だが、手動で作った差分にも単独発火できる。どのコミットに checkout しても壊れていない履歴を作る |
 
 ## Subagents (11)
 

@@ -9,6 +9,7 @@ shinaps-ai と統合した開発 workflow skill 集。Claude Code plugin とし�
 - **rule 照合 + memory 記録 + セルフレビューが workflow に bake**: AI の instruction 遵守度に依存しない
 - **EnterPlanMode は一切使わない**: bypassPermissions モード (リモート実行など) でも全フェーズが走り切る
 - **不明な論点は必ず AskUserQuestion で確認**: 「わからないまま自動進行」より「ユーザーに聞く」を優先
+- **実装前の理解は人間主導で深める**: `explore` は 1 回の診断で打ち切らず、人間が納得するまで質問 → 調査 → 根拠付き回答を繰り返す
 - **subagent は shinaps MCP を叩かない**: rule 全文は Skill 側から prompt 経由で渡す (credit 最適化)
 - **実装はメインスレッドが担う**: 計画 / レビューフェーズの subagent 委譲は維持しつつ、実装フェーズは explorer / architect / plan-review で築いた文脈を活かしてメインが直接 Edit/Write
 
@@ -42,8 +43,9 @@ shinaps-ai と統合した開発 workflow skill 集。Claude Code plugin とし�
 /plugin install shinaps@shinaps-skills
 ```
 
-`marketplace add` は repo 内の `.claude-plugin/marketplace.json` を読み、そこに列挙された plugin 一覧をレジストリに登録する。`install shinaps@shinaps-skills` は「marketplace `shinaps-skills` から plugin `shinaps` を入れる」の意味。Install 後、Skill レジストリに以下 7 skill が登録される:
+`marketplace add` は repo 内の `.claude-plugin/marketplace.json` を読み、そこに列挙された plugin 一覧をレジストリに登録する。`install shinaps@shinaps-skills` は「marketplace `shinaps-skills` から plugin `shinaps` を入れる」の意味。Install 後、Skill レジストリに以下 8 skill が登録される:
 
+- `/shinaps:explore` — 人間が納得するまで質問を重ねる read-only 対話調査
 - `/shinaps:spec` — 対話ヒアリング + フィジビリ調査で仕様を詰める
 - `/shinaps:dev` — 計画策定 + 実装 + セルフレビュー一気通貫
 - `/shinaps:review` — 差分 / PR / パス指定の単独レビュー
@@ -62,17 +64,18 @@ npx skills add sh1n4ps/shinaps-skills -a codex -g
 
 **注意 (Codex CLI の非対称性)**:
 
-- Codex CLI では `shinaps:` namespace prefix は付与されず、`dev` / `spec` / `review` / `debug` / `refine` などの平名で登録される可能性が高い (Codex 側の namespace 概念は非公式)
+- Codex CLI では `shinaps:` namespace prefix は付与されず、`explore` / `dev` / `spec` / `review` / `debug` / `refine` などの平名で登録される可能性が高い (Codex 側の namespace 概念は非公式)
 - 既存の同名 skill と衝突する可能性がある — 衝突時は user 側で個別 skill を rename すること
 - skills.sh CLI は Codex global を `~/.codex/skills/` に書き込むが、Codex 公式 docs は `~/.agents/skills/` を示している (path 不整合の実測は環境依存)
 - SKILL.md 本文の `${CLAUDE_SKILL_DIR}` などの Claude Code 固有 syntax は使わず portable に書いてあるので、Codex 側でも読み進められる想定
 
 ## Skills (詳細)
 
-### Workflow skills (4)
+### Workflow skills (5)
 
 | Skill | 用途 |
 |---|---|
+| `shinaps:explore` | バグか未確定の違和感、既存挙動、実装方針や影響範囲を、人間の質問ごとに read-only 調査。コード・テスト・設定・履歴の根拠を `confirmed / inference / unknown` に分け、納得するまでラウンド数無制限で続ける。合意した変更は `exploration.md` から `shinaps:dev` へ橋渡し可能 |
 | `shinaps:spec` | ざっくり要望をヒアリング → 既存実装調査 (shinaps-explorer) → フィジビリ調査 (shinaps-tech-surveyor + shinaps-survey-validator) → 必要ならプロトタイプ → 構造化 spec.md 作成。そのまま `shinaps:dev` に橋渡し可能 |
 | `shinaps:dev` | 計画策定 (shinaps-architect) → plan-review (shinaps-plan-reviewer) → メインスレッドが直接実装 → セルフレビュー + refine 並列 (shinaps-reviewer + `Skill(shinaps:refine)`) → Critical 自動修正 → ユーザー承認の上 `shinaps:commit` へ handoff、まで一気通貫 |
 | `shinaps:review` | 差分 (branch) / PR / パスの単独レビュー。shinaps-reviewer + shinaps-tech-surveyor を並列起動 → shinaps-review-validator で妥当性検証。確定指摘は `shinaps:dev` へ橋渡し可能、PR モードでは PR コメント投稿も可 |
@@ -86,11 +89,12 @@ npx skills add sh1n4ps/shinaps-skills -a codex -g
 | `shinaps:refine` | rule 照合を並列 subagent で行う共通スキル。**対象ファイルの現状全文** を rule と照合する (diff の hunk だけではファイル全体の規約適合を判断できないため)。対象ファイルは path 指定 / `git diff --name-only HEAD` / PR / commit range から決まる。今回の変更箇所 (`changed`) の自明な違反は Edit で自動適用、既存箇所 (`pre-existing`) と判断要は 4 択 AskUserQuestion |
 | `shinaps:commit` | working tree の差分を「コミットメッセージ一言で説明できる範囲」のレビュー単位に分割し、サイクルごとに「次の単位以外を stash へ退避 → 単位だけの worktree で単独検証 → 人間レビュー → 修正ループ → コミット → stash を全部 pop で戻してコンフリクトをその場で解消」を繰り返すコミットモード。pop のたびに残差分がコミット済み内容と整合した状態へリセットされるため、レビュー指摘の修正を制約なく取り込める。`shinaps:dev` 完了後の handoff 先だが、手動で作った差分にも単独発火できる。どのコミットに checkout しても壊れていない履歴を作る |
 
-## Subagents (11)
+## Subagents (12)
 
 | Subagent | 役割 |
 |---|---|
 | `shinaps-explorer` | コードベース探索、必読ファイル抽出 |
+| `shinaps-investigator` | `shinaps:explore` の現在の質問をコード・テスト・設定・履歴から調べ、確実性を分けて回答 |
 | `shinaps-architect` | 実装ブループリント策定 (複数観点 → 単一案収束) |
 | `shinaps-plan-reviewer` | architect 案の批判 + 修正版最終 plan (confidence 閾値 70) |
 | `shinaps-reviewer` | logic / design / security / performance / maintainability / rule 統合レビュー (confidence 閾値 80) |
@@ -111,12 +115,13 @@ npx skills add sh1n4ps/shinaps-skills -a codex -g
 ```
 .claude/shinaps/
 ├── {ts}-{slug}/               ← shinaps:dev の作業ディレクトリ
+├── explorations/{ts}-{slug}/  ← shinaps:explore の living document と質問別調査レポート
 ├── specs/{ts}-{slug}/         ← shinaps:spec の作業ディレクトリ (dev が spec.md を再利用)
 ├── reviews/{ts}-{mode}/       ← shinaps:review の作業ディレクトリ (dev が review-validated.md を再利用)
 └── debug/{ts}-{slug}/         ← shinaps:debug の作業ディレクトリ (dev が debug-validated.md を再利用)
 ```
 
-生レポート (explorer / architect / plan-reviewer / reviewer / refine / tech-surveyor / survey-validator / debugger / debug-validator の応答) は `raw/` 配下に全文保存する規約。
+生レポート (investigator / explorer / architect / plan-reviewer / reviewer / refine / tech-surveyor / survey-validator / debugger / debug-validator の応答) は `raw/` 配下に全文保存する規約。
 
 ## License
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shinaps Explore"
+  short_description: "コードと履歴を根拠に、人間が納得するまで対話で深く調査する"
+  default_prompt: "Use $explore to investigate this bug or implementation question interactively until I understand it."

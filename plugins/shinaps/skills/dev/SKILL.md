@@ -1,6 +1,6 @@
 ---
 name: dev
-description: 計画策定 + 実装 + セルフレビューを一気通貫で行う開発ワークフロー。shinaps-explorer でコードベース調査 (spec.md からの handoff なら spec が取った explorer 結果を再利用) → shinaps-architect で実装ブループリント策定 → shinaps-plan-reviewer が plan を批判して修正版最終 plan を返す → メインスレッドが plan.md を直接実装 + 動作確認 (型/lint/test) + implementation.md 執筆 → shinaps-reviewer と Skill(shinaps:refine) を発火してセルフレビュー + rule 照合 → Critical 自動修正 → ユーザー承認の上 Skill(shinaps:commit) へ handoff してレビュー単位の分割コミット、までを単一スキルで完走する。実装フェーズをメインスレッドが担うことで、explorer / architect / plan-review で築いた文脈をそのまま実装判断に活用し、レビュー指摘や修正ループでもブレない実装精度を保つ。EnterPlanMode は使わず bypassPermissions モード (リモート実行など) と両立する設計。不明な論点は AskUserQuestion で必ずユーザーに確認する
+description: 計画策定 + 実装 + セルフレビューを一気通貫で行う開発ワークフロー。shinaps-explorer でコードベース調査 (spec.md / exploration.md からの handoff なら既存調査を再利用) → shinaps-architect で実装ブループリント策定 → shinaps-plan-reviewer が plan を批判して修正版最終 plan を返す → メインスレッドが plan.md を直接実装 + 動作確認 (型/lint/test) + implementation.md 執筆 → shinaps-reviewer と Skill(shinaps:refine) を発火してセルフレビュー + rule 照合 → Critical 自動修正 → ユーザー承認の上 Skill(shinaps:commit) へ handoff してレビュー単位の分割コミット、までを単一スキルで完走する。実装フェーズをメインスレッドが担うことで、explorer / architect / plan-review で築いた文脈をそのまま実装判断に活用し、レビュー指摘や修正ループでもブレない実装精度を保つ。EnterPlanMode は使わず bypassPermissions モード (リモート実行など) と両立する設計。不明な論点は AskUserQuestion で必ずユーザーに確認する
 argument-hint: <実装したい機能・解決したい課題>
 ---
 
@@ -17,7 +17,7 @@ argument-hint: <実装したい機能・解決したい課題>
 
 | エージェント | subagent_type | 役割 |
 |---|---|---|
-| Shinaps Explorer | `shinaps-explorer` | コードベース探索、必読ファイル抽出 (spec からの handoff 時は再起動しない) |
+| Shinaps Explorer | `shinaps-explorer` | コードベース探索、必読ファイル抽出 (spec / explore の事前調査が十分なら再起動しない) |
 | Shinaps Architect | `shinaps-architect` | 複数観点を内包した実装ブループリント策定 |
 | Shinaps Plan Reviewer | `shinaps-plan-reviewer` | architect 初回案を批判 + Critical/Warning を反映した修正版最終 plan までを返す |
 | Shinaps Reviewer | `shinaps-reviewer` | logic / design / security / performance / maintainability / rule の統合観点でレビュー |
@@ -30,7 +30,7 @@ argument-hint: <実装したい機能・解決したい課題>
 .claude/shinaps/{YYYYMMDD-HHMMSS}-{slug}/
 ├── plan.md                    ← Phase 4 で確定する最終 plan (plan-reviewer Part 2)
 ├── raw/                       ← 計画フェーズの生レポート (全文保存)
-│   ├── explorer.md            ← または explorer-1.md, explorer-2.md ... (並列時、または spec handoff で再利用時は既存参照)
+│   ├── explorer.md            ← または explorer-1.md, explorer-2.md ... (事前調査 handoff 時は既存レポートを参照)
 │   ├── architect.md           ← architect の初回案
 │   ├── plan-review.md         ← plan-reviewer の Part 1 (レビュー結果のみ)
 │   ├── refine.md              ← Phase 6 で走らせた Skill(shinaps:refine) の findings 集約
@@ -41,7 +41,7 @@ argument-hint: <実装したい機能・解決したい課題>
 └── fix-log.md                 ← 修正ループの履歴 (修正があった場合のみ)
 ```
 
-`spec.md` からの handoff の場合、spec が取った `raw/explorer.md` を再利用するため自前で explorer を起動しない (Phase 2 参照)。
+`spec.md` / `exploration.md` からの handoff では、同ディレクトリの既存調査を再利用し、情報が十分なら自前で explorer を起動しない (Phase 2 参照)。
 
 `{slug}` はタスク内容の短い英語スラッグ (kebab-case, 30 文字以内)。
 
@@ -52,19 +52,25 @@ argument-hint: <実装したい機能・解決したい課題>
 1. 引数なし → エラー終了「`/shinaps:dev <task>` でタスクを指定してください」
 2. 引数の文字列をタスク内容として確定
 3. **`list_recent_work({ repoOwner, repoName })` を必ず呼ぶ** → 返却の直近 20 件から **直近 5-10 件のみ 1 行サマリ化** して保持する (subagent prompt に埋め込む用の要約)
-4. **spec.md からの handoff 判定**: 引数に `.claude/shinaps/specs/.../spec.md` のパスが含まれていれば spec モードと判定し、その spec.md を Read してタスク詳細・採用技術・既存実装との関係を取り込む。同 spec ディレクトリ配下の `raw/explorer.md` も存在するか確認 (Phase 2 で再利用)
+4. **他スキルからの handoff 判定**: 引数に `.claude/shinaps/.../*.md` の成果物パスが含まれていれば必ず Read し、タスク詳細・確定事項・未解決点を取り込む。特に以下を Phase 2 の事前調査として扱う:
+   - `specs/.../spec.md`: 同ディレクトリの `raw/explorer*.md` を確認する
+   - `explorations/.../exploration.md`: `## 実装 handoff` の `status: ready` を確認し、同ディレクトリの `raw/investigation-*.md` を確認する。status が欠落・不明・`not-ready` なら変更内容を推測せず、`AskUserQuestion` で「explore に戻る / 実装内容をここで確定する」を確認する
 5. タスクから英語 slug を生成 (kebab-case, 30 文字以内)
 6. 作業ディレクトリを確定: `.claude/shinaps/{YYYYMMDD-HHMMSS}-{slug}/` + `raw/`
 7. タスク文字列が曖昧 / 制約が不明確な場合は `AskUserQuestion` で要件を確認 (何回聞いても良い)
 
 ### Phase 2: コードベース探索
 
-#### spec.md からの handoff の場合 (推奨パス)
+#### spec.md / exploration.md からの handoff の場合 (推奨パス)
 
-`spec.md` のディレクトリ配下に `raw/explorer.md` があれば、それをそのまま Read で取り込み、**自前で `shinaps-explorer` を起動しない**。spec フェーズで既に同じタスク領域を調査済みなので二重探索を避ける。
+Phase 1 で読んだ成果物と同ディレクトリの raw report を取り込み、現在の実装を理解するための証拠として再利用する。
 
-- spec の `raw/explorer.md` から必読ファイル一覧を抽出 → メインが直接 Read
-- 追加の探索が必要だと判断した場合 (spec から時間が経って差分がある / 追加領域が必要) のみ補完的に `shinaps-explorer` を起動し、`raw/explorer-supplement.md` に保存
+- spec handoff: `raw/explorer*.md` から必読ファイル一覧を抽出し、メインが直接 Read する
+- explore handoff: `exploration.md` の confirmed findings / 実装 handoff と `raw/investigation-*.md` の証拠・関連ファイルを取り込み、メインが重要箇所を直接 Read する
+- handoff の `evidenceSnapshot` にある各ローカル根拠ファイルの content hash を現在値と照合する。hash の不一致・ファイル欠落はその根拠を stale とみなし、同じ path を直接 Read して結論を再検証する。branch / HEAD / worktree status が同じでも hash 照合を省略しない
+- 現行仕様・バージョンなど時間依存の外部根拠は、実装判断を左右する場合に公式情報で再確認する
+- 情報が十分かつ最新なら **自前で `shinaps-explorer` を起動しない**
+- 情報不足、陳腐化、実装範囲の追加がある場合だけ補完的に `shinaps-explorer` を起動し、今回の作業ディレクトリの `raw/explorer-supplement.md` に保存する
 
 `search_rules` の結果はメインスレッドで Phase 2 冒頭に:
 - `list_search_facets()` で facet master を確認
@@ -72,7 +78,7 @@ argument-hint: <実装したい機能・解決したい課題>
 
 する形で確保しておく (Phase 3 以降で subagent prompt に埋め込む用)。
 
-#### handoff でない / explorer.md が存在しない場合
+#### handoff でない / 事前調査が不足する場合
 
 `list_search_facets()` + `search_rules({ repoOwner, repoName, ...推定 facet })` を呼び、rule カタログ (userRules + officialRules 全文) を確保 → `shinaps-explorer` を起動 (領域が広ければ複数並列)。
 
@@ -89,7 +95,7 @@ argument-hint: <実装したい機能・解決したい課題>
 
 **プロンプトに含める情報**:
 - タスク内容
-- Phase 2 の explorer 結果 (必読ファイル一覧 + 要点)
+- Phase 2 の調査結果 (explorer または handoff 済み investigation の必読ファイル一覧 + 要点)
 - **Phase 2 で取得した `search_rules` 結果 (userRules + officialRules 全文)**
 - 「作業前に必ず CLAUDE.md / プロジェクト規約を Read し、rule カタログと突き合わせよ」
 
@@ -101,7 +107,7 @@ argument-hint: <実装したい機能・解決したい課題>
 
 **プロンプトに含める情報**:
 - タスク内容
-- Phase 2 の explorer 結果
+- Phase 2 の調査結果 (explorer または handoff 済み investigation)
 - Phase 3 の architect 初回案 (`raw/architect.md` 全文)
 - Phase 2 の search_rules 結果 (userRules + officialRules 全文)
 - 「architect 案を批判的にレビューし、Critical / Warning を反映した修正版最終 plan を Part 2 として返せ。rule はアーキテクチャ / 責務分割 / 依存方向など実装後に気付くと手戻りが大きい設計レベルの違反を拾い、コードレベルの規約 (コメントの WHY / 命名 / import 経路) には踏み込まなくてよい」
@@ -223,17 +229,18 @@ dev 自身は `git add` / `git commit` を直接実行しない。コミット�
 - **rule 照合を各 Phase に bake**: Phase 2 の `search_rules` → Phase 3 の architect prompt 埋め込み → Phase 4 の plan-reviewer (設計レベルの違反) → Phase 6 の refine 並列 (コードレベルの違反)
 - **判断・方針転換で `record_memory`**
 - **不明な論点は必ず AskUserQuestion で確認**: 回数に制限なし。「わからないまま自動進行」より「ユーザーに聞く」を優先
-- **生レポート保存厳守**: explorer / architect / plan-reviewer / reviewer / refine の応答は全文保存
+- **生レポート保存厳守**: explorer / handoff 済み investigation / architect / plan-reviewer / reviewer / refine の応答は全文参照可能な状態を保つ
 - **Critical は自動修正、Warning は確認**
 - **plan からの逸脱は確認 + 記録**: AskUserQuestion で確認した上で `implementation.md` に経緯を残す
 - **コミットは shinaps:commit 経由のみ**: dev 自身は `git add` / `git commit` を実行しない。Phase 9 でユーザー承認の上 `Skill(shinaps:commit)` へ handoff する。push / PR はスコープ外 (別スキルへ案内のみ)
 
 ## 他スキルからの呼び出し
 
-`/shinaps:spec` `/shinaps:review` `/shinaps:debug` などから handoff される際は、それらが生成した **生成物のパス** を引数に直接渡す (専用の handoff ファイルは生成しない):
+`/shinaps:explore` `/shinaps:spec` `/shinaps:review` `/shinaps:debug` などから handoff される際は、それらが生成した **生成物のパス** を引数に直接渡す (専用の handoff ファイルは生成しない):
 
 | 元スキル | 渡すパス | dev での扱い |
 |---|---|---|
+| `/shinaps:explore` | `.claude/shinaps/explorations/{ts}-{slug}/exploration.md` | `status: ready` と `evidenceSnapshot` を確認して合意済み変更・confirmed findings・未解決点を取り込み、Phase 2 で同ディレクトリ配下の `raw/investigation-*.md` を再利用。status 欠落 / `not-ready` なら変更内容を推測しない |
 | `/shinaps:spec` | `.claude/shinaps/specs/{ts}-{slug}/spec.md` | Phase 1 で Read してタスク詳細・採用技術を取り込み、Phase 2 で同ディレクトリ配下の `raw/explorer.md` を再利用 |
 | `/shinaps:review` | `.claude/shinaps/reviews/{ts}-{mode}/review-validated.md` | Phase 1 で Read し、確定指摘を修正タスクとして扱う |
 | `/shinaps:debug` | `.claude/shinaps/debug/{ts}-{slug}/debug-validated.md` | Phase 1 で Read し、root-cause / contributing-factor を修正タスクとして扱う |

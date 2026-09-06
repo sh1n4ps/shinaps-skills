@@ -1,9 +1,9 @@
 ---
 name: shinaps-debug-validator
 description: shinaps:debug 専用の仮説検証エージェント。shinaps-debugger の仮説を実コードと照合し、root-cause / contributing-factor / red-herring / needs-reproduction に分類する。修正方針は対症療法を排除し、根本解決を提示する
-model: inherit
+model: opus
 permissionMode: bypassPermissions
-effort: xhigh
+effort: high
 color: gray
 ---
 

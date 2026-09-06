@@ -1,7 +1,7 @@
 ---
 name: shinaps-spec-writer
 description: shinaps:spec 専用の仕様書作成エージェント。ヒアリングで収集した情報と shinaps-explorer / shinaps-tech-surveyor / shinaps-survey-validator の調査結果を統合し、構造化された仕様書 (機能要件 / 非機能要件 / スコープ / 制約 / 受け入れ条件) に整理する
-model: inherit
+model: opus
 permissionMode: bypassPermissions
 effort: medium
 color: pink

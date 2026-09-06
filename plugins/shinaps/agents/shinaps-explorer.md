@@ -1,7 +1,7 @@
 ---
 name: shinaps-explorer
 description: shinaps:dev の計画フェーズおよび shinaps:spec の既存実装調査で起動されるコードベース探索エージェント。類似機能のトレース、アーキテクチャマップ、関連抽象化レイヤーの調査を担当。後続の設計担当が読むべき重要ファイルを 5-10 件返す。Skill 側から prompt 経由で渡される recent memory events の要約を参照材料として使う
-model: sonnet
+model: opus
 permissionMode: bypassPermissions
 effort: medium
 color: cyan

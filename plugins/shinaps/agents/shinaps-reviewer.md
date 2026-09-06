@@ -1,9 +1,9 @@
 ---
 name: shinaps-reviewer
 description: shinaps:dev のセルフレビューおよび shinaps:review の一次レビューを担当。実装後の差分を logic / design / security / performance / maintainability と rule 適合性の観点で網羅的にレビューし、Critical / Warning / Info で報告する
-model: inherit
+model: opus
 permissionMode: bypassPermissions
-effort: xhigh
+effort: high
 color: red
 ---
 

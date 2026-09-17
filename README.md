@@ -52,7 +52,7 @@ shinaps-ai と統合した開発 workflow skill 集。Claude Code plugin とし�
 - `/shinaps:debug` — 根本原因調査
 - `/shinaps:refine` — セルフレビュー直前の並列 rule 照合 (対象ファイルの現状全文を照合)
 - `/shinaps:extract-rules` — 過去 PR review から userRules 一括生成
-- `/shinaps:commit` — 差分をレビュー単位に分割し、単位ごとに人間レビュー + 単独検証を回して段階コミット
+- `/shinaps:commit` — 差分をレビュー単位に分割 (区切り方は shinaps-split-reviewer が判定) し、単位ごとに人間レビュー + 単独検証を回して段階コミット
 
 user が直接叩くことも、AI が description matching で自動発火することもできる。
 
@@ -87,9 +87,9 @@ npx skills add sh1n4ps/shinaps-skills -a codex -g
 |---|---|
 | `shinaps:extract-rules` | 過去 PR のレビューコメントから userRules を bulk 生成。新規リポジトリ着手時や userRules が空 / 少ないとき (5 件未満) に提案・起動 |
 | `shinaps:refine` | rule 照合を並列 subagent で行う共通スキル。**対象ファイルの現状全文** を rule と照合する (diff の hunk だけではファイル全体の規約適合を判断できないため)。対象ファイルは path 指定 / `git diff --name-only HEAD` / PR / commit range から決まる。今回の変更箇所 (`changed`) の自明な違反は Edit で自動適用、既存箇所 (`pre-existing`) と判断要は 4 択 AskUserQuestion |
-| `shinaps:commit` | working tree の差分を「コミットメッセージ一言で説明できる範囲」のレビュー単位に分割し、サイクルごとに「次の単位以外を stash へ退避 → 単位だけの worktree で単独検証 → 人間レビュー → 修正ループ → コミット → stash を全部 pop で戻してコンフリクトをその場で解消」を繰り返すコミットモード。pop のたびに残差分がコミット済み内容と整合した状態へリセットされるため、レビュー指摘の修正を制約なく取り込める。`shinaps:dev` 完了後の handoff 先だが、手動で作った差分にも単独発火できる。どのコミットに checkout しても壊れていない履歴を作る |
+| `shinaps:commit` | working tree の差分を「コミットメッセージ一言で説明できる範囲」のレビュー単位に分割し、分割案は `shinaps-split-reviewer` が「各単位の diff だけで妥当性を判断できるか」を批判的にレビューして修正版最終計画を返すため、区切り方を人間に確認しない (人間の判断は単位ごとのコミット可否のみ)。サイクルごとに「次の単位以外を stash へ退避 → 単位だけの worktree で単独検証 → 人間レビュー → 修正ループ → コミット → stash を全部 pop で戻してコンフリクトをその場で解消」を繰り返すコミットモード。pop のたびに残差分がコミット済み内容と整合した状態へリセットされるため、レビュー指摘の修正を制約なく取り込める。`shinaps:dev` 完了後の handoff 先だが、手動で作った差分にも単独発火できる。どのコミットに checkout しても壊れていない履歴を作る |
 
-## Subagents (12)
+## Subagents (13)
 
 | Subagent | 役割 |
 |---|---|
@@ -105,6 +105,7 @@ npx skills add sh1n4ps/shinaps-skills -a codex -g
 | `shinaps-survey-validator` | tech-surveyor の出典を WebFetch で再確認 |
 | `shinaps-debugger` | 症状から根本原因の仮説立案 (コードトレース + WebSearch + GitHub Issue) |
 | `shinaps-debug-validator` | 仮説の実コード検証 (root-cause / contributing-factor / red-herring / needs-reproduction 分類) |
+| `shinaps-split-reviewer` | `shinaps:commit` の分割案を「単位の diff だけで妥当性を判断できるか」で批判 + 修正版最終分割計画 (worktree は read-only) |
 
 全 subagent の frontmatter は `name` / `description` / `model` / `permissionMode: bypassPermissions` / `effort` / `color` の 6 項目統一。**subagent 内では shinaps MCP を直接叩かず、rule 全文は Skill 側から prompt 経由で渡す** 原則を全 system prompt に明記 (credit 最適化)。
 

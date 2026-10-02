@@ -1,7 +1,7 @@
 {
   "name": "shinaps",
-  "description": "shinaps-ai と統合した開発 workflow skill 集。人間が納得するまで質問を重ねる read-only 対話調査の shinaps:explore、計画策定 + 実装 + セルフレビュー一気通貫の shinaps:dev、仕様を詰める shinaps:spec、単独レビューの shinaps:review、根本原因を追う shinaps:debug の 5 workflow skill と、refine / extract-rules / commit の 3 支援 skill、合計 8 skill を bundle。13 subagent (shinaps-investigator / explorer / architect / plan-reviewer / reviewer / review-validator / refine-agent / spec-writer / tech-surveyor / survey-validator / debugger / debug-validator / split-reviewer) が Phase ごとに担当し、rule 照合 + memory 記録 + セルフレビューを workflow に組み込む。EnterPlanMode は使わず bypassPermissions モードと両立。事前に shinaps-ai MCP server を .mcp.json に登録すること (https://app.shinaps.ai/mcp または http://localhost:5173/mcp)。plugin 名は shinaps (namespace prefix) だが MCP server 名は shinaps-ai。",
-  "version": "0.8.0",
+  "description": "shinaps-ai と統合した開発 workflow skill 集。人間が納得するまで質問を重ねる read-only 対話調査の shinaps:explore、計画策定 + 実装 + セルフレビュー一気通貫の shinaps:dev、仕様を詰める shinaps:spec、単独レビューの shinaps:review、根本原因を追う shinaps:debug の 5 workflow skill と、refine / extract-rules / commit の 3 支援 skill、合計 8 skill を bundle。13 subagent (shinaps-investigator / explorer / architect / plan-reviewer / reviewer / review-validator / refine-agent / spec-writer / tech-surveyor / survey-validator / debugger / debug-validator / split-reviewer) が Phase ごとに担当し、rule 照合 + ローカル成果物への判断記録 + セルフレビューを workflow に組み込む。EnterPlanMode は使わず bypassPermissions モードと両立。事前に shinaps-ai MCP server を .mcp.json に登録すること (https://app.shinaps.ai/mcp または http://localhost:5173/mcp)。plugin 名は shinaps (namespace prefix) だが MCP server 名は shinaps-ai。",
+  "version": "0.8.1",
   "author": {
     "name": "shinaps",
     "email": "ryuta@shinaps.jp"
@@ -11,7 +11,6 @@
   "license": "MIT",
   "keywords": [
     "shinaps",
-    "memory",
     "rules",
     "workflow",
     "mcp",

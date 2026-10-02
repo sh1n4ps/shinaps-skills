@@ -1,6 +1,6 @@
 ---
 name: debug
-description: バグ報告・不具合の根本原因を多角的に調査し、対症療法ではなく根本解決を導くスキル。コードトレース + WebSearch + GitHub Issue 検索で仮説を立て、実コード検証で確定させ、必要に応じて shinaps-tech-surveyor + shinaps-survey-validator で外部情報を深掘りし、/shinaps:dev に橋渡しする。過去の memory events と rule カタログを仮説候補の予選材料に使う
+description: バグ報告・不具合の根本原因を多角的に調査し、対症療法ではなく根本解決を導くスキル。コードトレース + WebSearch + GitHub Issue 検索で仮説を立て、実コード検証で確定させ、必要に応じて shinaps-tech-surveyor + shinaps-survey-validator で外部情報を深掘りし、/shinaps:dev に橋渡しする。既存の調査・実装成果物と rule カタログを仮説候補の予選材料に使う
 argument-hint: <なし | エラーメッセージ / 症状の説明 | ファイルパス>
 ---
 
@@ -39,7 +39,7 @@ argument-hint: <なし | エラーメッセージ / 症状の説明 | ファイ�
 
 ### Phase 1: 引数判定と入力収集
 
-- **`list_recent_work({ repoOwner, repoName })` を必ず呼ぶ** → 直近 5-10 件を 1 行サマリ化 (Phase 3 の debugger prompt に埋め込む用)
+- 今回の依頼に関連する既存の spec・調査レポート・Git の変更履歴を確認し、引き継ぐ決定と根拠を要約する。既存成果物がなければ追加取得は不要。
 - **interactive モード**: `AskUserQuestion` で以下を段階的に聞く:
   - 何が起きているか (症状)
   - いつから起きているか
@@ -66,9 +66,9 @@ argument-hint: <なし | エラーメッセージ / 症状の説明 | ファイ�
 
 - `input.md` 全文
 - プロジェクト `CLAUDE.md` 全文
-- **Phase 1 で作成した memory events 要約 (直近 5-10 件、1 行サマリ化済み)**
+- **Phase 1 で作成した既存成果物の要約**
 - **前準備の `search_rules` 結果 (userRules + officialRules 全文)**
-- 「対症療法ではなく根本原因を特定せよ。過去 memory と rule カタログを仮説予選材料に使う」
+- 「対症療法ではなく根本原因を特定せよ。既存成果物 と rule カタログを仮説予選材料に使う」
 - trace モードの場合: 起点ファイル指定
 
 **記録先**: メインが Write で `debug-report.md`
@@ -107,7 +107,7 @@ root-cause または contributing-factor が 1 件以上あれば `AskUserQuesti
 - **追加調査を依頼する** (Phase 7 へ)
 - **保存のみで終了**
 
-**根本原因確定時に `record_memory`** で「症状 → 根本原因 → 修正方針」を記録。
+**根本原因確定時に ローカル成果物（implementation.md / 調査・レビューレポート）** で「症状 → 根本原因 → 修正方針」を記録。
 
 ### Phase 6: /shinaps:dev への橋渡し (修正実装選択時)
 
@@ -124,7 +124,7 @@ Skill(skill="shinaps:dev", args="以下のデバッグ結果に基づき根本�
 - **根本原因志向**: 対症療法を推奨しない、根本解決を導く
 - **多角的調査**: コード + docs + WebSearch + GitHub Issue を組み合わせる
 - **二段検証**: debugger の仮説を debug-validator が必ず実コードで検証
-- **rule + memory を仮説予選に活用**: `search_rules` + `list_recent_work` の結果を debugger prompt に埋め込む
+- **rule と既存成果物を仮説予選に活用**: `search_rules` の結果と、今回の依頼に関連する Git・spec・raw report の根拠を debugger prompt に埋め込む
 - **subagent は文字列応答のみ**: ファイル書き込みは必ずメインが担当
 - **生レポート保存厳守**: すべての subagent 応答を全文保存
-- **根本原因確定時に `record_memory`**: 未来の自分と別 AI agent が辿れるように
+- **根本原因確定時に ローカル成果物（implementation.md / 調査・レビューレポート）**: 未来の自分と別 AI agent が辿れるように

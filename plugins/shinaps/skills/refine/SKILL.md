@@ -79,7 +79,7 @@ subagent 側は system prompt で finding severity 解釈 / JSON 返却フォー
 
 各 agent には以下を渡す (カテゴリごとに埋める):
 
-- **担当カテゴリ名** と、そのカテゴリに属する **rule 全件** (title / why / recommend / avoid / source_urls を full text で。id も添えて後で record_memory / update_rule するとき参照できるように)
+- **担当カテゴリ名** と、そのカテゴリに属する **rule 全件** (title / why / recommend / avoid / source_urls を full text で。id も添えて後で update_rule するとき参照できるように)
 - そのカテゴリに関連する **AGENTS.md / CLAUDE.md / docs の該当節** (全文でよい、agent 側で context 消費するので原文をそのまま貼る)
 - **repo root の絶対 path**
 - **対象ファイル一覧** (Step 0 で確定した repo root 相対 path をそのまま列挙する。agent が自分で対象を解決しないよう完全形で渡す)
@@ -173,7 +173,7 @@ subagent 側は system prompt で finding severity 解釈 / JSON 返却フォー
 選択肢は 4 つ:
 
 1. **修正する** — どう直すかを 1-2 文で提案 (agent が返した `detail` を活用)。承認されたら `Edit` / `Write` で実行
-2. **このまま許容する** — 妥当な理由があるとき。理由を shinaps-ai MCP server の `record_memory` に残す (将来の自分が「なぜ違反のままにしたか」を辿れるように)
+2. **このまま許容する** — 妥当な理由があるとき。理由を今回のローカル成果物（implementation.md / 調査・レビューレポート）に残す (将来の自分が「なぜ違反のままにしたか」を辿れるように)
 3. **ルールの方を修正する** — 規約自体が現実と乖離している場合。shinaps-ai MCP server の `record_rule` (新規) or `update_rule` (既存修正) を実行。新規 record_rule のときは scope (user / repo_owner / repo) も選ばせる (横断的なら user、この repo 限定なら repo)
 4. **後回し** — 別タスクとして扱う。`TaskCreate` で TODO 化し、後の作業セッションで拾えるようにする
 

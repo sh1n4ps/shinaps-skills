@@ -59,7 +59,7 @@ argument-hint: <調べたいバグ・挙動・実装上の疑問（省略可）>
 ### Phase 1: セッション初期化
 
 1. 最初の質問を受領する。引数が空、またはファイルパスだけなら、理解したいことを `AskUserQuestion` で 1 問だけ確認する
-2. git remote から `repoOwner` / `repoName` を解決し、`list_recent_work({ repoOwner, repoName })` を必ず呼ぶ。直近 5-10 件を 1 行ずつ要約する
+2. git remoteから `repoOwner` / `repoName` を解決する。今回の依頼に関連する既存の spec・調査レポート・Git の変更履歴を確認し、引き継ぐ決定と根拠を要約する。既存成果物がなければ追加取得は不要。
 3. `list_search_facets()` と、最初の質問に対応する `search_rules({ repoOwner, repoName, ...推定 facet })` を呼ぶ。論点が別領域へ移ったら、その時点で facet を取り直す
 4. リポジトリの `CLAUDE.md` / `AGENTS.md` / その他の指示ファイルを読む
 5. `git status --short --branch` と HEAD を記録する。調査対象の revision は未コミット変更を含む現在の worktree をデフォルトにし、production / PR / commit が明示された場合は対象 revision を特定して別に記録する。reset / stash / checkout / clean は行わない
@@ -82,7 +82,7 @@ argument-hint: <調べたいバグ・挙動・実装上の疑問（省略可）>
 - 今回の質問。言い換えで論点を狭めすぎず、ユーザーの表現も残す
 - `exploration.md` 全文と、必要な過去ラウンドの要点
 - target revision / environment と、現在の branch / HEAD / worktree 状態
-- recent memory events の要約
+- 関連する既存成果物の要約
 - `search_rules` の userRules + officialRules 全文
 - 関連するプロジェクト指示
 - 「今回の質問へ直接答え、confirmed / inference / unknown を混ぜない。一般的な設計案や修正案へ先回りしない」
@@ -181,7 +181,7 @@ investigator の回答をそのまま転送しない。結論を支える主要�
 
 handoff 直前に confirmed 根拠の content hash を再計算し、`evidenceSnapshot` を最新化する。人間が内容を確認した後にだけ `status: ready` へ更新する。説明を理解して終了するだけのセッションや、望む変更が曖昧なセッションは `not-ready` のまま残す。
 
-安定した設計判断や再利用価値のある発見だけを `record_memory` へ短く記録する。質問ログや長いコード引用は記録しない。
+安定した設計判断や再利用価値のある発見だけをローカル成果物（implementation.md / 調査・レビューレポート）へ短く記録する。質問ログや長いコード引用は記録しない。
 
 中間 handoff ファイルは作らず、`exploration.md` のパスを直接渡す。
 
@@ -200,4 +200,4 @@ dev は `exploration.md` と同ディレクトリの `raw/investigation-*.md` �
 - **質問ごとに調査する**: 過去の一般論だけで即答せず、そのラウンドの問いに必要な証拠を取り直す
 - **理解完了を代行しない**: 終了判定は人間が行う。回数制限を設けない
 - **生レポートを保存する**: subagent 応答は全文保存し、会話ログは要約だけ残す
-- **shinaps MCP はメインだけが呼ぶ**: subagent は `list_recent_work` / `search_rules` / `record_memory` / `list_search_facets` を直接呼ばない
+- **shinaps MCP はメインだけが呼ぶ**: subagent は `search_rules` / `list_search_facets` を直接呼ばない

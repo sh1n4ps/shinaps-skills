@@ -51,7 +51,7 @@ argument-hint: <実装したい機能・解決したい課題>
 
 1. 引数なし → エラー終了「`/shinaps:dev <task>` でタスクを指定してください」
 2. 引数の文字列をタスク内容として確定
-3. **`list_recent_work({ repoOwner, repoName })` を必ず呼ぶ** → 返却の直近 20 件から **直近 5-10 件のみ 1 行サマリ化** して保持する (subagent prompt に埋め込む用の要約)
+3. 今回の依頼に関連する既存の spec・調査レポート・Git の変更履歴を確認し、引き継ぐ決定と根拠を要約する。既存成果物がなければ追加取得は不要。
 4. **他スキルからの handoff 判定**: 引数に `.claude/shinaps/.../*.md` の成果物パスが含まれていれば必ず Read し、タスク詳細・確定事項・未解決点を取り込む。特に以下を Phase 2 の事前調査として扱う:
    - `specs/.../spec.md`: 同ディレクトリの `raw/explorer*.md` を確認する
    - `explorations/.../exploration.md`: `## 実装 handoff` の `status: ready` を確認し、同ディレクトリの `raw/investigation-*.md` を確認する。status が欠落・不明・`not-ready` なら変更内容を推測せず、`AskUserQuestion` で「explore に戻る / 実装内容をここで確定する」を確認する
@@ -84,7 +84,7 @@ Phase 1 で読んだ成果物と同ディレクトリの raw report を取り込
 
 **`shinaps-explorer` に渡す prompt に含める情報**:
 - タスク内容
-- **Phase 1 で作成した「直近 5-10 件の memory events 要約」**
+- **Phase 1 で作成した「既存成果物の要約」**
 - 探索の狙い
 
 **記録先**: メインが Write で `raw/explorer.md` (並列時は `raw/explorer-{n}.md`)
@@ -145,7 +145,7 @@ Phase 1 で読んだ成果物と同ディレクトリの raw report を取り込
 - 不明点 (命名 / 依存方向 / 例外処理の落とし所など plan で曖昧な点) は **必ず `AskUserQuestion`** で確認 (回数制限なし)
 - plan からの逸脱は `AskUserQuestion` で確認した上で `implementation.md` に経緯を記録
 - 1 サブタスク完了ごとに `TaskUpdate` で `completed` に進める
-- **判断 / ブロッカー / 方針転換で `record_memory`** を残す
+- **判断 / ブロッカー / 方針転換で ローカル成果物（implementation.md / 調査・レビューレポート）** を残す
 
 #### C. `implementation.md` 執筆
 
@@ -195,7 +195,7 @@ Claude Code の実行エンジンが Skill tool と Agent tool を並列 dispatc
 - **refine の `scope=pre-existing` な finding は自動修正しない**。今回の実装と無関係な差分が commit に混ざるため、Violation でも `AskUserQuestion` で「今回直す / 別タスクにする」を確認する
 - **Info は記録のみで修正しない**
 
-修正を行った場合、`fix-log.md` に「指摘 → 修正内容 → 該当ファイル」を記録。修正判断は `record_memory` を残す。
+修正を行った場合、`fix-log.md` に「指摘 → 修正内容 → 該当ファイル」を記録。修正判断も `fix-log.md` に残す。
 
 修正実装はメインが直接 Edit/Write で行う (Phase 5 と同じ主体)。reviewer / refine の指摘文脈をメインがそのまま保持しているため、修正判断のブレが起きにくい。大規模な再実装が必要な場合は `AskUserQuestion` で「メインで修正継続 / Phase 4 に戻って plan-reviewer に再策定させる」を確認する。
 
@@ -227,7 +227,7 @@ dev 自身は `git add` / `git commit` を直接実行しない。コミット�
 - **実装はメインスレッドが担う**: explorer / architect / plan-review で築いた文脈・設計判断の WHY をそのまま実装と修正ループに引き継ぐため。サブエージェント委譲は計画フェーズとレビューフェーズに限定
 - **subagent は文字列応答のみを返す**: raw/*.md への Write / Edit は必ずメインスレッドが担当
 - **rule 照合を各 Phase に bake**: Phase 2 の `search_rules` → Phase 3 の architect prompt 埋め込み → Phase 4 の plan-reviewer (設計レベルの違反) → Phase 6 の refine 並列 (コードレベルの違反)
-- **判断・方針転換で `record_memory`**
+- **判断・方針転換で ローカル成果物（implementation.md / 調査・レビューレポート）**
 - **不明な論点は必ず AskUserQuestion で確認**: 回数に制限なし。「わからないまま自動進行」より「ユーザーに聞く」を優先
 - **生レポート保存厳守**: explorer / handoff 済み investigation / architect / plan-reviewer / reviewer / refine の応答は全文参照可能な状態を保つ
 - **Critical は自動修正、Warning は確認**

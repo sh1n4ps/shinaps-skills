@@ -40,7 +40,7 @@ argument-hint: <なし | PR番号 | ファイル/ディレクトリパス>
 
 ### Phase 1: 引数判定とレビュー対象の取得
 
-- **`list_recent_work({ repoOwner, repoName })` を必ず呼ぶ** → 直近 5-10 件を 1 行サマリ化して保持 (Phase 3 の subagent prompt に埋め込む用)
+- 今回の依頼に関連する既存の spec・調査レポート・Git の変更履歴を確認し、引き継ぐ決定と根拠を要約する。既存成果物がなければ追加取得は不要。
 - **branch モード**: ベースブランチ判定 → `git diff <base>...HEAD` を取得。空ならエラー終了 (「差分がありません」)
 - **PR モード**: `gh pr view <番号>` で PR 情報、`gh pr diff <番号>` で diff を取得
 - **path モード**: 存在確認 → Read。50 ファイル超えたら `AskUserQuestion` で「全部レビューする / 主要ファイルに絞る / 中断」を確認
@@ -64,7 +64,7 @@ argument-hint: <なし | PR番号 | ファイル/ディレクトリパス>
 
 - レビューモード (branch / pr / path)
 - `input.md` 全文
-- **Phase 1 で作成した memory events 要約 (直近 5-10 件、1 行サマリ化済み)**
+- **Phase 1 で作成した既存成果物の要約**
 - **前準備の `search_rules` 結果 (userRules + officialRules 全文)**
 - モード別追加指示 (branch なら base branch との差分の背景、PR なら PR description、path ならファイル配下の責務)
 - 「confidence ≥ 80 のみ報告、rule 違反は必ず Critical タグ」
@@ -72,7 +72,7 @@ argument-hint: <なし | PR番号 | ファイル/ディレクトリパス>
 #### shinaps-tech-surveyor プロンプト
 
 - `input.md` 全文
-- **Phase 1 で作成した memory events 要約**
+- **Phase 1 で作成した既存成果物の要約**
 - **前準備の `search_rules` 結果**
 - 「(a) 採用 API / library / 言語機能は現代的か、(b) より良い代替があるか、(c) 既知の落とし穴、(d) 採用バージョンの安全性、を WebSearch / WebFetch で調査せよ。既存スタック + rule カタログ整合性を予選条件に」
 
@@ -107,7 +107,7 @@ tech-surveyor が「特筆事項なし」以外を返した場合のみ起動。
 - **PR にコメント投稿する** (PR モードのみ)
 - **ローカル保存のみで終了**
 
-**修正実装選択時 (Phase 6 前) に `record_memory`** で修正方針決定の記録を残す。
+**修正実装選択時 (Phase 6 前) に ローカル成果物（implementation.md / 調査・レビューレポート）** で修正方針決定の記録を残す。
 
 ### Phase 6: /shinaps:dev への橋渡し (修正実装選択時)
 

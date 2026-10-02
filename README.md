@@ -6,7 +6,7 @@ shinaps-ai と統合した開発 workflow skill 集。Claude Code plugin とし�
 
 ## 設計の核
 
-- **rule 照合 + memory 記録 + セルフレビューが workflow に bake**: AI の instruction 遵守度に依存しない
+- **rule 照合 + ローカル成果物への判断記録 + セルフレビューが workflow に bake**: AI の instruction 遵守度に依存しない
 - **EnterPlanMode は一切使わない**: bypassPermissions モード (リモート実行など) でも全フェーズが走り切る
 - **不明な論点は必ず AskUserQuestion で確認**: 「わからないまま自動進行」より「ユーザーに聞く」を優先
 - **実装前の理解は人間主導で深める**: `explore` は 1 回の診断で打ち切らず、人間が納得するまで質問 → 調査 → 根拠付き回答を繰り返す

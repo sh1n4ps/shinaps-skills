@@ -1,6 +1,6 @@
 ---
 name: dev
-description: 計画策定 + 実装 + セルフレビューを一気通貫で行う開発ワークフロー。shinaps-explorer でコードベース調査 (spec.md / exploration.md からの handoff なら既存調査を再利用) → shinaps-architect で実装ブループリント策定 → shinaps-plan-reviewer が plan を批判して修正版最終 plan を返す → メインスレッドが plan.md を直接実装 + 動作確認 (型/lint/test) + implementation.md 執筆 → shinaps-reviewer と Skill(shinaps:refine) を発火してセルフレビュー + rule 照合 → Critical 自動修正 → ユーザー承認の上 Skill(shinaps:commit) へ handoff してレビュー単位の分割コミット、までを単一スキルで完走する。実装フェーズをメインスレッドが担うことで、explorer / architect / plan-review で築いた文脈をそのまま実装判断に活用し、レビュー指摘や修正ループでもブレない実装精度を保つ。EnterPlanMode は使わず bypassPermissions モード (リモート実行など) と両立する設計。不明な論点は AskUserQuestion で必ずユーザーに確認する
+description: 計画策定 + 実装 + セルフレビューを一気通貫で行う開発ワークフロー。shinaps-explorer でコードベース調査 (spec.md / exploration.md からの handoff なら既存調査を再利用) → shinaps-architect で実装ブループリント策定 → shinaps-plan-reviewer が plan を批判して修正版最終 plan を返す → メインスレッドが plan.md を直接実装 + 動作確認 (型/lint/test) + implementation.md 執筆 → shinaps-reviewer と Skill(shinaps:refine) と簡素化レビューを発火してセルフレビュー + rule 照合 + 削れるものの洗い出し → Critical 自動修正・仕様を変えない削除の適用 → ユーザー承認の上 Skill(shinaps:commit) へ handoff してレビュー単位の分割コミット、までを単一スキルで完走する。実装フェーズをメインスレッドが担うことで、explorer / architect / plan-review で築いた文脈をそのまま実装判断に活用し、レビュー指摘や修正ループでもブレない実装精度を保つ。EnterPlanMode は使わず bypassPermissions モード (リモート実行など) と両立する設計。不明な論点は AskUserQuestion で必ずユーザーに確認する
 argument-hint: <実装したい機能・解決したい課題>
 ---
 
@@ -34,6 +34,7 @@ argument-hint: <実装したい機能・解決したい課題>
 │   ├── architect.md           ← architect の初回案
 │   ├── plan-review.md         ← plan-reviewer の Part 1 (レビュー結果のみ)
 │   ├── refine.md              ← Phase 6 で走らせた Skill(shinaps:refine) の findings 集約
+│   ├── simplify.md            ← Phase 6 の簡素化レビューの生レポート
 │   └── architect-revised-{n}.md  ← 差し戻し再策定時のみ (n は 1 始まり)
 ├── implementation.md          ← 実装ログ・変更ファイル一覧・動作確認結果
 ├── review.md                  ← shinaps-reviewer の生レポート
@@ -162,11 +163,13 @@ Phase 1 で読んだ成果物と同ディレクトリの raw report を取り込
 - 結果を `implementation.md` の「動作確認結果」セクションに記録
 - 自分の実装ミスによる失敗は **3 回まで自己修正**。それを超える場合は `AskUserQuestion` で「さらに修正試行 / Phase 6 のレビュー対象として diff を渡す / Phase 4 に戻って plan-reviewer に再策定させる」を確認
 
-### Phase 6: セルフレビュー + refine (並列 spawn)
+### Phase 6: セルフレビュー + refine + 簡素化 (並列 spawn)
 
-**`shinaps-reviewer` と `Skill(shinaps:refine)` を 1 メッセージ内で並列 spawn する** (workflow に bake された rule 照合 checkpoint)。
+**`shinaps-reviewer`、`Skill(shinaps:refine)`、簡素化レビューの 3 つを 1 メッセージ内で並列 spawn する** (workflow に bake された rule 照合 checkpoint)。
 
-#### 1 メッセージ内に以下 2 tool 呼び出しを含める
+reviewer と refine は「足りないもの」を探す。足りないものを探すレビューは指摘のたびにコードを増やし、削る役割を持たない。簡素化レビューは「削れるもの・まとめられるもの」だけを探す独立した観点で、同じ diff を見る。
+
+#### 1 メッセージ内に以下 3 tool 呼び出しを含める
 
 1. `Agent(subagent_type="shinaps-reviewer", prompt=<下記>)`:
    - plan.md 全文
@@ -178,6 +181,16 @@ Phase 1 で読んだ成果物と同ディレクトリの raw report を取り込
 2. `Skill(skill="shinaps:refine")`:
    - 引数なし → `git diff HEAD` で変更ファイルを特定し、それらの現状全文を対象に refine が Step 0-6 を実行
 
+3. `Agent(subagent_type="general-purpose", prompt=<下記>)` (簡素化レビュー):
+   - plan.md 全文、implementation.md 全文、変更ファイル一覧と diff
+   - 目的と必要条件から見直し、次を問う:
+     - 外部ツール・API が自分で拒否する入力（形式・存在・到達可能性）を先回りして検査していないか。失敗経路を 1 つにまとめられないか
+     - 受入条件やレビュー指摘の列挙に 1 対 1 で対応した分岐・assert・ドキュメント行がないか。共通する性質 1 つで置き換えられないか
+     - 仮定（hypothetical）のためだけに存在する防御コード・フラグ・ラッパーがないか
+     - テストは同じ検出力のまま件数・fixture・行数を減らせないか（データ表化、fixture 共有、検出力ゼロの assert の削除）
+     - 仕様を少し単純化すれば消える複雑さがないか（これはユーザー判断として分けて報告）
+   - 出力は「仕様を変えない削除・統合（削除行数と根拠）」と「仕様変更を伴う提案（消える複雑さと増えるリスク）」に分け、必要なら scratchpad にプロトタイプを置いて動作を確かめる。リポジトリのファイルは編集しない
+
 #### 並列 dispatch フォールバック
 
 Claude Code の実行エンジンが Skill tool と Agent tool を並列 dispatch できず直列化された場合は、`shinaps-reviewer` を先に単独起動 → `Skill(shinaps:refine)` を単独発火する 2 段直列に切り替える。どちらも独立に対象を取りに行くので、順序が変わっても結果は変わらない。
@@ -186,6 +199,7 @@ Claude Code の実行エンジンが Skill tool と Agent tool を並列 dispatc
 
 - `review.md`: shinaps-reviewer の生レポート (メインが Write)
 - `raw/refine.md`: refine の findings 集約 (メインが Write)
+- `raw/simplify.md`: 簡素化レビューの生レポート (メインが Write)
 
 ### Phase 7: 修正ループ
 
@@ -194,6 +208,7 @@ Claude Code の実行エンジンが Skill tool と Agent tool を並列 dispatc
 - **Warning は `AskUserQuestion` で確認**: 「全部修正 / 個別に確認 / 後回し (Issue 化) / スコープ外として記録」 (reviewer Warning + refine Improvement)
 - **refine の `scope=pre-existing` な finding は自動修正しない**。今回の実装と無関係な差分が commit に混ざるため、Violation でも `AskUserQuestion` で「今回直す / 別タスクにする」を確認する
 - **Info は記録のみで修正しない**
+- **簡素化レビューの「仕様を変えない削除・統合」は自動適用**し、Phase 5 サブフェーズ D の動作確認を再実行する。削除は追加より検証しやすく、残すほうが保守の負債になるため。**「仕様変更を伴う提案」は `AskUserQuestion` で確認**: 「採用して仕様を変える / 現状維持 / 別タスクにする」
 
 修正を行った場合、`fix-log.md` に「指摘 → 修正内容 → 該当ファイル」を記録。修正判断も `fix-log.md` に残す。
 
@@ -231,6 +246,7 @@ dev 自身は `git add` / `git commit` を直接実行しない。コミット�
 - **不明な論点は必ず AskUserQuestion で確認**: 回数に制限なし。「わからないまま自動進行」より「ユーザーに聞く」を優先
 - **生レポート保存厳守**: explorer / handoff 済み investigation / architect / plan-reviewer / reviewer / refine の応答は全文参照可能な状態を保つ
 - **Critical は自動修正、Warning は確認**
+- **削る工程を Phase 6 に bake**: reviewer / refine は足りないものを探すだけで削る役割を持たないため、簡素化レビューを並列で走らせ、仕様を変えない削除・統合は自動適用する
 - **plan からの逸脱は確認 + 記録**: AskUserQuestion で確認した上で `implementation.md` に経緯を残す
 - **コミットは shinaps:commit 経由のみ**: dev 自身は `git add` / `git commit` を実行しない。Phase 9 でユーザー承認の上 `Skill(shinaps:commit)` へ handoff する。push / PR はスコープ外 (別スキルへ案内のみ)
 

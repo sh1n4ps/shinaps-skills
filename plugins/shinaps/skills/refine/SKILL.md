@@ -39,7 +39,7 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 
 対象が決まったらユーザーに「以下 N ファイルの現状を refine します」と 1 行で宣言してから先に進む。**Step 3 で各 agent に渡すファイル一覧と「変更範囲の確認コマンド」も、ここで決めた集合に必ず合わせること** (agent が独立に `git diff HEAD` を叩いて対象を取り違えないよう prompt に具体コマンドを埋め込む)。
 
-**対象ファイルが多くてもメインスレッド側での scope 絞りは不要**。各 agent が担当カテゴリに関係あるファイルだけを選んで読むため。ただし対象が 50 ファイルを超える場合だけは、agent 1 体あたりの読み込み量が実用限界を超えるので、ユーザーに「対象を絞るか、ディレクトリ単位で複数回に分けるか」を確認する。
+**ファイル数による一律の上限は設けない**。確定した対象集合を維持し、件数の多さだけを理由に対象の縮小やユーザーへの分割確認を求めない。各カテゴリの担当量が大きい場合は、ファイルの行数・内容量と関連性（ディレクトリ、機能、依存関係）を見て自動的にバッチへ分ける。小規模なら分割は不要。関連ファイルはできるだけ同じバッチにまとめ、バッチをまたぐ契約は集約時に照合する。
 
 ## Step 1. 規約と context を集約する (並列取得)
 
@@ -71,7 +71,7 @@ AGENTS.md / CLAUDE.md 側の記述も **同じカテゴリ体系に振り分け�
 
 ## Step 3. カテゴリごとに shinaps-refine-agent を並列 dispatch (MUST)
 
-`Agent` tool を **同一メッセージ内で複数呼び出す** ことで全カテゴリを並列起動する (`subagent_type` は `shinaps-refine-agent`)。1 メッセージ内に含めることが並列実行の必須条件。
+カテゴリごと（分割した場合はカテゴリ × バッチごと）に `shinaps-refine-agent` を起動する。利用環境の同時実行枠内で独立した担当を並列に進め、残りは順次実行する。カテゴリ数とバッチ数は別に扱い、Step 2 のカテゴリ数の目安を対象ファイル数や総バッチ数の制限にしない。メインは担当一覧と完了状況を保持し、全バッチの結果を集約する。
 
 subagent 側は system prompt で finding severity 解釈 / JSON 返却フォーマット / credit 最適化原則を既に持っているので、Skill 側は必要最小限の情報だけ渡せばよい。
 
@@ -82,7 +82,7 @@ subagent 側は system prompt で finding severity 解釈 / JSON 返却フォー
 - **担当カテゴリ名** と、そのカテゴリに属する **rule 全件** (title / why / recommend / avoid / source_urls を full text で。id も添えて後で update_rule するとき参照できるように)
 - そのカテゴリに関連する **AGENTS.md / CLAUDE.md / docs の該当節** (全文でよい、agent 側で context 消費するので原文をそのまま貼る)
 - **repo root の絶対 path**
-- **対象ファイル一覧** (Step 0 で確定した repo root 相対 path をそのまま列挙する。agent が自分で対象を解決しないよう完全形で渡す)
+- **担当ファイル一覧とバッチID** (Step 0 の対象集合から割り当てた repo root 相対 path を列挙する。未分割なら対象集合全体を渡す。agent が独立に対象を再決定しないよう明示する)
 - **変更範囲の確認コマンド** (finding を「今回の変更箇所」と「元からある箇所」に切り分けるために使わせる。Step 0 で確定した対象に応じて 1 つを具体コマンドとして埋め込む):
   - **ローカル**: `git diff HEAD -- <path>`
   - **commit range**: `git diff <range> -- <path>` (例: `main..feature`, `HEAD~3..HEAD`)
@@ -112,6 +112,9 @@ subagent 側は system prompt で finding severity 解釈 / JSON 返却フォー
 ```json
 {
   "category": "<担当カテゴリ名>",
+  "batch_id": "<割り当てられたバッチID>",
+  "reviewed_files": ["<全文の照合を完了したファイル>"],
+  "skipped_files": [{ "file": "<未照合の担当ファイル>", "reason": "<カテゴリ非該当・読み取り失敗・未完了などの理由>" }],
   "findings": [
     {
       "severity": "violation" | "improvement" | "question",
@@ -134,6 +137,8 @@ subagent 側は system prompt で finding severity 解釈 / JSON 返却フォー
 ## Step 4. findings を集約する
 
 全 agent の返却を受け取ったら、メインスレッドで以下を実施:
+
+- **対象の照合状況**: カテゴリ × バッチの担当一覧と `reviewed_files` / `skipped_files` を照合する。関連カテゴリで未照合のファイルや報告から抜けたファイルは再割り当てする。読み切れなかった場合は担当量を減らして続きを確認し、findings が空という理由だけで完了扱いにしない。全カテゴリで非該当としたファイルは理由を明記する。分割をまたぐ呼出し元・実装・型などの整合性も必要な担当へ照合を依頼する。
 
 - **重複マージ**: 同じ file + line で意味が重なる finding は 1 件に統合し、根拠を両方併記する (異なるカテゴリの agent が同じ問題を別観点で拾うことがある)
 - **scope 整合**: 同じ箇所を指す finding の `scope` が agent 間で割れていたら `changed` を優先する (変更行に 1 行でも掛かっていれば今回の変更の責任範囲とみなす)
@@ -184,7 +189,7 @@ subagent 側は system prompt で finding severity 解釈 / JSON 返却フォー
 処理が一巡したら、最後にユーザーへ箇条書きでサマリ報告する。
 
 - 対象ファイル数と、その決め方 (`git diff HEAD` の変更ファイル / PR / commit range / path 指定のどれか) を冒頭に明示
-- 走らせたカテゴリ数と各カテゴリの finding 件数
+- 走らせたカテゴリ数・バッチ数と各カテゴリの finding 件数、照合済みファイル数、非該当・未完了のファイルと理由
 - 検出 / 処理した finding の総数と内訳 (自動修正 X 件 / 確認の上修正 Y 件 / 許容 Z 件 / rule 更新 W 件 / 後回し V 件)
 - **`changed` と `pre-existing` の内訳** (既存箇所の指摘が何件あり、そのうち何件を今回直したか。今回の変更に無関係な修正がどれだけ混ざったかをユーザーが把握できるように)
 - **自動修正した内容の一覧** (file + 1 行の何をどう直したか。ユーザーが事後確認する唯一の接点なので省略しない)
@@ -196,7 +201,7 @@ subagent 側は system prompt で finding severity 解釈 / JSON 返却フォー
 ## 注意点
 
 - **Info レベルは report しない**。Critical / Warning 相当だけを扱う。ノイズが多いと「規約照合は手間」というネガティブ印象が定着するため
-- **並列は 1 メッセージ内での複数 Agent 呼び出しが必須**。順次呼びだと本 skill の高速化メリット (rule 数増加に対する耐性) が失われる
+- **並列数は利用環境に合わせる**。同時実行枠が少なくても、残りのバッチを順次実行して対象全体を確認する
 - **Agent への rule 受け渡しは full text**。id + title だけを渡して agent 側に search_rules を再取得させると shinaps MCP を N 回叩くことになるため無駄。メインスレッドが 1 度取得したものを prompt に貼る
 - **各 agent の scope 逸脱を防ぐ**: prompt 内で「担当カテゴリ以外の観点で finding を上げない」と明示する。violation と思っても他カテゴリ担当ならスキップする (別 agent が拾う想定)
 - finding 同士が重複していたら Step 4 の集約で統合する (「同じファイルで console.log 3 件、まとめて削除しますか?」等)

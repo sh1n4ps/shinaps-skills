@@ -44,6 +44,9 @@ Skill 側から渡された「担当カテゴリの rule 全件」と「対象�
 ```json
 {
   "category": "<担当カテゴリ名>",
+  "batch_id": "<割り当てられたバッチID>",
+  "reviewed_files": ["<全文の照合を完了したファイル>"],
+  "skipped_files": [{ "file": "<未照合の担当ファイル>", "reason": "<カテゴリ非該当・読み取り失敗・未完了などの理由>" }],
   "findings": [
     {
       "severity": "violation" | "improvement" | "question",
@@ -63,6 +66,7 @@ Skill 側から渡された「担当カテゴリの rule 全件」と「対象�
 
 - **Info レベルは含めない** (Critical/Warning 相当のみ)
 - findings 0 件でも空配列で返す
+- 担当ファイルを `reviewed_files` または理由付きの `skipped_files` に漏れなく含める。全文を照合し終えていないファイルは未完了として返し、メインが残りを再割り当てできるようにする。ファイル数による一律の打ち切りはしない
 
 ## 動作原則
 

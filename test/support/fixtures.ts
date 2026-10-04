@@ -4,26 +4,31 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import type { TestContext } from 'node:test';
-import type { RunOptions } from '../../lib/install.ts';
+import type { AutoUpdateOptions } from '../../lib/auto-update.ts';
 import { manifestPath, payloadPaths } from '../../lib/layout.ts';
 
 /**
  * fixture がインストールするこのリポジトリの plugin の版と比べるための版。`aboveRelease` は現在のどの
- * リリースより新しい。リポジトリの版が 9.0.0 以上になったら上げる。
+ * リリースより新しく、`belowRelease` はどのリリースより古い。リポジトリの版が 9.0.0 以上になったら
+ * `aboveRelease` を上げる。
  */
-export const PACKAGE_VERSION = { aboveRelease: '9.0.0' };
+export const PACKAGE_VERSION = { aboveRelease: '9.0.0', belowRelease: '0.0.1' };
 
 // 管理ディレクトリ (`~/.local/share/shinaps-ai/skills`) 配下の相対パス。保存先は版をまたぐ約束なので、
 // 実装の定数を使わず文字列で書く。
 export const STATE = 'state.json';
 export const MANIFEST = 'codex/plugins/shinaps-codex/.codex-plugin/plugin.json';
 export const JOURNAL = 'transaction/journal.json';
+export const RESULT = 'auto-update-result.json';
+export const CONFIG = 'auto-update.json';
+// ホームディレクトリ配下の相対パス。
+export const PLIST = 'Library/LaunchAgents/io.shinaps.skills.update.plist';
 
-export type TestOptions = RunOptions & { home: string; codexHome: string };
+export type TestOptions = AutoUpdateOptions & { home: string; codexHome: string };
 
 /**
- * 一時的なホームディレクトリ。CODEX_HOME はシェルの環境変数を拾わないよう明示する。codex は何もしない
- * 偽物。インストールはしないので、必要なテストが `run(['install', 'codex'])` を呼ぶ。
+ * 一時的なホームディレクトリ。CODEX_HOME はシェルの環境変数を拾わないよう明示する。codex と launchd
+ * は何もしない偽物。インストールはしないので、必要なテストが `run(['install', 'codex'])` を呼ぶ。
  */
 export async function temporaryHome(
   t: TestContext,
@@ -34,6 +39,10 @@ export async function temporaryHome(
     home,
     codexHome: join(home, '.codex'),
     command: async () => {},
+    launch: async () => {},
+    platform: 'darwin',
+    npm: '/test/npm',
+    path: '/test/bin',
     log() {},
   };
   return { options, root: join(home, '.local/share/shinaps-ai/skills') };
@@ -66,6 +75,19 @@ export function recordingCodex(failFirst?: (args: string[]) => boolean) {
 }
 
 export const isPluginAdd = (args: string[]): boolean => args[0] === 'plugin' && args[1] === 'add';
+
+/**
+ * launchd の偽物。読み込み済みのラベルへの bootstrap を拒否する実物の挙動を写す。これが無いと、
+ * 再 enable が先に bootout しなくてもテストが通ってしまう。
+ */
+export function fakeLaunchd() {
+  let registered = false;
+  const launch = async ([verb]: string[]) => {
+    if (verb === 'bootstrap' && registered) throw new Error('service already bootstrapped');
+    registered = verb === 'bootstrap';
+  };
+  return { launch, registered: () => registered };
+}
 
 export const assertMissing = (path: string) => assert.rejects(access(path), { code: 'ENOENT' });
 

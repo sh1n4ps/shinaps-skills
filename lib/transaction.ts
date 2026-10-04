@@ -10,7 +10,7 @@ import {
   writeFileAtomic,
 } from './fs.ts';
 
-/** 外部コマンド (codex CLI) を argv で実行する関数。失敗したら throw する。テストでは差し替える。 */
+/** 外部コマンド (codex CLI、launchctl) を argv で実行する関数。失敗したら throw する。テストでは差し替える。 */
 export type Command = (argv: string[]) => unknown;
 
 /** 更新の対象。管理ディレクトリと導入先、codex CLI の実行関数。 */

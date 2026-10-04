@@ -15,6 +15,7 @@ import {
 import { withLock } from './lock.ts';
 import { readTextIfExists, writeFileAtomic } from './fs.ts';
 import {
+  codexHomeMismatch,
   codexHomeOf,
   isRecordedCodexHome,
   managedAgent,
@@ -30,7 +31,8 @@ import {
 } from './layout.ts';
 
 /**
- * `run` の動作環境を外から指定するオプション。テストが使う。省略した項目はこのプロセスの環境から決める。
+ * `run` の動作環境を外から指定するオプション。`auto-update check` とテストが使う。省略した項目は
+ * このプロセスの環境から決める。
  */
 export type RunOptions = {
   home?: string;
@@ -58,6 +60,7 @@ const isAction = (value: string): value is Action => (actions as readonly string
 
 const usage = [
   'Usage: shinaps-skills <install|update|uninstall|recover> codex',
+  '       shinaps-skills auto-update <enable|disable|status|check> codex',
   'Claude Code: /plugin marketplace add sh1n4ps/shinaps-skills',
   '             /plugin install shinaps@shinaps-skills',
 ].join('\n');
@@ -72,7 +75,7 @@ const installGuidance = [
  * `shinaps-skills <install|update|uninstall|recover> codex` を実行する。どの操作も、開始時に中断した
  * 更新があれば restore で元に戻す。
  * @param args コマンドライン引数 (node とスクリプトのパスを除いたもの)。例: `['install', 'codex']`。
- * @param options 動作環境の指定。テストが使う。
+ * @param options 動作環境の指定。`auto-update check` とテストが使う。
  */
 export async function run(args: string[], options: RunOptions = {}): Promise<void> {
   const log = options.log ?? console.log;
@@ -89,14 +92,14 @@ export async function run(args: string[], options: RunOptions = {}): Promise<voi
     case 'recover':
       return recover(installation);
     case 'uninstall':
-      return uninstall(installation);
+      return uninstall(installation, options);
     case 'install':
     case 'update':
       return install(installation, action);
   }
 }
 
-function openInstallation(options: RunOptions): Installation {
+export function openInstallation(options: RunOptions): Installation {
   const home = options.home ?? homedir();
   const codexHome = codexHomeOf(options, home);
   return {
@@ -110,7 +113,7 @@ function openInstallation(options: RunOptions): Installation {
 }
 
 /** 中断した更新があれば元に戻す。無ければ何もしない。 */
-function recover(installation: Installation): Promise<void> {
+export function recover(installation: Installation): Promise<void> {
   return withLock(installation.root, () => restore(installation));
 }
 
@@ -119,7 +122,10 @@ function recover(installation: Installation): Promise<void> {
  * あれば何も変更せずに止める。
  * @param action install と update の違いは完了メッセージだけ。
  */
-async function install(installation: Installation, action: 'install' | 'update'): Promise<void> {
+export async function install(
+  installation: Installation,
+  action: 'install' | 'update',
+): Promise<void> {
   const { root, codexHome, agentsDir, command, log } = installation;
   await withLock(root, async () => {
     await restore(installation);
@@ -164,7 +170,7 @@ async function install(installation: Installation, action: 'install' | 'update')
   for (const line of installGuidance) log(line);
 }
 
-async function uninstall(installation: Installation): Promise<void> {
+async function uninstall(installation: Installation, options: RunOptions): Promise<void> {
   const { root, agentsDir, command, log } = installation;
   await withLock(root, async () => {
     await restore(installation);
@@ -173,6 +179,9 @@ async function uninstall(installation: Installation): Promise<void> {
       log('No managed Shinaps installation found.');
       return;
     }
+    // auto-update.ts は check でこのモジュールを使う。相互 import を避けるため実行時に読み込む。
+    const { autoUpdate } = await import('./auto-update.ts');
+    await autoUpdate(['disable', 'codex'], options);
     await command(['plugin', 'remove', pluginId]);
     await command(['plugin', 'marketplace', 'remove', marketplaceName]);
     for (const name of Object.keys(recorded.state.agents)) {
@@ -186,8 +195,8 @@ async function uninstall(installation: Installation): Promise<void> {
   });
 }
 
-// codex にはファイル操作と同じ CODEX_HOME を見せる。options.codexHome はシェルの環境変数と違い得るので、
-// 解決済みの値を明示的に渡す。
+// codex にはファイル操作と同じ CODEX_HOME を見せる。options.codexHome (`auto-update check` が渡す)
+// はシェルの環境変数と違い得るので、解決済みの値を明示的に渡す。
 const codexCommand =
   (codexHome: string): Command =>
   (argv) => {
@@ -220,7 +229,7 @@ async function readVerifiedState(
   // uninstall が、そちらにある同名のファイルを削除しないように、一致しなければ止める。
   if (!isRecordedCodexHome(state.codexHome, codexHome)) {
     throw new Error(
-      `Shinaps is installed in CODEX_HOME=${state.codexHome}, but this run uses ${codexHome}. Run again with CODEX_HOME=${state.codexHome}, or run "CODEX_HOME=${state.codexHome} shinaps-skills uninstall codex" first.`,
+      `${codexHomeMismatch(state.codexHome, codexHome)} Run again with CODEX_HOME=${state.codexHome}, or run "CODEX_HOME=${state.codexHome} shinaps-skills uninstall codex" first.`,
     );
   }
   for (const [name, hash] of Object.entries(state.agents)) {

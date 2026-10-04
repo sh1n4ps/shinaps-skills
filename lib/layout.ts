@@ -2,6 +2,11 @@ import { existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// ファイルの配置と形式。
+// launchd ジョブは enable した版の CLI ではなく、実行のたびに npm から取得した最新版の CLI を起動する。
+// そのためここに定義した場所と形式 (auto-update.json、state.json、transaction/journal.json) は
+// どの版でも読めるように保ち、変える場合は旧形式も読めるようにする。
+
 /**
  * このパッケージのルートディレクトリ。リポジトリの checkout、または npm が展開したディレクトリ。
  * このファイルは checkout では `lib/`、配布物では `dist/lib/` にあり深さが違うので、package.json が
@@ -33,14 +38,14 @@ export const pluginId = `shinaps@${marketplaceName}`;
  */
 export const managedAgent = /^shinaps-[a-z0-9-]+\.toml$/;
 
-/** 管理ディレクトリ。配布物、state.json、ロックを置く。 */
+/** 管理ディレクトリ。配布物、state.json、自動更新の設定とロックを置く。 */
 export const managedRoot = (home: string): string =>
   join(home, '.local', 'share', 'shinaps-ai', 'skills');
 /** 配置済みの配布物。Codex の marketplace はここを指す。 */
 export const payloadDir = (root: string): string => join(root, 'codex');
 export const statePath = (root: string): string => join(root, 'state.json');
 
-/** CODEX_HOME の解決値。オプション → 環境変数 → Codex の既定の順。 */
+/** CODEX_HOME の解決値。オプション (`auto-update check` が渡す) → 環境変数 → Codex の既定の順。 */
 export const codexHomeOf = (options: { codexHome?: string }, home: string): string =>
   resolve(options.codexHome ?? process.env.CODEX_HOME ?? join(home, '.codex'));
 
@@ -50,6 +55,10 @@ export const codexHomeOf = (options: { codexHome?: string }, home: string): stri
  */
 export const isRecordedCodexHome = (recorded: string, current: string): boolean =>
   resolve(recorded) === current;
+
+/** CODEX_HOME 不一致のメッセージの共通部分。続けて対処を書く。 */
+export const codexHomeMismatch = (recorded: string, current: string): string =>
+  `Shinaps is installed in CODEX_HOME=${recorded}, but this run uses ${current}.`;
 
 /** state.json。 */
 export type State = {
@@ -65,4 +74,15 @@ export type State = {
    * まま保存していた。
    */
   codexHome: string;
+};
+
+/** auto-update.json。 */
+export type AutoUpdateConfig = { codexHome: string; npm: string };
+
+/** auto-update-result.json。 */
+export type CheckResult = {
+  checkedAt: string;
+  status?: 'updated' | 'up-to-date' | 'failed';
+  installed?: string;
+  available?: string;
 };

@@ -7,7 +7,9 @@ import { errorCode } from './fs.ts';
  * `pid` ファイルに記録する。保持者が存在しないロックは置き換える。保持者が生きているか pid をまだ読め
  * ないロックは "Another Shinaps update is running" で、別の処理が古いロックの判定中なら
  * "Another Shinaps update is recovering its lock" で reject する。
- * 入れ子にできるのは別のディレクトリ同士だけ。保持中のロックは待たずに即失敗する。
+ * 入れ子にできるのは別のディレクトリ同士だけ。scheduler ロックの中で installation ロックを取る
+ * (`auto-update check`) 場合と、その逆 (uninstall) の両方がある。保持中のロックは待たずに即失敗する
+ * ので、どちらの向きでもデッドロックしない。
  * @param directory ロックの親ディレクトリ。無ければ作る。古いロックの置き換え中は `lock-recovery`
  *   もここに置く。
  * @param work ロック保持中に実行する処理。戻り値をそのまま返す。

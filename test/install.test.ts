@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir, writeFile, readFile, access, rm, cp, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { run } from '../lib/install.ts';
+import { autoUpdate } from '../lib/auto-update.ts';
 import { payloadPaths } from '../lib/layout.ts';
 import {
   JOURNAL,
@@ -124,16 +125,17 @@ test('replacing an installed agent with a symlink does not write through it', as
 });
 
 // 記録された CODEX_HOME を resolve せずに比較すると落ちる。旧版 (0.11.0) は指定された値をそのまま
-// 保存していたため、末尾にスラッシュを付けてインストールした環境で update できなくなる。
-test('an install whose recorded CODEX_HOME is not normalized can still be updated', async (t) => {
+// 保存していたため、末尾にスラッシュを付けてインストールした環境で update も enable もできなくなる。
+test('an install whose recorded CODEX_HOME is not normalized can still be updated and enabled', async (t) => {
   const { options, root } = await temporaryHome(t);
   await run(['install', 'codex'], options);
   const state = JSON.parse(await readFile(join(root, STATE), 'utf8'));
   state.codexHome = `${options.codexHome}/`;
   await writeFile(join(root, STATE), JSON.stringify(state));
 
+  // update は state.json を正規化した値で書き直すので、旧版の値のまま両方の経路を通すため enable を先に行う。
+  await autoUpdate(['enable', 'codex'], options);
   await run(['update', 'codex'], options);
-  // 例外なく完了することを確認する。
 });
 
 // restore がファイルを戻しても、古い配布物を Codex に登録し直さないと落ちる。登録し直さないと、Codex の

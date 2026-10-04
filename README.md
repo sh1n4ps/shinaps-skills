@@ -160,7 +160,7 @@ codex mcp login shinaps-ai
 | `shinaps-debug-validator` | 仮説の実コード検証 (root-cause / contributing-factor / red-herring / needs-reproduction 分類) |
 | `shinaps-split-reviewer` | `shinaps:commit` の分割案を「単位の diff だけで妥当性を判断できるか」で批判 + 修正版最終分割計画 (worktree は read-only) |
 
-Claude版はMarkdown、Codex版はTOMLで役割を定義する。**subagent 内では shinaps MCP を直接叩かず、rule 全文は Skill 側から prompt 経由で渡す** 原則を全 system prompt に明記 (credit 最適化)。
+Claude版はMarkdown、Codex版はTOMLで役割を定義する。**subagent 内では shinaps MCP を直接呼び出さず、rule 全文は Skill 側から prompt 経由で渡す** 原則を全 system prompt に明記する。MCP呼び出しの利用量が重複しないようにするため。
 
 
 ## 作業成果物

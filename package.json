@@ -4,11 +4,10 @@
   "description": "Install Shinaps AI workflows and custom agents for Codex",
   "type": "module",
   "bin": {
-    "shinaps-skills": "bin/skills.mjs"
+    "shinaps-skills": "dist/bin/skills.js"
   },
   "files": [
-    "bin/",
-    "lib/",
+    "dist/",
     "plugins/",
     ".agents/plugins/marketplace.json",
     "README.md",
@@ -18,9 +17,11 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --test",
-    "check": "npm run format:check && node --check bin/skills.mjs && node --check lib/install.mjs && node --check scripts/verify-package.mjs",
-    "verify:package": "node scripts/verify-package.mjs",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
+    "test": "node --test \"test/*.test.ts\"",
+    "check": "npm run format:check && tsc --noEmit",
+    "verify:package": "node scripts/verify-package.ts",
     "format": "biome format --write .",
     "format:check": "biome format ."
   },
@@ -33,6 +34,8 @@
     "access": "public"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.15"
+    "@biomejs/biome": "2.5.15",
+    "@types/node": "^26.6.4",
+    "typescript": "^7.0.2"
   }
 }

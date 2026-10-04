@@ -1,21 +1,23 @@
-import { test } from 'node:test';
+import { test, type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, readFile, access, rm, cp, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { run } from '../lib/install.mjs';
+import { run, type RunOptions } from '../lib/install.ts';
 
-async function fixture(t) {
+async function fixture(t: TestContext) {
   const home = await mkdtemp(join(tmpdir(), 'shinaps-install-'));
   t.after(() => rm(home, { recursive: true, force: true }));
-  const calls = [];
-  return {
+  const calls: string[][] = [];
+  const options: RunOptions & { home: string; codexHome: string } = {
     home,
     codexHome: join(home, '.codex'),
-    command: async (args) => calls.push(args),
+    command: async (args) => {
+      calls.push(args);
+    },
     log() {},
-    calls,
   };
+  return { ...options, calls };
 }
 
 test('install, repeat and uninstall preserve unrelated files', async (t) => {
@@ -75,18 +77,19 @@ test('plugin command failure does not report success or install agents', async (
 
 test('update replaces managed content and retires removed package files', async (t) => {
   const options = await fixture(t);
-  options.source = join(options.home, 'package');
+  const source = join(options.home, 'package');
+  options.source = source;
   for (const dir of ['plugins/shinaps-codex', '.agents']) {
-    await cp(new URL(`../${dir}`, import.meta.url), join(options.source, dir), { recursive: true });
+    await cp(new URL(`../${dir}`, import.meta.url), join(source, dir), { recursive: true });
   }
   const agent = 'shinaps-reviewer.toml';
   await run(['install', 'codex'], options);
   const newContent =
-    (await readFile(join(options.source, 'plugins/shinaps-codex/agents', agent), 'utf8')) +
+    (await readFile(join(source, 'plugins/shinaps-codex/agents', agent), 'utf8')) +
     '\n# New release\n';
-  await writeFile(join(options.source, 'plugins/shinaps-codex/agents', agent), newContent);
-  await rm(join(options.source, 'plugins/shinaps-codex/agents/shinaps-explorer.toml'));
-  await rm(join(options.source, 'plugins/shinaps-codex/skills/review'), { recursive: true });
+  await writeFile(join(source, 'plugins/shinaps-codex/agents', agent), newContent);
+  await rm(join(source, 'plugins/shinaps-codex/agents/shinaps-explorer.toml'));
+  await rm(join(source, 'plugins/shinaps-codex/skills/review'), { recursive: true });
   await run(['update', 'codex'], options);
   assert.equal(await readFile(join(options.codexHome, 'agents', agent), 'utf8'), newContent);
   await assert.rejects(access(join(options.codexHome, 'agents/shinaps-explorer.toml')), {

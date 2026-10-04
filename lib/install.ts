@@ -1,25 +1,53 @@
+import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile, readdir, cp, rm, rename, lstat } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join, dirname, resolve } from 'node:path';
+import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 
-const source = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const plugin = 'shinaps@shinaps-skills-codex';
-const digest = (text) => createHash('sha256').update(text).digest('hex');
+export type Command = (argv: string[]) => unknown;
 
-async function optional(path) {
+export type RunOptions = {
+  home?: string;
+  codexHome?: string;
+  source?: string;
+  command?: Command;
+  log?: (message: string) => unknown;
+};
+
+type State = {
+  agents: Record<string, string>;
+  pending?: Record<string, string>;
+  codexHome: string;
+};
+
+// This file lives at lib/ in a checkout and at dist/lib/ in the published package, so
+// locate the package root by the nearest package.json instead of a fixed depth.
+function findPackageRoot(directory: string): string {
+  if (existsSync(join(directory, 'package.json'))) return directory;
+  const parent = dirname(directory);
+  if (parent === directory) throw new Error(`package.json not found above ${directory}`);
+  return findPackageRoot(parent);
+}
+
+const source = findPackageRoot(dirname(fileURLToPath(import.meta.url)));
+const plugin = 'shinaps@shinaps-skills-codex';
+const digest = (text: string): string => createHash('sha256').update(text).digest('hex');
+const errorCode = (error: unknown): string | undefined =>
+  error instanceof Error ? (error as NodeJS.ErrnoException).code : undefined;
+
+async function optional(path: string): Promise<string | null> {
   try {
     if ((await lstat(path)).isSymbolicLink()) throw new Error(`Symlink preserved: ${path}`);
     return await readFile(path, 'utf8');
   } catch (error) {
-    if (error.code === 'ENOENT') return null;
+    if (errorCode(error) === 'ENOENT') return null;
     throw error;
   }
 }
 
-export async function run(args, options = {}) {
+export async function run(args: string[], options: RunOptions = {}): Promise<void> {
   const [action, target, ...extra] = args;
   const log = options.log ?? console.log;
   if (!action || action === '--help' || action === 'help') {
@@ -38,12 +66,12 @@ export async function run(args, options = {}) {
   const payload = join(root, 'codex');
   const agentsDir = join(codexHome, 'agents');
   const stateText = await optional(statePath);
-  const state = stateText ? JSON.parse(stateText) : { agents: {}, codexHome };
+  const state: State = stateText ? JSON.parse(stateText) : { agents: {}, codexHome };
   // Ownership is bound to the installation target, so a changed CODEX_HOME cannot
   // make an uninstall remove a different account's files.
   if (state.codexHome !== codexHome)
     throw new Error('CODEX_HOME differs from the existing install. Use the original target first.');
-  const command =
+  const command: Command =
     options.command ??
     ((argv) => {
       const result = spawnSync('codex', argv, { stdio: 'inherit' });
@@ -83,7 +111,7 @@ export async function run(args, options = {}) {
     return;
   }
   const agentSource = join(options.source ?? source, 'plugins', 'shinaps-codex', 'agents');
-  const next = {};
+  const next: Record<string, { content: string; hash: string }> = {};
   for (const name of await readdir(agentSource)) {
     if (!/^shinaps-[a-z0-9-]+\.toml$/.test(name)) continue;
     const content = await readFile(join(agentSource, name), 'utf8');

@@ -60,7 +60,7 @@ uninstallはこのCLIのplugin・marketplace・管理済みエージェントを
 
 - Claude版: `plugins/shinaps-claude/`、marketplaceは`.claude-plugin/marketplace.json`
 - Codex版: `plugins/shinaps-codex/`、marketplaceは`.agents/plugins/marketplace.json`
-- Codexカスタムエージェント: `codex/agents/`
+- Codexカスタムエージェント: `plugins/shinaps-codex/agents/`
 - 配布CLI: `bin/skills.mjs` / `lib/install.mjs`
 
 品質基準とプロジェクト設定の方針は揃えつつ、クライアント固有の実行手順・エージェント形式は別々に管理する。Claude向けのエージェント呼び出しをCodexに読み替えさせる方式は使わない。スキルを追加・変更した場合は両版への適用可否を判断する。

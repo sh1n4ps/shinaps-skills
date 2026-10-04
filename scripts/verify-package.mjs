@@ -27,7 +27,7 @@ async function collect(path) {
     else throw new Error(`Unsupported package entry: ${child}`);
   }
 }
-for (const path of ['bin', 'lib', 'codex', 'plugins']) await collect(path);
+for (const path of ['bin', 'lib', 'plugins']) await collect(path);
 assert.deepEqual(actual, expected.sort(), 'Packed files differ from the intended payload');
 const tarball = join(destination, artifact.filename);
 console.log(`${pkg.name}@${pkg.version}: ${actual.length} files verified\n${tarball}`);

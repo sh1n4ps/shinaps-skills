@@ -66,14 +66,14 @@ test('plugin command failure does not report success or install agents', async t
 test('update replaces managed content and retires removed package files', async t => {
   const options = await fixture(t);
   options.source = join(options.home, 'package');
-  for (const dir of ['codex', 'plugins/shinaps-codex', '.agents']) {
+  for (const dir of ['plugins/shinaps-codex', '.agents']) {
     await cp(new URL(`../${dir}`, import.meta.url), join(options.source, dir), { recursive: true });
   }
   const agent = 'shinaps-reviewer.toml';
   await run(['install', 'codex'], options);
-  const newContent = (await readFile(join(options.source, 'codex/agents', agent), 'utf8')) + '\n# New release\n';
-  await writeFile(join(options.source, 'codex/agents', agent), newContent);
-  await rm(join(options.source, 'codex/agents/shinaps-explorer.toml'));
+  const newContent = (await readFile(join(options.source, 'plugins/shinaps-codex/agents', agent), 'utf8')) + '\n# New release\n';
+  await writeFile(join(options.source, 'plugins/shinaps-codex/agents', agent), newContent);
+  await rm(join(options.source, 'plugins/shinaps-codex/agents/shinaps-explorer.toml'));
   await rm(join(options.source, 'plugins/shinaps-codex/skills/review'), { recursive: true });
   await run(['update', 'codex'], options);
   assert.equal(await readFile(join(options.codexHome, 'agents', agent), 'utf8'), newContent);

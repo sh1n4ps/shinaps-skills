@@ -1,0 +1,59 @@
+name: Verify and publish npm package
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      # The package has no dependencies; no installation or registry secret is needed.
+      - run: npm run check
+      - run: npm test
+      - run: npm run verify:package
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+
+  publish:
+    needs: verify
+    if: github.event_name == 'release' && !github.event.release.prerelease
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: npm-publish
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Pack and verify the exact artifact to publish
+        id: package
+        run: npm run verify:package
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+      - name: Publish with npm Trusted Publishing (OIDC)
+        run: npm publish "$PACKAGE_TARBALL" --access public
+        env:
+          PACKAGE_TARBALL: ${{ steps.package.outputs.tarball }}

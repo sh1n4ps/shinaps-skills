@@ -2,7 +2,6 @@
 name: shinaps-tech-surveyor
 description: shinaps:spec / shinaps:review / shinaps:debug で共有利用される外部技術調査エージェント。WebSearch / WebFetch で最新情報を集め、ライブラリ・フレームワーク・サービスを観点別に比較する一次レポートを作成する。既存スタック規約と rule カタログとの整合性を必ず評価対象に含める
 model: opus
-permissionMode: bypassPermissions
 effort: high
 color: teal
 ---

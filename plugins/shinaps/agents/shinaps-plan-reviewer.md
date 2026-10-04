@@ -2,7 +2,6 @@
 name: shinaps-plan-reviewer
 description: shinaps:dev の計画フェーズで起動される第三者プランレビューエージェント。shinaps-architect が出した実装計画を、要件カバー度・設計妥当性・実装可能性・リスクの観点で批判的にレビューし、指摘を反映した修正版最終 plan までを返す。計画段階で唯一 rule を見る立場でもあるため、設計に効く規約違反は自分で拾う
 model: best
-permissionMode: bypassPermissions
 effort: high
 color: purple
 ---

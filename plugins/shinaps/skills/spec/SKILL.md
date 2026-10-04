@@ -4,6 +4,20 @@ description: ざっくりした要望を入力に、対話的なヒアリング 
 argument-hint: <ざっくりした要望（省略可）>
 ---
 
+## 作業記録の保存先
+
+作業記録はプロジェクトルートの `.shinaps/work/` 以下へ保存する。最初に記録を作るとき、`.shinaps/` を作成し、`.shinaps/.gitignore` がなければ内容 `*` と改行で作成する。既存ファイルは上書きせず、除外が不足する場合だけ `*` を追記する。ユーザーのグローバルignoreやルートの `.gitignore` の編集は不要。Git管理下では `git check-ignore` と `git status --short --untracked-files=all` で記録が未追跡変更に出ないことを確認する。既存の追跡済みファイルは自動で追跡解除しない。
+
+既存の `.claude/shinaps/` 等の記録は渡されたパスから読み、無断で移動・削除しない。新規記録は新しい保存先を使う。共有する仕様書などを `docs/` 等へ出す場合は、明示された成果物の保存先に従う。秘密情報は記録しない。
+
+## 実行環境とプロジェクト条件
+
+この節は以下の工程全体に適用する。適用される `AGENTS.md`・`CLAUDE.md` と参照先、CI、既存スクリプトから今回の条件を読み、明示された依頼・許可を引き継ぐ。仕様に影響する不足だけ一問ずつ確認する。新しい恒久方針の保存はユーザーの了承を得てプロジェクト側へ行う。
+
+Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用できる場合は対応するツールを使う。現在のセッションで提供されていないツールは仮定しない。質問は一問ずつ確認して回答を待つ。
+
+別セッションへの委託・新しいworktreeは明示された許可がある場合だけ行う。委託不可なら現在のセッションで調査・計画・レビューの観点を順に確認し、独立レビューとは報告しない。独立レビューがプロジェクトの必須条件なら未完了として扱う。Shinapsのエージェント名はClaudeのpluginで公開された名前を使う。サービスのrule照合が必要な工程でMCPを利用できなければ、その工程を未確認として報告し、照合済みとしない。
+
 ## 引数仕様
 
 | 呼び出し | 動作 |
@@ -25,7 +39,7 @@ argument-hint: <ざっくりした要望（省略可）>
 ## ディレクトリ規約
 
 ```
-.claude/shinaps/specs/{YYYYMMDD-HHMMSS}-{slug}/
+.shinaps/work/specs/{YYYYMMDD-HHMMSS}-{slug}/
 ├── spec.md                ← shinaps-spec-writer が作成 (dev には spec.md パスを直接渡す)
 ├── interview-log.md       ← ヒアリングのやりとり記録
 ├── raw/                   ← 調査エージェントの生レポート (dev が再利用)
@@ -127,7 +141,7 @@ argument-hint: <ざっくりした要望（省略可）>
 
 実施する場合:
 
-1. **隔離スペース** `.claude/shinaps/specs/{ts}-{slug}/prototype/` を作成 (既存コードベースを汚さない)
+1. **隔離スペース** `.shinaps/work/specs/{ts}-{slug}/prototype/` を作成 (既存コードベースを汚さない)
 2. 必要最小限のコードを書いて動かす:
    - 既存コードベースに統合する必要があれば最小の touch のみ
    - 主目的は「動くか / 期待した振る舞いか / どこで詰まるか」を確認すること
@@ -154,7 +168,7 @@ argument-hint: <ざっくりした要望（省略可）>
 - **Phase 2 前準備で取得した `search_rules` 結果 (userRules + officialRules 全文)**
 - 「ヒアリングと調査結果を統合した構造化された仕様書を作成せよ。既存実装の状況・技術的方向性・採用技術 (あれば) も spec.md に反映すること。CLAUDE.md + rule カタログを制約セクションに集約すること」
 
-**記録先**: メインが Write で `.claude/shinaps/specs/{ts}-{slug}/spec.md`
+**記録先**: メインが Write で `.shinaps/work/specs/{ts}-{slug}/spec.md`
 
 ### Phase 7: 仕様書サマリ提示
 
@@ -179,7 +193,7 @@ dev 側の Phase 1 で spec.md を Read してタスク詳細・採用技術・�
 引数例:
 
 ```
-Skill(skill="shinaps:dev", args="以下の仕様書を実装する。詳細は .claude/shinaps/specs/{ts}-{slug}/spec.md を参照: {1 行サマリ}")
+Skill(skill="shinaps:dev", args="以下の仕様書を実装する。詳細は .shinaps/work/specs/{ts}-{slug}/spec.md を参照: {1 行サマリ}")
 ```
 
 ## 動作原則

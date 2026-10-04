@@ -2,7 +2,6 @@
 name: shinaps-refine-agent
 description: shinaps:refine の Step 3 で並列 dispatch される rule 照合エージェント。担当カテゴリ内の rule 全文と対象ファイルの現状全文を突き合わせて Violation / Improvement / Question に分類し、今回の変更箇所か既存箇所かを scope で切り分ける。subagent 内で shinaps MCP を叩かない (credit 二重消費回避)
 model: opus
-permissionMode: bypassPermissions
 effort: medium
 color: blue
 ---

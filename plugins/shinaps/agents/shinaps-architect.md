@@ -2,7 +2,6 @@
 name: shinaps-architect
 description: shinaps:dev の計画フェーズで起動される実装ブループリント策定エージェント。shinaps-explorer の探索結果と、Skill 側から渡された search_rules 由来の rule カタログ・CLAUDE.md 規約を踏まえ、複数観点を内部で検討した上で唯一最強の実装計画を断言する。出力は shinaps-plan-reviewer が直接批判 → 修正版最終 plan を返す
 model: best
-permissionMode: bypassPermissions
 effort: high
 color: green
 ---

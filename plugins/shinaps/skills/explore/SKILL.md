@@ -4,6 +4,20 @@ description: バグか確定していない違和感、既存挙動の「なぜ�
 argument-hint: <調べたいバグ・挙動・実装上の疑問（省略可）>
 ---
 
+## 作業記録の保存先
+
+作業記録はプロジェクトルートの `.shinaps/work/` 以下へ保存する。最初に記録を作るとき、`.shinaps/` を作成し、`.shinaps/.gitignore` がなければ内容 `*` と改行で作成する。既存ファイルは上書きせず、除外が不足する場合だけ `*` を追記する。ユーザーのグローバルignoreやルートの `.gitignore` の編集は不要。Git管理下では `git check-ignore` と `git status --short --untracked-files=all` で記録が未追跡変更に出ないことを確認する。既存の追跡済みファイルは自動で追跡解除しない。
+
+既存の `.claude/shinaps/` 等の記録は渡されたパスから読み、無断で移動・削除しない。新規記録は新しい保存先を使う。共有する仕様書などを `docs/` 等へ出す場合は、明示された成果物の保存先に従う。秘密情報は記録しない。
+
+## 実行環境とプロジェクト条件
+
+この節は以下の工程全体に適用する。適用される `AGENTS.md`・`CLAUDE.md` と参照先、CI、既存スクリプトから今回の条件を読み、明示された依頼・許可を引き継ぐ。仕様に影響する不足だけ一問ずつ確認する。新しい恒久方針の保存はユーザーの了承を得てプロジェクト側へ行う。
+
+Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用できる場合は対応するツールを使う。現在のセッションで提供されていないツールは仮定しない。質問は一問ずつ確認して回答を待つ。
+
+別セッションへの委託・新しいworktreeは明示された許可がある場合だけ行う。委託不可なら現在のセッションで調査・計画・レビューの観点を順に確認し、独立レビューとは報告しない。独立レビューがプロジェクトの必須条件なら未完了として扱う。Shinapsのエージェント名はClaudeのpluginで公開された名前を使う。サービスのrule照合が必要な工程でMCPを利用できなければ、その工程を未確認として報告し、照合済みとしない。
+
 ## このスキルの責務
 
 人間を質問の主体にして、1 つの疑問を調査して答えるサイクルを、本人が理解できたと明示するまで繰り返す。
@@ -42,7 +56,7 @@ argument-hint: <調べたいバグ・挙動・実装上の疑問（省略可）>
 ## ディレクトリ規約
 
 ```
-.claude/shinaps/explorations/{YYYYMMDD-HHMMSS}-{slug}/
+.shinaps/work/explorations/{YYYYMMDD-HHMMSS}-{slug}/
 ├── exploration.md                 ← 現在の理解と dev handoff 契約を保つ living document
 ├── question-log.md                ← 質問と回答の要約。会話の逐語録にはしない
 └── raw/
@@ -186,7 +200,7 @@ handoff 直前に confirmed 根拠の content hash を再計算し、`evidenceSn
 中間 handoff ファイルは作らず、`exploration.md` のパスを直接渡す。
 
 ```
-Skill(skill="shinaps:dev", args="以下の対話調査で合意した変更を実装する。詳細は .claude/shinaps/explorations/{ts}-{slug}/exploration.md を参照: {実装目的の 1 行サマリ}")
+Skill(skill="shinaps:dev", args="以下の対話調査で合意した変更を実装する。詳細は .shinaps/work/explorations/{ts}-{slug}/exploration.md を参照: {実装目的の 1 行サマリ}")
 ```
 
 dev は `exploration.md` と同ディレクトリの `raw/investigation-*.md` を既存実装調査として再利用し、情報が不足・陳腐化している場合だけ `shinaps-explorer` で補完する。

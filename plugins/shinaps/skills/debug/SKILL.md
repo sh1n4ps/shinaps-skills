@@ -4,6 +4,20 @@ description: バグ報告・不具合の根本原因を多角的に調査し、�
 argument-hint: <なし | エラーメッセージ / 症状の説明 | ファイルパス>
 ---
 
+## 作業記録の保存先
+
+作業記録はプロジェクトルートの `.shinaps/work/` 以下へ保存する。最初に記録を作るとき、`.shinaps/` を作成し、`.shinaps/.gitignore` がなければ内容 `*` と改行で作成する。既存ファイルは上書きせず、除外が不足する場合だけ `*` を追記する。ユーザーのグローバルignoreやルートの `.gitignore` の編集は不要。Git管理下では `git check-ignore` と `git status --short --untracked-files=all` で記録が未追跡変更に出ないことを確認する。既存の追跡済みファイルは自動で追跡解除しない。
+
+既存の `.claude/shinaps/` 等の記録は渡されたパスから読み、無断で移動・削除しない。新規記録は新しい保存先を使う。共有する仕様書などを `docs/` 等へ出す場合は、明示された成果物の保存先に従う。秘密情報は記録しない。
+
+## 実行環境とプロジェクト条件
+
+この節は以下の工程全体に適用する。適用される `AGENTS.md`・`CLAUDE.md` と参照先、CI、既存スクリプトから今回の条件を読み、明示された依頼・許可を引き継ぐ。仕様に影響する不足だけ一問ずつ確認する。新しい恒久方針の保存はユーザーの了承を得てプロジェクト側へ行う。
+
+Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用できる場合は対応するツールを使う。現在のセッションで提供されていないツールは仮定しない。質問は一問ずつ確認して回答を待つ。
+
+別セッションへの委託・新しいworktreeは明示された許可がある場合だけ行う。委託不可なら現在のセッションで調査・計画・レビューの観点を順に確認し、独立レビューとは報告しない。独立レビューがプロジェクトの必須条件なら未完了として扱う。Shinapsのエージェント名はClaudeのpluginで公開された名前を使う。サービスのrule照合が必要な工程でMCPを利用できなければ、その工程を未確認として報告し、照合済みとしない。
+
 ## 引数仕様
 
 | 呼び出し | モード | 動作 |
@@ -24,7 +38,7 @@ argument-hint: <なし | エラーメッセージ / 症状の説明 | ファイ�
 ## ディレクトリ規約
 
 ```
-.claude/shinaps/debug/{YYYYMMDD-HHMMSS}-{slug}/
+.shinaps/work/debug/{YYYYMMDD-HHMMSS}-{slug}/
 ├── input.md                ← 症状・再現手順のサマリ
 ├── debug-report.md         ← shinaps-debugger の生レポート (仮説一覧)
 ├── debug-validated.md      ← shinaps-debug-validator の検証済みレポート (dev にはこのパスを直接渡す)
@@ -112,7 +126,7 @@ root-cause または contributing-factor が 1 件以上あれば `AskUserQuesti
 ### Phase 6: /shinaps:dev への橋渡し (修正実装選択時)
 
 ```
-Skill(skill="shinaps:dev", args="以下のデバッグ結果に基づき根本原因を修正する。詳細は .claude/shinaps/debug/{ts}-{slug}/debug-validated.md を参照: {根本原因の 1 行サマリ}")
+Skill(skill="shinaps:dev", args="以下のデバッグ結果に基づき根本原因を修正する。詳細は .shinaps/work/debug/{ts}-{slug}/debug-validated.md を参照: {根本原因の 1 行サマリ}")
 ```
 
 ### Phase 7: 追加調査 (選択時)

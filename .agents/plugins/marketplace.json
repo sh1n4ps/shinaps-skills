@@ -1,0 +1,10 @@
+{
+  "name": "shinaps-skills-codex",
+  "interface": { "displayName": "Shinaps AI for Codex" },
+  "plugins": [{
+    "name": "shinaps",
+    "source": { "source": "local", "path": "./plugins/shinaps-codex" },
+    "policy": { "installation": "AVAILABLE", "authentication": "ON_USE" },
+    "category": "Developer Tools"
+  }]
+}

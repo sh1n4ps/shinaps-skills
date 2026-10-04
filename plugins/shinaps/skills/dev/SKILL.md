@@ -1,8 +1,22 @@
 ---
 name: dev
-description: 計画策定 + 実装 + セルフレビューを一気通貫で行う開発ワークフロー。shinaps-explorer でコードベース調査 (spec.md / exploration.md からの handoff なら既存調査を再利用) → shinaps-architect で実装ブループリント策定 → shinaps-plan-reviewer が plan を批判して修正版最終 plan を返す → メインスレッドが plan.md を直接実装 + 動作確認 (型/lint/test) + implementation.md 執筆 → shinaps-reviewer と Skill(shinaps:refine) と簡素化レビューを発火してセルフレビュー + rule 照合 + 削れるものの洗い出し → Critical 自動修正・仕様を変えない削除の適用 → ユーザー承認の上 Skill(shinaps:commit) へ handoff してレビュー単位の分割コミット、までを単一スキルで完走する。実装フェーズをメインスレッドが担うことで、explorer / architect / plan-review で築いた文脈をそのまま実装判断に活用し、レビュー指摘や修正ループでもブレない実装精度を保つ。EnterPlanMode は使わず bypassPermissions モード (リモート実行など) と両立する設計。不明な論点は AskUserQuestion で必ずユーザーに確認する
+description: 既存設計とプロジェクトの条件を確認し、計画・実装・簡素化・検証・レビューを行う。機能追加や修正の実装を依頼されたときに使う。コミットは別途明示された場合だけ行う。
 argument-hint: <実装したい機能・解決したい課題>
 ---
+
+## 作業記録の保存先
+
+作業記録はプロジェクトルートの `.shinaps/work/` 以下へ保存する。最初に記録を作るとき、`.shinaps/` を作成し、`.shinaps/.gitignore` がなければ内容 `*` と改行で作成する。既存ファイルは上書きせず、除外が不足する場合だけ `*` を追記する。ユーザーのグローバルignoreやルートの `.gitignore` の編集は不要。Git管理下では `git check-ignore` と `git status --short --untracked-files=all` で記録が未追跡変更に出ないことを確認する。既存の追跡済みファイルは自動で追跡解除しない。
+
+既存の `.claude/shinaps/` 等の記録は渡されたパスから読み、無断で移動・削除しない。新規記録は新しい保存先を使う。共有する仕様書などを `docs/` 等へ出す場合は、明示された成果物の保存先に従う。秘密情報は記録しない。
+
+## 実行環境とプロジェクト条件
+
+この節は以下の工程全体に適用する。適用される `AGENTS.md`・`CLAUDE.md` と参照先、CI、既存スクリプトから今回の条件を読み、明示された依頼・許可を引き継ぐ。仕様に影響する不足だけ一問ずつ確認する。新しい恒久方針の保存はユーザーの了承を得てプロジェクト側へ行う。
+
+Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用できる場合は対応するツールを使う。現在のセッションで提供されていないツールは仮定しない。質問は一問ずつ確認して回答を待つ。
+
+別セッションへの委託・新しいworktreeは明示された許可がある場合だけ行う。委託不可なら現在のセッションで調査・計画・レビューの観点を順に確認し、独立レビューとは報告しない。独立レビューがプロジェクトの必須条件なら未完了として扱う。Shinapsのエージェント名はClaudeのpluginで公開された名前を使う。サービスのrule照合が必要な工程でMCPを利用できなければ、その工程を未確認として報告し、照合済みとしない。
 
 ## 引数仕様
 
@@ -27,7 +41,7 @@ argument-hint: <実装したい機能・解決したい課題>
 ## ディレクトリ規約
 
 ```
-.claude/shinaps/{YYYYMMDD-HHMMSS}-{slug}/
+.shinaps/work/{YYYYMMDD-HHMMSS}-{slug}/
 ├── plan.md                    ← Phase 4 で確定する最終 plan (plan-reviewer Part 2)
 ├── raw/                       ← 計画フェーズの生レポート (全文保存)
 │   ├── explorer.md            ← または explorer-1.md, explorer-2.md ... (事前調査 handoff 時は既存レポートを参照)
@@ -53,11 +67,11 @@ argument-hint: <実装したい機能・解決したい課題>
 1. 引数なし → エラー終了「`/shinaps:dev <task>` でタスクを指定してください」
 2. 引数の文字列をタスク内容として確定
 3. 今回の依頼に関連する既存の spec・調査レポート・Git の変更履歴を確認し、引き継ぐ決定と根拠を要約する。既存成果物がなければ追加取得は不要。
-4. **他スキルからの handoff 判定**: 引数に `.claude/shinaps/.../*.md` の成果物パスが含まれていれば必ず Read し、タスク詳細・確定事項・未解決点を取り込む。特に以下を Phase 2 の事前調査として扱う:
+4. **他スキルからの handoff 判定**: 引数に成果物パス（旧 `.claude/shinaps/` を含む）が含まれていれば必ず Read し、タスク詳細・確定事項・未解決点を取り込む。特に以下を Phase 2 の事前調査として扱う:
    - `specs/.../spec.md`: 同ディレクトリの `raw/explorer*.md` を確認する
    - `explorations/.../exploration.md`: `## 実装 handoff` の `status: ready` を確認し、同ディレクトリの `raw/investigation-*.md` を確認する。status が欠落・不明・`not-ready` なら変更内容を推測せず、`AskUserQuestion` で「explore に戻る / 実装内容をここで確定する」を確認する
 5. タスクから英語 slug を生成 (kebab-case, 30 文字以内)
-6. 作業ディレクトリを確定: `.claude/shinaps/{YYYYMMDD-HHMMSS}-{slug}/` + `raw/`
+6. 作業ディレクトリを確定: `.shinaps/work/{YYYYMMDD-HHMMSS}-{slug}/` + `raw/`
 7. タスク文字列が曖昧 / 制約が不明確な場合は `AskUserQuestion` で要件を確認 (何回聞いても良い)
 
 ### Phase 2: コードベース探索
@@ -143,7 +157,7 @@ Phase 1 で読んだ成果物と同ディレクトリの raw report を取り込
 #### B. 実装
 
 - ビルド順序に従って Edit / Write で実装
-- 不明点 (命名 / 依存方向 / 例外処理の落とし所など plan で曖昧な点) は **必ず `AskUserQuestion`** で確認 (回数制限なし)
+- 目的・仕様を左右する不明点だけ一問ずつ確認する。命名等の通常の実装判断は既存規約に合わせて進める
 - plan からの逸脱は `AskUserQuestion` で確認した上で `implementation.md` に経緯を記録
 - 1 サブタスク完了ごとに `TaskUpdate` で `completed` に進める
 - **判断 / ブロッカー / 方針転換で ローカル成果物（implementation.md / 調査・レビューレポート）** を残す
@@ -159,47 +173,17 @@ Phase 1 で読んだ成果物と同ディレクトリの raw report を取り込
 
 #### D. 動作確認
 
-- 型 / lint / build / test を順に実行
+- プロジェクト規約・CI・変更の影響から必要な検証を実行する。UI変更は `verify-ui` で対象環境を確定して実画面を確認する。全案件に同じコマンド・端末構成を強制しない
 - 結果を `implementation.md` の「動作確認結果」セクションに記録
 - 自分の実装ミスによる失敗は **3 回まで自己修正**。それを超える場合は `AskUserQuestion` で「さらに修正試行 / Phase 6 のレビュー対象として diff を渡す / Phase 4 に戻って plan-reviewer に再策定させる」を確認
 
-### Phase 6: セルフレビュー + refine + 簡素化 (並列 spawn)
+### Phase 6: 簡素化後のセルフレビュー + refine
 
-**`shinaps-reviewer`、`Skill(shinaps:refine)`、簡素化レビューの 3 つを 1 メッセージ内で並列 spawn する** (workflow に bake された rule 照合 checkpoint)。
+まず `simplify` を適用し、目的を維持できる削除・簡素化をメインセッションで実施する。仕様変更の提案は確認してから進める。影響する検証を再実行し、その結果を `raw/simplify.md` に残す。
 
-reviewer と refine は「足りないもの」を探す。足りないものを探すレビューは指摘のたびにコードを増やし、削る役割を持たない。簡素化レビューは「削れるもの・まとめられるもの」だけを探す独立した観点で、同じ diff を見る。
+その後、最終差分（staged / unstaged / untrackedを含む）と現在のファイル、plan、implementation、ruleカタログを使ってレビューする。許可された独立レビューでは `shinaps-reviewer` に読み取りだけを依頼し、`refine` で規約と照合する。委託できなければメインで両観点を確認し、独立レビュー済みとは報告しない。
 
-#### 1 メッセージ内に以下 3 tool 呼び出しを含める
-
-1. `Agent(subagent_type="shinaps-reviewer", prompt=<下記>)`:
-   - plan.md 全文
-   - implementation.md 全文 (動作確認結果含む)
-   - 変更ファイル一覧と diff (`git diff` の出力。git 管理されていないファイルは Read 結果)
-   - **Phase 2 で取得した `search_rules` 結果 (userRules + officialRules 全文)**
-   - 「confidence ≥ 80 のみ報告、rule 違反は必ず Critical タグ」
-
-2. `Skill(skill="shinaps:refine")`:
-   - 引数なし → `git diff HEAD` で変更ファイルを特定し、それらの現状全文を対象に refine が Step 0-6 を実行
-
-3. `Agent(subagent_type="general-purpose", prompt=<下記>)` (簡素化レビュー):
-   - plan.md 全文、implementation.md 全文、変更ファイル一覧と diff
-   - 目的と必要条件から見直し、次を問う:
-     - 外部ツール・API が自分で拒否する入力（形式・存在・到達可能性）を先回りして検査していないか。失敗経路を 1 つにまとめられないか
-     - 受入条件やレビュー指摘の列挙に 1 対 1 で対応した分岐・assert・ドキュメント行がないか。共通する性質 1 つで置き換えられないか
-     - 仮定（hypothetical）のためだけに存在する防御コード・フラグ・ラッパーがないか
-     - テストは同じ検出力のまま件数・fixture・行数を減らせないか（データ表化、fixture 共有、検出力ゼロの assert の削除）
-     - 仕様を少し単純化すれば消える複雑さがないか（これはユーザー判断として分けて報告）
-   - 出力は「仕様を変えない削除・統合（削除行数と根拠）」と「仕様変更を伴う提案（消える複雑さと増えるリスク）」に分け、必要なら scratchpad にプロトタイプを置いて動作を確かめる。リポジトリのファイルは編集しない
-
-#### 並列 dispatch フォールバック
-
-Claude Code の実行エンジンが Skill tool と Agent tool を並列 dispatch できず直列化された場合は、`shinaps-reviewer` を先に単独起動 → `Skill(shinaps:refine)` を単独発火する 2 段直列に切り替える。どちらも独立に対象を取りに行くので、順序が変わっても結果は変わらない。
-
-#### 記録先
-
-- `review.md`: shinaps-reviewer の生レポート (メインが Write)
-- `raw/refine.md`: refine の findings 集約 (メインが Write)
-- `raw/simplify.md`: 簡素化レビューの生レポート (メインが Write)
+結果は `review.md` と `raw/refine.md` に記録する。簡素化前の差分だけをレビューして完了しない。
 
 ### Phase 7: 修正ループ
 
@@ -227,14 +211,9 @@ Phase 7 で **Critical または Warning を修正した場合のみ**、もう�
 
 修正がなかった場合は再レビューをスキップして Phase 9 へ。
 
-### Phase 9: コミットモードへの handoff
+### Phase 9: 完了と必要なhandoff
 
-全 Phase 完了後、実装内容のサマリ (変更ファイル一覧 + 動作確認結果) を提示した上で、`AskUserQuestion` で確認する:
-
-- **コミットモードへ移行** — `Skill(skill="shinaps:commit", args="<タスク要約>。実装の WHY は {作業ディレクトリ}/implementation.md を参照")` を発火。差分をレビュー単位に分割し、単位ごとに人間レビュー + 単独検証を回しながら段階的にコミットする
-- **コミットせず終了** — working tree に差分を残したまま終了 (ユーザーが手動でコミットする / 後で `/shinaps:commit` を単独発火する)
-
-dev 自身は `git add` / `git commit` を直接実行しない。コミットは必ず shinaps:commit の「単位ごとの人間レビュー」を経由させることで、大きい差分が無レビューのまま履歴に積まれることを防ぐ。
+変更、簡素化、検証結果、未確認事項を報告する。コミットが明示されていれば、その許可範囲と通常／自律モードを `commit` へ引き継ぐ。コミット依頼がなければ未コミットのまま完了し、毎回コミット許可を要求しない。PRやリリースは明示された場合だけ、それぞれ `create-pr`・`release` へ進む。
 
 ## 動作原則
 
@@ -243,12 +222,12 @@ dev 自身は `git add` / `git commit` を直接実行しない。コミット�
 - **subagent は文字列応答のみを返す**: raw/*.md への Write / Edit は必ずメインスレッドが担当
 - **rule 照合を各 Phase に bake**: Phase 2 の `search_rules` → Phase 3 の architect prompt 埋め込み → Phase 4 の plan-reviewer (設計レベルの違反) → Phase 6 の refine 並列 (コードレベルの違反)
 - **判断・方針転換で ローカル成果物（implementation.md / 調査・レビューレポート）**
-- **不明な論点は必ず AskUserQuestion で確認**: 回数に制限なし。「わからないまま自動進行」より「ユーザーに聞く」を優先
+- **目的・仕様を左右する不明点を確認**: 既存の指示で分かることや任された細部は再質問しない
 - **生レポート保存厳守**: explorer / handoff 済み investigation / architect / plan-reviewer / reviewer / refine の応答は全文参照可能な状態を保つ
 - **Critical は自動修正、Warning は確認**
-- **削る工程を Phase 6 に bake**: reviewer / refine は足りないものを探すだけで削る役割を持たないため、簡素化レビューを並列で走らせ、仕様を変えない削除・統合は自動適用する
+- **簡素化をレビュー前に実行する**: 目的を保つ削除を先に適用し、最終差分をレビューする
 - **plan からの逸脱は確認 + 記録**: AskUserQuestion で確認した上で `implementation.md` に経緯を残す
-- **コミットは shinaps:commit 経由のみ**: dev 自身は `git add` / `git commit` を実行しない。Phase 9 でユーザー承認の上 `Skill(shinaps:commit)` へ handoff する。push / PR はスコープ外 (別スキルへ案内のみ)
+- **コミットは明示依頼時のみ**: Phase 9 で既存の許可を引き継ぐ。
 
 ## 他スキルからの呼び出し
 
@@ -256,10 +235,10 @@ dev 自身は `git add` / `git commit` を直接実行しない。コミット�
 
 | 元スキル | 渡すパス | dev での扱い |
 |---|---|---|
-| `/shinaps:explore` | `.claude/shinaps/explorations/{ts}-{slug}/exploration.md` | `status: ready` と `evidenceSnapshot` を確認して合意済み変更・confirmed findings・未解決点を取り込み、Phase 2 で同ディレクトリ配下の `raw/investigation-*.md` を再利用。status 欠落 / `not-ready` なら変更内容を推測しない |
-| `/shinaps:spec` | `.claude/shinaps/specs/{ts}-{slug}/spec.md` | Phase 1 で Read してタスク詳細・採用技術を取り込み、Phase 2 で同ディレクトリ配下の `raw/explorer.md` を再利用 |
-| `/shinaps:review` | `.claude/shinaps/reviews/{ts}-{mode}/review-validated.md` | Phase 1 で Read し、確定指摘を修正タスクとして扱う |
-| `/shinaps:debug` | `.claude/shinaps/debug/{ts}-{slug}/debug-validated.md` | Phase 1 で Read し、root-cause / contributing-factor を修正タスクとして扱う |
+| `/shinaps:explore` | `.shinaps/work/explorations/{ts}-{slug}/exploration.md` | `status: ready` と `evidenceSnapshot` を確認して合意済み変更・confirmed findings・未解決点を取り込み、Phase 2 で同ディレクトリ配下の `raw/investigation-*.md` を再利用。status 欠落 / `not-ready` なら変更内容を推測しない |
+| `/shinaps:spec` | `.shinaps/work/specs/{ts}-{slug}/spec.md` | Phase 1 で Read してタスク詳細・採用技術を取り込み、Phase 2 で同ディレクトリ配下の `raw/explorer.md` を再利用 |
+| `/shinaps:review` | `.shinaps/work/reviews/{ts}-{mode}/review-validated.md` | Phase 1 で Read し、確定指摘を修正タスクとして扱う |
+| `/shinaps:debug` | `.shinaps/work/debug/{ts}-{slug}/debug-validated.md` | Phase 1 で Read し、root-cause / contributing-factor を修正タスクとして扱う |
 
 ```
 Skill(skill="shinaps:dev", args="<元タスク要約>。詳細は <生成物パス> を参照")

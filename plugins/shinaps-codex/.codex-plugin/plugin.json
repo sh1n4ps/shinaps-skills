@@ -1,0 +1,6 @@
+{
+  "name": "shinaps",
+  "version": "0.11.0",
+  "description": "Shinaps AIのCodex向け開発ワークフロー",
+  "skills": "./skills/"
+}

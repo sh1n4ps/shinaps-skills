@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
-      # The package has no dependencies; no installation or registry secret is needed.
+      - run: npm ci
       - run: npm run check
       - run: npm test
       - run: npm run verify:package

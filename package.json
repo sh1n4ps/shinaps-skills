@@ -3,11 +3,36 @@
   "version": "0.11.0",
   "description": "Install Shinaps AI workflows and custom agents for Codex",
   "type": "module",
-  "bin": { "shinaps-skills": "bin/skills.mjs" },
-  "files": ["bin/", "lib/", "plugins/", ".agents/plugins/marketplace.json", "README.md", "LICENSE"],
-  "engines": { "node": ">=22" },
-  "scripts": { "test": "node --test", "check": "node --check bin/skills.mjs && node --check lib/install.mjs && node --check scripts/verify-package.mjs", "verify:package": "node scripts/verify-package.mjs" },
-  "repository": { "type": "git", "url": "https://github.com/sh1n4ps/shinaps-skills.git" },
+  "bin": {
+    "shinaps-skills": "bin/skills.mjs"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "plugins/",
+    ".agents/plugins/marketplace.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "npm run format:check && node --check bin/skills.mjs && node --check lib/install.mjs && node --check scripts/verify-package.mjs",
+    "verify:package": "node scripts/verify-package.mjs",
+    "format": "biome format --write .",
+    "format:check": "biome format ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sh1n4ps/shinaps-skills.git"
+  },
   "license": "MIT",
-  "publishConfig": { "access": "public" }
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15"
+  }
 }

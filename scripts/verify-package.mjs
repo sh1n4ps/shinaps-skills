@@ -7,7 +7,7 @@ import { execFileSync } from 'node:child_process';
 const json = async path => JSON.parse(await readFile(path, 'utf8'));
 const pkg = await json('package.json');
 assert.equal(pkg.name, '@shinaps/skills');
-for (const path of ['plugins/shinaps/.claude-plugin/plugin.json', 'plugins/shinaps-codex/.codex-plugin/plugin.json']) {
+for (const path of ['plugins/shinaps-claude/.claude-plugin/plugin.json', 'plugins/shinaps-codex/.codex-plugin/plugin.json']) {
   assert.equal((await json(path)).version, pkg.version, `Version differs: ${path}`);
 }
 if (process.env.RELEASE_TAG) assert.equal(process.env.RELEASE_TAG, `v${pkg.version}`, 'Release tag must match package version');

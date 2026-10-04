@@ -58,7 +58,7 @@ uninstallはこのCLIのplugin・marketplace・管理済みエージェントを
 
 ## 開発と配布
 
-- Claude版: `plugins/shinaps/`、marketplaceは`.claude-plugin/marketplace.json`
+- Claude版: `plugins/shinaps-claude/`、marketplaceは`.claude-plugin/marketplace.json`
 - Codex版: `plugins/shinaps-codex/`、marketplaceは`.agents/plugins/marketplace.json`
 - Codexカスタムエージェント: `codex/agents/`
 - 配布CLI: `bin/skills.mjs` / `lib/install.mjs`

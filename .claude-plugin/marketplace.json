@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "shinaps",
-      "source": "./plugins/shinaps",
+      "source": "./plugins/shinaps-claude",
       "description": "Shinaps AIの開発ワークフロー。プロジェクトの指示から条件を読み、調査・設計・実装・簡素化・UI検証・レビュー・コミット・PR・リリースを支援する12スキル。",
       "author": {
         "name": "shinaps",

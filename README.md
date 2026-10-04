@@ -46,7 +46,10 @@ Node.js 22以上と、`plugin marketplace add` / `plugin add` に対応したCod
 npx @shinaps/skills@latest install codex
 npx @shinaps/skills@latest update codex
 npx @shinaps/skills@latest uninstall codex
+npx @shinaps/skills@latest recover codex
 ```
+
+`recover codex`は、中断した更新の記録が残っている場合に復元だけを行う。記録が無ければ何もしない。
 
 ローカル開発では、このcheckoutから `node bin/skills.ts install codex` のように同じ操作を実行できる。Node.js 22.18以上なら型除去でTypeScriptをそのまま実行する (ビルド不要)。
 

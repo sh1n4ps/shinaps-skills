@@ -48,6 +48,7 @@ jobs:
           node-version: '24'
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
+      - run: npm ci
       - name: Pack and verify the exact artifact to publish
         id: package
         run: npm run verify:package

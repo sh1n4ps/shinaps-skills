@@ -34,9 +34,10 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 | Shinaps Explorer | `shinaps-explorer` | コードベース探索、必読ファイル抽出 (spec / explore の事前調査が十分なら再起動しない) |
 | Shinaps Architect | `shinaps-architect` | 複数観点を内包した実装ブループリント策定 |
 | Shinaps Plan Reviewer | `shinaps-plan-reviewer` | architect 初回案を批判 + Critical/Warning を反映した修正版最終 plan までを返す |
+| Shinaps Implementer | `shinaps-implementer` | 確定した計画の実装・検証と、レビュー後に決まった修正 (Opus) |
 | Shinaps Reviewer | `shinaps-reviewer` | logic / design / security / performance / maintainability / rule の統合観点でレビュー |
 
-実装フェーズ (Phase 5) は **メインスレッドが直接 Edit/Write で行う**。explorer / architect / plan-review で築いた文脈・設計判断の意図をそのまま実装に持ち込むことで、レビュー指摘の文脈共有と修正ループの精度を最大化する狙い。
+委託が許可されている場合、実装と修正は **`shinaps-implementer` (Opus) 1 体**が担当し、メインは仕様判断・進行管理・成果物の確認を担う。設計判断を実装へ引き継ぎつつモデルの利用を分けるため、確定した計画・判断理由・規約を実装担当へ渡す。委託不可またはエージェントを利用できない場合はメインが担当し、その旨を報告する。
 
 ## ディレクトリ規約
 
@@ -144,42 +145,42 @@ Phase 1 で読んだ成果物と同ディレクトリの raw report を取り込
 | **条件付き承認** | Part 2 で確定した plan.md をそのまま Phase 5 へ (条件は Phase 5 実装時に判断) |
 | **差し戻し** | `AskUserQuestion` で「再策定する / 指摘を未解決リスクとして明記して進む / タスク見直し」を確認。再策定の場合は Part 1 の差し戻し理由を渡して `shinaps-architect` を再起動、`raw/architect-revised-{n}.md` に保存 → 再度 plan-reviewer を起動 |
 
-### Phase 5: 実装フェーズ (メインスレッド直接実装)
+### Phase 5: 実装フェーズ
 
-メインスレッドが Phase 4 で確定した `plan.md` の実装を **直接 Edit/Write で行う**。
+#### A. 引き継ぎ
 
-#### A. 事前整合性チェック
+メインが `plan.md` を再読し、ビルド順序を `TaskCreate` で展開する。委託が許可されている場合は `shinaps-implementer` を 1 体起動し、以下を渡す:
 
-1. `plan.md` を再読し、ビルド順序を `TaskCreate` で展開
-2. Phase 2-4 で確定した必読ファイル・plan-reviewer 指摘は既にメイン context に保有済み。再 Read は不要 — 新たに発生した疑問だけ Read で補う
-3. 既存実装との衝突や前提の不一致を発見した場合は `AskUserQuestion` で「plan を上書く / 既存に合わせる / Phase 4 に戻って plan-reviewer に再策定させる」を確認
+- タスクの目的・受入条件、確定した `plan.md` 全文
+- Phase 2 の調査結果と必読ファイル、Phase 4 のレビュー指摘と設計判断の理由
+- 適用するプロジェクト規約と Phase 2 の search_rules 結果 (userRules + officialRules 全文)
+- 作業ディレクトリ、担当するファイル・責務、既存の未コミット変更、必要な検証
+- 「同じ作業ツリーには他の作業があるため、他者の変更を戻さず、現在の内容に合わせて実装する」
 
-#### B. 実装
+実装担当が作業している間は、メインも同じ範囲を編集しない。実装担当のモデルを起動時に上書きせず、定義の `model: opus` を使う。
 
-- ビルド順序に従って Edit / Write で実装
-- 目的・仕様を左右する不明点だけ一問ずつ確認する。命名等の通常の実装判断は既存規約に合わせて進める
-- plan からの逸脱は `AskUserQuestion` で確認した上で `implementation.md` に経緯を記録
-- 1 サブタスク完了ごとに `TaskUpdate` で `completed` に進める
-- **判断 / ブロッカー / 方針転換で ローカル成果物（implementation.md / 調査・レビューレポート）** を残す
+#### B. 実装と確認
 
-#### C. `implementation.md` 執筆
+実装担当は確定した計画を実装し、仕様を保つ簡素化と必要な検証まで行う。メインは報告と実際の差分を確認し、完了した項目を `TaskUpdate` で更新する。
 
-実装と並行して `implementation.md` を更新し、以下を全文記録する:
+目的・仕様を左右する不明点、計画と既存実装の不一致があれば、実装担当は変更を広げずメインへ返す。メインが既存の合意で解決できない点だけ `AskUserQuestion` で一問ずつ確認し、決定を実装担当へ返す。通常の実装判断は既存規約に従って進める。
 
-- 変更ファイル一覧 (パス + 1 行サマリ)
-- 各ファイルでの **設計上の WHY** (なぜこの設計を選んだか / plan からの逸脱があれば理由)
-- 実装中に判断した重要事項
+実装担当の実装ミスによる検証失敗は 3 回まで自己修正する。それを超える場合はメインへ失敗の根拠と未解決点を返し、メインが「さらに修正試行 / Phase 6 のレビュー対象として diff を渡す / Phase 4 に戻って再策定する」を確認する。
+
+#### C. 記録と検証
+
+メインが実装担当の報告を `implementation.md` に保存する:
+
+- 変更ファイルと変更内容、設計上の理由
+- 実装中の重要な判断、計画からの変更とその合意
+- 実行した検証コマンドと結果、未実施の確認
 - 残課題・規約衝突・未解決の論点
 
-#### D. 動作確認
-
-- プロジェクト規約・CI・変更の影響から必要な検証を実行する。UI変更は `verify-ui` で対象環境を確定して実画面を確認する。全案件に同じコマンド・端末構成を強制しない
-- 結果を `implementation.md` の「動作確認結果」セクションに記録
-- 自分の実装ミスによる失敗は **3 回まで自己修正**。それを超える場合は `AskUserQuestion` で「さらに修正試行 / Phase 6 のレビュー対象として diff を渡す / Phase 4 に戻って plan-reviewer に再策定させる」を確認
+必要な検証はプロジェクト規約・CI・変更の影響から決める。UI変更は `verify-ui` で対象環境を確定して実画面を確認する。メインは報告だけで完了とせず、差分と検証の根拠を確認して Phase 6 へ進む。
 
 ### Phase 6: 簡素化後のセルフレビュー + refine
 
-まず `simplify` を適用し、目的を維持できる削除・簡素化をメインセッションで実施する。仕様変更の提案は確認してから進める。影響する検証を再実行し、その結果を `raw/simplify.md` に残す。
+まず `simplify` を適用し、実装担当が行った簡素化を確認する。追加で必要な削除・統合は同じ実装担当に依頼し、仕様変更の提案は確認してから進める。影響する検証を再実行した結果をメインが `raw/simplify.md` に残す。委託不可の場合はメインが実施する。
 
 その後、最終差分（staged / unstaged / untrackedを含む）と現在のファイル、plan、implementation、ruleカタログを使ってレビューする。許可された独立レビューでは `shinaps-reviewer` に読み取りだけを依頼し、`refine` で規約と照合する。委託できなければメインで両観点を確認し、独立レビュー済みとは報告しない。
 
@@ -188,15 +189,15 @@ Phase 1 で読んだ成果物と同ディレクトリの raw report を取り込
 ### Phase 7: 修正ループ
 
 - **Critical は必ず自動修正** (reviewer Critical + refine の `scope=changed` な Violation、承認不要 — 動作を壊している / 規約違反の指摘)
-- **Phase 5 サブフェーズ D で検出された動作確認の失敗** も Critical として修正
+- **Phase 5 で検出された検証の失敗** も Critical として修正
 - **Warning は `AskUserQuestion` で確認**: 「全部修正 / 個別に確認 / 後回し (Issue 化) / スコープ外として記録」 (reviewer Warning + refine Improvement)
 - **refine の `scope=pre-existing` な finding は自動修正しない**。今回の実装と無関係な差分が commit に混ざるため、Violation でも `AskUserQuestion` で「今回直す / 別タスクにする」を確認する
 - **Info は記録のみで修正しない**
-- **簡素化レビューの「仕様を変えない削除・統合」は自動適用**し、Phase 5 サブフェーズ D の動作確認を再実行する。削除は追加より検証しやすく、残すほうが保守の負債になるため。**「仕様変更を伴う提案」は `AskUserQuestion` で確認**: 「採用して仕様を変える / 現状維持 / 別タスクにする」
+- **簡素化レビューの「仕様を変えない削除・統合」は自動適用**し、Phase 5 の動作確認を再実行する。削除は追加より検証しやすく、残すほうが保守の負債になるため。**「仕様変更を伴う提案」は `AskUserQuestion` で確認**: 「採用して仕様を変える / 現状維持 / 別タスクにする」
 
 修正を行った場合、`fix-log.md` に「指摘 → 修正内容 → 該当ファイル」を記録。修正判断も `fix-log.md` に残す。
 
-修正実装はメインが直接 Edit/Write で行う (Phase 5 と同じ主体)。reviewer / refine の指摘文脈をメインがそのまま保持しているため、修正判断のブレが起きにくい。大規模な再実装が必要な場合は `AskUserQuestion` で「メインで修正継続 / Phase 4 に戻って plan-reviewer に再策定させる」を確認する。
+修正実装は Phase 5 の `shinaps-implementer` を再開して依頼する。メインは確定した指摘・修正判断・現在の差分・必要な再検証を渡す。再開できなければ Phase 5 の引き継ぎ情報と実装・修正履歴を新しい実装担当へ渡す。委託不可の場合はメインが修正する。大規模な再実装が必要な場合は、メインが「現行の計画で修正継続 / Phase 4 に戻って再策定」を確認する。
 
 ### Phase 8: 修正後の再レビュー (Critical / Warning 修正時のみ)
 
@@ -218,8 +219,8 @@ Phase 7 で **Critical または Warning を修正した場合のみ**、もう�
 ## 動作原則
 
 - **EnterPlanMode は使わない**: bypassPermissions モード (リモート実行など) と両立させるため
-- **実装はメインスレッドが担う**: explorer / architect / plan-review で築いた文脈・設計判断の WHY をそのまま実装と修正ループに引き継ぐため。サブエージェント委譲は計画フェーズとレビューフェーズに限定
-- **subagent は文字列応答のみを返す**: raw/*.md への Write / Edit は必ずメインスレッドが担当
+- **実装と修正は同じ担当へ引き継ぐ**: 委託が許可されている場合は Opus の `shinaps-implementer` を使い、メインが確定した計画・規約・判断理由を渡して差分を確認する
+- **レポートの保存はメインが担当**: subagent は結果を文字列で返す。実装担当は担当範囲のコード・テスト・必要なドキュメントを編集し、raw/*.md など進行管理の成果物はメインが保存する
 - **rule 照合を各 Phase に bake**: Phase 2 の `search_rules` → Phase 3 の architect prompt 埋め込み → Phase 4 の plan-reviewer (設計レベルの違反) → Phase 6 の refine 並列 (コードレベルの違反)
 - **判断・方針転換で ローカル成果物（implementation.md / 調査・レビューレポート）**
 - **目的・仕様を左右する不明点を確認**: 既存の指示で分かることや任された細部は再質問しない

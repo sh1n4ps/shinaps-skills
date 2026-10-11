@@ -142,7 +142,7 @@ codex mcp login shinaps-ai
 
 未登録の利用者は[Shinaps AI](https://app.shinaps.ai)でアカウントを作成する。未認証でもスキルの導入は完了できる。MCPが使えないときに照合済みと報告しない。`simplify`・`verify-ui`・`commit`・`create-pr`・`release` の基本手順はMCP接続を必須としない。
 
-## Subagents (13)
+## Subagents (Claude: 14 / Codex: 13)
 
 | Subagent | 役割 |
 |---|---|
@@ -150,6 +150,7 @@ codex mcp login shinaps-ai
 | `shinaps-investigator` | `shinaps:explore` の現在の質問をコード・テスト・設定・履歴から調べ、確実性を分けて回答 |
 | `shinaps-architect` | 実装ブループリント策定 (複数観点 → 単一案収束) |
 | `shinaps-plan-reviewer` | architect 案の批判 + 修正版最終 plan (confidence 閾値 70) |
+| `shinaps-implementer` (Claudeのみ) | 確定した計画の実装・簡素化・検証、レビュー後の修正 (Opus) |
 | `shinaps-reviewer` | logic / design / security / performance / maintainability / rule 統合レビュー (confidence 閾値 80) |
 | `shinaps-review-validator` | reviewer 指摘の実コード検証 (confirmed / false positive / partial / out-of-scope 分類) |
 | `shinaps-refine-agent` | rule 照合の並列 dispatch (ファイル現状全文と照合、Violation / Improvement / Question 分類 + changed / pre-existing 切り分け) |
@@ -160,7 +161,11 @@ codex mcp login shinaps-ai
 | `shinaps-debug-validator` | 仮説の実コード検証 (root-cause / contributing-factor / red-herring / needs-reproduction 分類) |
 | `shinaps-split-reviewer` | `shinaps:commit` の分割案を「単位の diff だけで妥当性を判断できるか」で批判 + 修正版最終分割計画 (worktree は read-only) |
 
-Claude版はMarkdown、Codex版はTOMLで役割を定義する。**subagent 内では shinaps MCP を直接呼び出さず、rule 全文は Skill 側から prompt 経由で渡す** 原則を全 system prompt に明記する。MCP呼び出しの利用量が重複しないようにするため。
+Claude版はMarkdown、Codex版はTOMLで役割を定義する。
+
+Claude版の `dev` は、委託が許可されている場合に `shinaps-implementer` 1体へ実装と修正を渡す。architect と plan-reviewer は `model: best`、実装担当を含む他のエージェントは `model: opus` を使う。メインは仕様判断・進行管理と実際の差分・検証結果の確認を担う。Codex版は親モデルを継承する既存の構成を維持し、Claude専用の実装担当は追加しない。
+
+**subagent 内では shinaps MCP を直接呼び出さず、rule 全文は Skill 側から prompt 経由で渡す** 原則を全 system prompt に明記する。MCP呼び出しの利用量が重複しないようにするため。
 
 
 ## 作業成果物

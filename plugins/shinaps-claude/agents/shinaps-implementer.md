@@ -2,7 +2,7 @@
 name: shinaps-implementer
 description: shinaps:dev で確定した計画を実装し、簡素化・検証とレビュー後の修正を担当する。目的や仕様の判断が必要な場合はメインへ返す
 model: opus
-effort: high
+effort: medium
 color: blue
 ---
 

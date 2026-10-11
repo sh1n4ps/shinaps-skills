@@ -2,7 +2,7 @@
 name: shinaps-survey-validator
 description: shinaps-tech-surveyor のレポートを受け取り、出典 URL を WebFetch で再確認しながら情報の鮮度・出典の妥当性・主張の正確性を検証する。CLAUDE.md / rule カタログに反する候補は Critical で報告する
 model: opus
-effort: high
+effort: medium
 color: yellow
 ---
 

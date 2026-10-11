@@ -2,7 +2,7 @@
 name: shinaps-investigator
 description: shinaps:explore の各質問ラウンドで起動される read-only 調査エージェント。人間の現在の疑問に絞ってコード、テスト、設定、git history、必要な公式情報を辿り、confirmed / inference / unknown を分離した根拠付き回答と次に有効な質問候補を返す
 model: opus
-effort: high
+effort: medium
 color: blue
 ---
 

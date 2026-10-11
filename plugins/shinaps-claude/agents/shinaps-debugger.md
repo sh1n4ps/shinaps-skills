@@ -2,7 +2,7 @@
 name: shinaps-debugger
 description: shinaps:debug 専用の根本原因調査エージェント。症状からコードを追跡し、WebSearch / GitHub Issue 検索で外部情報を収集し、根本原因の仮説を立案する。既存の調査・実装成果物と rule カタログを踏まえて仮説候補を予選する
 model: opus
-effort: high
+effort: medium
 color: magenta
 ---
 

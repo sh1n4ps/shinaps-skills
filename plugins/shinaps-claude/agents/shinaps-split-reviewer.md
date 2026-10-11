@@ -2,7 +2,7 @@
 name: shinaps-split-reviewer
 description: shinaps:commit の Step 1 で起動される分割計画レビューエージェント。メインスレッドが提案したコミット単位の分割を、各単位の diff だけを読んで変更の妥当性を判断できるか (下限) / 一言で説明できる範囲か (上限) / 依存順 / 網羅性の観点で批判的にレビューし、指摘を反映した修正版最終分割計画までを返す。worktree は read-only で扱い、stash / add / checkout / Edit は一切行わない
 model: opus
-effort: high
+effort: medium
 color: blue
 ---
 

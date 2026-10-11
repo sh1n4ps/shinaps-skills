@@ -32,41 +32,47 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 | エージェント | subagent_type | 役割 |
 |---|---|---|
 | Shinaps Explorer | `shinaps-explorer` | コードベース探索、必読ファイル抽出 (spec / explore の事前調査が十分なら再起動しない) |
-| Shinaps Architect | `shinaps-architect` | 独立設計・2案の統合・プラン統合・全指摘の最終判断 (Opus) |
-| Codex CLI | `codex exec` | Astra / medium・標準速度で独立設計し、同じセッションで設計適合性をレビュー |
+| Shinaps Architect | `shinaps-architect` | 独立設計・2案の統合・プラン統合・設計適合性・全指摘の最終判断 (Opus) |
+| Codex CLI | `codex exec` | Astra / medium・標準速度で独立設計。各レビュー・簡素化は別セッション |
 | Shinaps Plan Reviewer | `shinaps-plan-reviewer` | Opus 1体＋別の Codex CLI 1体で同じ計画を独立レビューし、指摘と修正案を返す |
 | Shinaps Implementer | `shinaps-implementer` | 確定した計画の実装・検証と、レビュー後に決まった修正 (Opus) |
-| Shinaps Reviewer | `shinaps-reviewer` | logic / design / security / performance / maintainability / rule の統合観点でレビュー |
+| Shinaps Review Verifier | `shinaps-review-verifier` | 全指摘の事実確認・重複整理・誤認と対立の明示 (Opus) |
+| 独立コードレビュー | 新規 Codex CLI | 設計者とは別の文脈で正しさ・安全性・保守性を確認 |
 
 委託が許可されている場合、実装と修正は **`shinaps-implementer` (Opus) 1 体**が担当し、architect が設計判断と全指摘の統合を担い、メインはスキル呼び出し・エージェントの起動と再開・待機・記録・ユーザーへの確認を担う。設計判断を実装へ引き継ぎつつモデルの利用を分けるため、確定した計画・判断理由・規約を実装担当へ渡す。委託不可またはエージェントを利用できない場合はメインが担当し、その旨を報告する。
 
-## モデルと指摘の事前整理
+## モデルと指摘の検証
 
-メインは Opus / medium、architect は定義の opus / medium を使う構成を推奨する。スキルからユーザーのモデル設定を変更しない。メインが別モデルの場合は Opus で整理したとは報告しない。Codex は `gpt-6-astra` / medium / `service_tier="default"` とし、このフローから Fable / best は呼ばない。CLIの利用条件・起動・再開・完了判定は [Codex CLI担当](references/codex-worker.md) に従う。
+メイン・architect・implementer・verifierは Opus / medium、Codex CLIは `gpt-6-astra` / medium / `service_tier="default"` を使う。ユーザーのグローバル設定をスキルから変更せず、このフローでFableを起動しない。CLIは [Codex CLI担当](references/codex-worker.md) に従う。
 
-プランレビューと実装後レビューの全結果が揃ったら、メインが次の形で整理してから architect へ渡す。整理専用のエージェントは追加しない。
+計画段階・実装後ともに4担当の全結果が揃ったら、メインが新しい `shinaps-review-verifier` 1体を起動する。今回のレビューをした担当を流用しない。
 
-- 生レポートは全文保存し、全指摘に出典ID（担当・ラウンド・項番）を付ける。同じ原因・影響・修正方針の指摘だけまとめ、元の全IDと原文のパス・節を残す。判断が割れる指摘や同じ場所の別問題は統合しない。
-- 各項目に要点、重要度、対象の file:line、根拠、修正案、維持する契約、異論・不確実性を残す。全出典IDが整理後の項目に対応することを照合し、確認範囲・未確認事項も引き継ぐ。件数や文字数で指摘を落とさない。
-- メインは採否・重要度の引き下げ・対立の解消を行わない。architect が全項目を判断し、曖昧な要約や対立は原文・実コードで確かめる。
-- 整理結果はプラン用 `raw/plan-findings-{round}.md`、実装用 `raw/findings-{round}.md` に保存する。architect には整理結果と原文への参照、前回からの変更・検証結果を渡す。既に渡した計画・規約・レポート全文を毎回貼り直さず、変更部分を示す。再開できず文脈を失った場合は必要な情報を引き継ぐ。
+- 生レポート全文と原文のパス、各担当の確認範囲、目的・最新計画・受入条件・合意済み変更、対象コードと差分、検証結果、規約全文、ラウンド番号を渡す。
+- verifierが各指摘の根拠を検証して出典IDを保持し、重複・誤認・対立・未確認事項を整理する。メインは指摘を先に選別・要約したり、検証をやり直したりしない。
+- メインは出典の対応と完了状況を確認し、不足を同じverifierへ戻す。検証不能は未確認として明示し、誤認も削除しない。失敗や未完了を検証済みとして先へ渡さない。
+- 検証結果は `raw/plan-verification-{round}.md` / `raw/implementation-verification-{round}.md` に保存する。同じarchitectへ結果全文・原文への参照と前回からの更新を渡す。architectが採否・設計判断を担い、対立・不確実性・重要な設計判断に必要な根拠を追加確認する。
+
+メインは起動・待機・保存・受け渡し・ユーザーへの確認を担当する。verifierもarchitectも自分で他担当を起動しない。委託が利用不能なら制約と未実施工程を報告し、独立検証済みと扱わない。
 
 ## ディレクトリ規約
 
 ```
 .shinaps/work/{YYYYMMDD-HHMMSS}-{slug}/
-├── plan.md                    ← Phase 4 で2体の指摘を統合した最終 plan
+├── plan.md                    ← Phase 4 の4担当の結果を検証・統合した最終 plan
 ├── raw/                       ← 計画フェーズの生レポート (全文保存)
 │   ├── explorer.md            ← または explorer-1.md, explorer-2.md ... (事前調査 handoff 時は既存レポートを参照)
 │   ├── architect-opus.md      ← Opus の独立設計案
 │   ├── architect-codex.md     ← Codex の独立設計案
 │   ├── architect.md           ← Opus が統合した計画
 │   ├── plan-review-{round}-{1,2}.md ← 各プランレビューの結果
-│   ├── refine.md              ← Phase 6 で走らせた Skill(shinaps:refine) の findings 集約
+│   ├── plan-simplify-{round}-{1,2}.md ← 計画の簡素化提案
+│   ├── plan-verification-{round}.md ← 計画指摘の検証結果
+│   ├── implementation-verification-{round}.md ← 実装指摘の検証結果
+│   ├── refine.md              ← Phase 6 の規約照合の生レポート
 │   ├── simplify.md            ← Phase 6 の簡素化レビューの生レポート
 │   └── architect-revised-{n}.md  ← 差し戻し再策定時のみ (n は 1 始まり)
 ├── implementation.md          ← 実装ログ・変更ファイル一覧・動作確認結果
-├── architecture-review.md     ← Codex の設計適合性レビュー
+├── architecture-review.md     ← Opus architectの設計適合性レビュー
 ├── architecture-review-{n}.md ← 修正後の設計適合性レビュー
 ├── review.md                  ← 独立 reviewer の生レポート
 ├── review-{n}.md              ← 修正後の再レビュー (n は 2 始まり)
@@ -134,21 +140,25 @@ Phase 1 で読んだ成果物と同ディレクトリの raw report を取り込
 
 **記録先**: Opus案は `raw/architect-opus.md`、Codex案は `raw/architect-codex.md`。両方の結果が揃ったら同じ Opus architect を「設計案統合」として再開し、両案の根拠・トレードオフを比較して一つの計画を返させ、`raw/architect.md` に保存する。多数決や単純な継ぎ合わせにせず、採否と理由を残す。設計者間の反復議論は追加しない。この統合案を Phase 4 のレビュー対象にする。
 
-Opus のエージェントIDと Codex の `thread.started.thread_id` は別々に保持する。前者は設計案・プラン・全指摘の統合、後者は実装後の設計適合性レビューで再開する。実装中も両IDと設計の文脈を保持する。再開できなければ同じモデルに設計判断・最新計画・指摘の採否を引き継ぎ、担当変更を記録する。CLI起動失敗や未完了を二者設計済みと扱わず、利用不能時にFableへ切り替えない。
+Opus のエージェントIDと Codex の `thread.started.thread_id` は別々に保持する。Opusは設計案・プラン・全指摘の統合と設計適合性レビューで再開する。設計したCodexは設計上の追加確認が必要な場合だけ再開し、独立コードレビューへは流用しない。実装中も両IDと設計の文脈を保持する。再開できなければ同じモデルに設計判断・最新計画・指摘の採否を引き継ぎ、担当変更を記録する。CLI起動失敗や未完了を二者設計済みと扱わず、利用不能時にFableへ切り替えない。
 
-### Phase 4: プランレビュー
+### Phase 4: プランレビューと計画の簡素化
 
 委託が許可されている場合、`shinaps-plan-reviewer` (Opus / medium) 1体と、設計担当とは別の新規 Codex CLI (Astra / medium、fastなし) 1体を並行起動する。[Codex CLI担当](references/codex-worker.md) のプランレビュー指示を使い、両者へ同じ情報を渡す。同時実行枠が不足する場合は順次起動し、2体分の独立した結果を揃える。
 
 - タスクの目的・受入条件、Phase 2 の調査結果と rule 全文
 - Phase 3 の architect 案全文 (再策定時は最新案)
-- 「設計・要件・実装可能性・リスク・テスト戦略・過剰設計をレビューし、判定と具体的な修正案を返す。他のプランレビュー担当の結果は読まず、意見を交換しない」
+- 「設計・要件・実装可能性・リスク・テスト戦略をレビューし、判定と具体的な修正案を返す。他のプランレビュー担当の結果は読まず、意見を交換しない」
 
-両者の完了までは対象の計画を変更しない。メインは結果を `raw/plan-review-{round}-1.md` と `raw/plan-review-{round}-2.md` に保存する (round は 1 始まり、1はOpus、2はCodex)。片方が失敗・未完了なら2体で検証済みと扱わず、未完了分を完了させてから統合する。
+並行して `Skill(skill="shinaps:simplify", args="計画の簡素化、提案のみ、起動のみ。今回の目的・受入条件・最新計画・規約・調査結果・成果物パス…")` を呼ぶ。プランレビューとは別のOpus 1体＋新規Codex 1体が、仕様・状態・操作・実装方針から減らせるものだけを検討する。devから担当を重複起動しない。
 
-メインが同じ architect を「プラン統合」として再開し、メインが事前整理した全指摘と原文への参照を渡す。architect が根拠を検証して対立を判断し、採否と修正版の最終計画を返す。メインは結果を保存し、単一の `plan.md` を確定する。architect が仕様判断や範囲拡大の相談を返した場合だけ、メインがユーザーへ一問ずつ確認して決定を戻す。
+4担当へ同じ計画を渡し、他担当の今回の結果は読ませない。全担当の完了まで計画を変更しない。メインは `raw/plan-review-{round}-{1,2}.md` / `raw/plan-simplify-{round}-{1,2}.md` に全文保存する (roundは1始まり、1はOpus、2はCodex)。枠不足なら未起動分を順次実行し、未完了は同じ担当へ戻す。
 
-差し戻しがある場合は、その根拠を検証し、必要な再策定を同じ architect に依頼する。修正版を `raw/architect-revised-{n}.md` に保存し、2体とも同じ修正版を改めてレビューする。採用した Critical / Warning が計画に反映され、未解決の判断がなくなってから Phase 5 へ進む。委託不可の場合はメインが同じ観点で確認し、独立レビュー未実施と明記する。
+全結果を専任verifierへ渡し、検証完了後、同じarchitectを「プラン統合」で再開する。architectは検証結果の全項目の採否・根拠と計画の修正案を返す。簡素化で機能・ユーザー体験・外部契約・受入条件が変わる提案は、変更点・失うもの・期待効果を示してメインからユーザーに確認する。承認前に計画へ採用しない。
+
+計画を変更する場合は同じarchitectが修正版を返し、メインが `raw/architect-revised-{round}.md` に保存する。プランレビュー2担当と計画簡素化2担当へ同じ修正版・承認済み変更・前回の採否を渡し、再確認 → verifier → architectを繰り返す。担当を再開できなければ同じ役割へ引き継ぐ。他担当の今回の未確定結果は共有しない。
+
+**計画段階には回数上限を設けない**。修正不要で、採用すべき指摘と必要な判断・確認が解決したら `plan.md` を確定し、Phase 5へ進む。回数を埋める再確認や、新しい根拠のない却下案の再提案は行わない。委託不可なら制約と独立確認未実施を明記する。
 
 計画段階では `refine` を併走させない。設計に効く規約はプランレビューで確認し、コードの規約照合は実装後に行う。
 
@@ -191,11 +201,11 @@ Opus のエージェントIDと Codex の `thread.started.thread_id` は別々�
 
 | スキル呼び出し | 担当 |
 |---|---|
-| `Skill(skill="shinaps:review", args="開発レビュー、起動のみ。…")` | 設計した Codex CLI を再開 + 独立 Opus reviewer 1体 |
-| `Skill(skill="shinaps:refine", args="照合のみ、起動のみ。…")` | Opus / medium 1体＋Codex Astra / medium 1体（fastなし） |
-| `Skill(skill="shinaps:simplify", args="提案のみ、起動のみ。…")` | Opus / medium 1体＋Codex Astra / medium 1体（fastなし） |
+| `Skill(skill="shinaps:review", args="開発レビュー、起動のみ。…")` | 同じOpus architectの設計適合性 + 新規Codexの独立コードレビュー |
+| `Skill(skill="shinaps:refine", args="照合のみ、起動のみ。…")` | Opus / medium 1体 |
+| `Skill(skill="shinaps:simplify", args="提案のみ、起動のみ。…")` | Codex Astra / medium 1体（fastなし） |
 
-引数の省略部分には具体的な対象ファイル・変更範囲、最終 plan・受入条件・合意済み変更、実装報告、検証結果、規約・rule 全文と成果物のパスを渡す。review には Codex のセッションID・設計判断と統合後の最終計画を渡す。Opus architect はこの段階では起動せず、全指摘の統合まで待機する。単独の review とは異なる開発レビューの手順を使い、外部調査や review-validator を追加起動しない。
+引数の省略部分には具体的な対象ファイル・変更範囲、最終 plan・受入条件・合意済み変更、実装報告、検証結果、規約・rule 全文と成果物のパスを渡す。reviewにはOpus architectのID・設計判断・最終計画を渡す。architectは自身のレビューを確定するまで他担当の今回の結果を読まない。単独の review とは異なる開発レビューの手順を使い、外部調査や review-validator を追加起動しない。
 
 先に起動した担当の完了を待ってから次のスキルを呼ぶのではなく、3スキルの担当を起動してから結果を待つ。dev 自身が同じ担当を重複起動しない。同時実行枠が足りなければ未起動分を記録して順次実行し、台数や確認範囲を黙って減らさない。ツールや委託が利用できなければその制約を明記し、独立確認済みと扱わない。
 
@@ -203,11 +213,11 @@ Opus のエージェントIDと Codex の `thread.started.thread_id` は別々�
 
 各スキルの確認範囲・未完了報告を確認し、未確認部分は同じ担当へ戻す。対象が大きい場合も継続または後任への引き継ぎで全対象を確認する。失敗・未完了を「指摘なし」として処理しない。
 
-Codex の設計適合性レビューと全担当の結果を保存する。初回は `architecture-review.md` / `review.md` / `raw/refine.md` / `raw/simplify.md`、2回目は各ファイル名に `-2` を付ける。全結果が揃った後、メインが Codex のレビューも含めて事前整理する。その後で同じ architect を「指摘統合」として再開し、整理した全指摘・原文への参照・差分の更新・検証結果・ラウンド番号を渡す。独立レビュー中に他担当の結果を渡さない。
+Opus architectの設計適合性レビューと全担当の結果を保存する。初回は `architecture-review.md` / `review.md` / `raw/refine.md` / `raw/simplify.md`、2回目は各ファイル名に `-2` を付ける。4担当の全結果が揃った後、新しいverifierへ渡す。検証完了後、同じarchitectを「指摘統合」として再開し、検証結果全文・原文への参照・差分の更新・検証結果・ラウンド番号を渡す。独立レビュー中に他担当の結果を渡さない。
 
 ### Phase 7: architect が統合し、implementer が修正
 
-architect が review・refine・simplify の整理された全指摘を根拠から検証し、対立を判断する。全指摘の採否と理由、採用した修正の対象・責務・具体的な変更・維持する契約・必要な検証を、一つの修正指示として返す。メインはそのまま記録し、仕様・受入条件の変更や未許可の範囲拡大が必要な点だけユーザーに確認する。通常の設計・修正判断をメインでやり直さない。
+architectがverifierの報告から全項目の採否を決め、対立・不確実性・設計上の重要点に必要な根拠を確認する。全件の事実確認を最初から繰り返さない。全指摘の採否と理由、採用した修正の対象・責務・具体的な変更・維持する契約・必要な検証を、一つの修正指示として返す。メインはそのまま記録し、仕様・受入条件の変更や未許可の範囲拡大が必要な点だけユーザーに確認する。通常の設計・修正判断をメインでやり直さない。
 
 修正不要なら Phase 9 へ進む。修正があれば、メインが同じ `shinaps-implementer` を再開し、architect の修正指示・確定した計画・現在の差分・規約・検証条件を渡す。再開できなければ実装履歴と採否を新しい担当へ引き継ぐ。architect は次のレビューに備えて保持し、自分でコードを編集したり、実装担当を追加起動したりしない。
 
@@ -215,7 +225,7 @@ implementer が修正と必要な検証を行い、変更・検証結果・未�
 
 ### Phase 8: 最大2ラウンドで終了する
 
-- **1回目のレビュー後に修正した場合**: 修正後の同じ差分について、Phase 6 の review・refine・simplify を2回目として並行実行する。最新の計画、前回の指摘と採否、修正内容、検証結果を渡す。全結果を同じ architect に集約し、Phase 7 で必要な最終修正を実施する。
+- **1回目のレビュー後に修正した場合**: 修正後の同じ差分について、Phase 6 の review・refine・simplify を2回目として並行実行する。最新の計画、前回の指摘と採否、修正内容、検証結果を渡す。全結果を新しいverifierで検証してから同じ architect に渡し、Phase 7 で必要な最終修正を実施する。
 - **2回目のレビュー後に修正した場合**: implementer が最終修正と必要なテストを行ったら Phase 9 へ進む。3回目のレビュー・refine・simplify は起動しない。
 - **修正不要の場合**: 回数を埋めるために再実行せず Phase 9 へ進む。
 
@@ -233,7 +243,7 @@ implementer が修正と必要な検証を行い、変更・検証結果・未�
 - **rule 照合を各 Phase に bake**: Phase 2 の `search_rules` → Phase 3 の architect prompt 埋め込み → Phase 4 の plan-reviewer (設計レベルの違反) → Phase 6 の refine 並列 (コードレベルの違反)
 - **判断・方針転換で ローカル成果物（implementation.md / 調査・レビューレポート）**
 - **目的・仕様を左右する不明点を確認**: 既存の指示で分かることや任された細部は再質問しない
-- **生レポート保存厳守**: explorer / handoff 済み investigation / architect / plan-reviewer / reviewer / refine の応答は全文参照可能な状態を保つ
+- **生レポート保存厳守**: explorer / handoff 済み investigation / architect / plan-reviewer / reviewer / refine / simplify / verifier の応答は全文参照可能な状態を保つ
 - **architect が指摘の採否と修正方針を統合する**: 合意済み仕様内は任せ、仕様や許可範囲が変わる判断だけユーザーに確認する
 - **レビュー・規約照合・簡素化は同じ差分に並行して行う**: 全結果を統合してから実装担当が修正する
 - **plan からの逸脱は確認 + 記録**: AskUserQuestion で確認した上で `implementation.md` に経緯を残す

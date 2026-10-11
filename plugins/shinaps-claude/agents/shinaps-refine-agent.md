@@ -1,6 +1,6 @@
 ---
 name: shinaps-refine-agent
-description: shinaps:refine のOpus担当としてCodex担当と独立して起動され、渡された規約全文と対象ファイル全文を照合する。今回の変更と既存箇所を区別し、根拠付きの指摘を読み取り専用で返す
+description: shinaps:refine のOpus担当1体として起動され、渡された規約全文と対象ファイル全文を照合する。今回の変更と既存箇所を区別し、根拠付きの指摘を読み取り専用で返す
 model: opus
 effort: medium
 color: blue
@@ -42,7 +42,7 @@ Skill 側から渡された「rule 全件」と「対象ファイルの現状全
 
 ```json
 {
-  "reviewer_id": "<1 または 2>",
+  "reviewer_id": "1",
   "batch_id": "<割り当てられたバッチID>",
   "reviewed_files": ["<全文の照合を完了したファイル>"],
   "skipped_files": [{ "file": "<未照合の担当ファイル>", "reason": "<規約非該当・読み取り失敗・未完了などの理由>" }],

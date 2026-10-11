@@ -24,7 +24,7 @@ Shinaps AIの利用者向け開発ワークフロー。Claude CodeとCodexそれ
 | `create-pr` | リポジトリの規約に合わせてPRを作成する |
 | `release` | 公開条件を確定し、対象バージョンの利用可能性を確認する |
 
-Claude版の `dev` は実装後にレビュー・規約照合・簡素化の提案を並行して集め、全結果を同じ architect が統合して実装担当へ修正を依頼する。実装後のレビューは最大2ラウンドで終了する。コミット・PR・リリースは依頼された場合だけ進む。`autonomous-commit-review` の役割は `commit` に統合した。個人用の別AI呼び出し・ブラウザ管理・ゴール管理・動画制作はこのpluginに含めない。
+Claude版の `dev` は実装後にレビュー・規約照合・簡素化の提案を並行して集め、全結果を専任verifierが検証し、同じ architect が採否を統合して実装担当へ修正を依頼する。実装後のレビューは最大2ラウンドで終了する。コミット・PR・リリースは依頼された場合だけ進む。`autonomous-commit-review` の役割は `commit` に統合した。個人用の別AI呼び出し・ブラウザ管理・ゴール管理・動画制作はこのpluginに含めない。
 
 ## Claude Code
 
@@ -141,19 +141,20 @@ codex mcp login shinaps-ai
 
 未登録の利用者は[Shinaps AI](https://app.shinaps.ai)でアカウントを作成する。未認証でもスキルの導入は完了できる。MCPが使えないときに照合済みと報告しない。`simplify`・`commit`・`create-pr`・`release` の基本手順はMCP接続を必須としない。
 
-## Subagents (Claude: 15 / Codex: 13)
+## Subagents (Claude: 16 / Codex: 13)
 
 | Subagent | 役割 |
 |---|---|
 | `shinaps-explorer` | コードベース探索、必読ファイル抽出 |
 | `shinaps-investigator` | `shinaps:explore` の現在の質問をコード・テスト・設定・履歴から調べ、確実性を分けて回答 |
-| `shinaps-architect` | 設計。Claude版ではOpusが独立設計・Codex案との統合・プランと全指摘の最終判断を行う |
+| `shinaps-architect` | 設計。Claude版ではOpusが独立設計・Codex案との統合・設計適合性・プランと全指摘の最終判断を行う |
 | `shinaps-plan-reviewer` | 計画レビュー (confidence 閾値 70)。Claude版はOpus 1体＋独立したCodex CLI 1体が指摘と修正案を返す |
 | `shinaps-implementer` (Claudeのみ) | 確定した計画の実装・簡素化・検証、レビュー後の修正 (Opus) |
 | `shinaps-reviewer` | logic / design / security / performance / maintainability / rule 統合レビュー (confidence 閾値 80) |
 | `shinaps-review-validator` | reviewer 指摘の実コード検証 (confirmed / false positive / partial / out-of-scope 分類) |
-| `shinaps-simplifier` (Claudeのみ) | simplify のOpus担当。Codex CLI担当と独立して削除・統合を提案 |
-| `shinaps-refine-agent` | rule 照合の並列 dispatch (ファイル現状全文と照合、Violation / Improvement / Question 分類 + changed / pre-existing 切り分け) |
+| `shinaps-review-verifier` (Claudeのみ) | devの4担当の指摘を検証・重複整理し、出典・反証・対立をarchitectへ渡す (Opus) |
+| `shinaps-simplifier` (Claudeのみ) | 計画簡素化のOpus担当。Codexと独立して仕様・構造の削減を提案 |
+| `shinaps-refine-agent` | rule 照合 (Claude版はOpus 1体) (ファイル現状全文と照合、Violation / Improvement / Question 分類 + changed / pre-existing 切り分け) |
 | `shinaps-spec-writer` | ヒアリング + 調査結果を spec.md 構造化 |
 | `shinaps-tech-surveyor` | 外部技術調査 (WebSearch + WebFetch で 3-5 候補比較) |
 | `shinaps-survey-validator` | tech-surveyor の出典を WebFetch で再確認 |
@@ -163,20 +164,20 @@ codex mcp login shinaps-ai
 
 Claude版はMarkdown、Codex版はTOMLで役割を定義する。
 
-Claude版は全15エージェントが `opus / medium`。`dev` は Opus architect と Codex CLI (`gpt-6-astra` / medium / service tier default、fastなし) が同じ要件を独立に設計し、Opus architect が根拠を比較して一つの計画にまとめる。プランレビューは別の Opus 1体＋Codex CLI 1体。実装と修正は Opus implementer 1体が担当する。
+Claude版は全16エージェントが `opus / medium`。`dev` はOpus architectとCodex CLI (`gpt-6-astra` / medium / service tier default、fastなし) が同じ要件を独立に設計し、同じOpus architectが一つの計画にまとめる。プランレビューは別のOpus 1体＋Codex 1体、計画簡素化もそれぞれ別のOpus 1体＋Codex 1体。同じ計画を4担当が確認し、専任Opus verifierが全指摘を検証・重複整理してarchitectへ渡す。architectが採否を決め、計画が変われば4担当による確認を繰り返す。計画段階に回数上限は設けず、新しい根拠のない再提案・反復は行わない。機能・UX・契約・受入条件の変更はユーザーへ確認する。
 
-実装後は `review` (開発レビュー)・`refine`・`simplify` を Skill ツールで呼び、並行して確認する。設計適合性は設計したCodexのセッションを再開し、独立コードレビューはOpus 1体。refine と simplify は各 Opus 1体＋新規Codex CLI 1体とする。メインのOpusが出典・根拠・異論を保って重複整理し、同じOpus architectが全指摘の採否と一つの修正指示を返す。Codexの役割ごとにセッションと成果物を分け、独立レビューへ他担当の結果を渡さない。
+実装と修正はOpus implementer 1体。実装後は `review` (開発レビュー)・`refine`・`simplify` をSkillツールで呼ぶ。同じOpus architectの設計適合性、別のCodexの独立コードレビュー、Opus 1体のrefine、Codex 1体のsimplifyを同じ差分で並行実行する。全4担当の結果を新しいOpus verifierが検証し、同じarchitectが全指摘の採否と一つの修正指示を返す。メインは起動・待機・記録・受け渡し・ユーザー確認を担い、指摘を先に選別・重複整理しない。
 
-実装後レビューは最大2ラウンド。最終修正後はテスト・残課題と再レビュー未実施を報告し、重大な未解決事項を完了扱いにしない。UIレビューは別途Codex側で行う。Claude版のこの構成にはログイン済みのCodex CLIが必要。利用不能時にFableへ切り替えず未完了の工程を報告する。個人用 `ggc` / `ccc` alias は使わず、[CLI担当の手順](plugins/shinaps-claude/skills/dev/references/codex-worker.md) に従う。
+実装後レビューは最大2ラウンド。2回目の後に修正した場合はテスト・残課題と最終差分の再レビュー未実施を報告し、重大な未解決事項を完了扱いにしない。UIレビューは別途Codex側で行う。役割ごとにセッションと成果物を分け、今回の他担当の結果を独立レビューへ渡さない。Claude版のこの構成にはログイン済みのCodex CLIが必要。利用不能時にFableへ切り替えず未完了の工程を報告する。個人用 `ggc` / `ccc` aliasは使わず、[CLI担当の手順](plugins/shinaps-claude/skills/dev/references/codex-worker.md) に従う。
 
-Codex版は親モデルを継承する既存の構成を維持し、Claude専用の実装・簡素化担当は追加しない。
+Codex版は親モデルを継承する既存の構成を維持し、Claude専用の実装・簡素化・指摘検証担当は追加しない。
 
 **subagent 内では shinaps MCP を直接呼び出さず、rule 全文は Skill 側から prompt 経由で渡す** 原則を全 system prompt に明記する。MCP呼び出しの利用量が重複しないようにするため。
 
 
 ## Claude版 dev の流れ
 
-OpusとCodexの effort は medium。CodexはAstra・標準速度。Opus architect と設計したCodexはそれぞれのIDで再開する。
+OpusとCodexのeffortはmedium。CodexはAstra・標準速度。同じOpus architectが設計から最終判断まで担当する。
 
 ```mermaid
 flowchart TD
@@ -184,23 +185,30 @@ flowchart TD
     S --> B["Codex Astra: 独立設計"]
     A --> C["同じOpus architectが2案を統合"]
     B --> C
-    C --> P["プランレビュー: Opus 1体＋別のCodex 1体"]
-    P --> Q["Opusメインが重複整理 → architectが計画確定"]
-    Q --> D["Opus implementer: 実装・テスト"]
-    D --> E["同じ差分で並行レビュー"]
-    E --> F["設計したCodex: 設計適合性"]
-    E --> G["Opus: 独立コードレビュー"]
-    E --> H["refine: Opus 1体＋Codex 1体"]
-    E --> I["simplify: Opus 1体＋Codex 1体"]
-    F --> O["Opusメインが指摘を重複整理"]
+    C --> P["同じ計画で4担当を並行起動"]
+    P --> P1["プランレビュー: Opus 1体＋Codex 1体"]
+    P --> P2["計画簡素化: 別のOpus 1体＋Codex 1体"]
+    P1 --> V["専任Opus verifier: 全指摘の検証・重複整理"]
+    P2 --> V
+    V --> Q["同じOpus architect: 採否・計画修正案"]
+    Q --> U["仕様変更はユーザー確認後に反映"]
+    U --> R{"計画が変わった？"}
+    R -- はい・回数上限なし --> P
+    R -- いいえ・必要な判断が解決 --> D["Opus implementer: 実装・テスト"]
+    D --> E["同じ差分で4担当を並行起動"]
+    E --> F["同じOpus architect: 設計適合性"]
+    E --> G["別のCodex: 独立コードレビュー"]
+    E --> H["refine: Opus 1体"]
+    E --> I["simplify: Codex 1体"]
+    F --> O["専任Opus verifier: 全指摘の検証・重複整理"]
     G --> O
     H --> O
     I --> O
-    O --> J["同じOpus architectが全指摘を判断"]
+    O --> J["同じOpus architect: 採否・修正指示"]
     J --> K{"修正が必要？"}
-    K -- いいえ --> N["検証結果・残課題を報告"]
-    K -- はい --> L["同じOpus implementerが修正・テスト"]
-    L --> M{"レビューを2回実施した？"}
+    K -- いいえ --> N["検証結果・残課題・未確認事項を報告"]
+    K -- はい --> L["同じOpus implementer: 修正・テスト"]
+    L --> M{"実装レビューを2回実施した？"}
     M -- まだ1回 --> E
     M -- 2回済み --> N
 ```

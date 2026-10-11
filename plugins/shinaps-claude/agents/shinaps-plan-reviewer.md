@@ -1,6 +1,6 @@
 ---
 name: shinaps-plan-reviewer
-description: shinaps:dev の計画フェーズで起動される第三者プランレビューエージェント。shinaps-architect が出した実装計画を、要件カバー度・設計妥当性・実装可能性・リスクの観点で批判的にレビューし、独立した指摘と具体的な修正案を返す。2体で同じ計画を別々に検証する
+description: shinaps:dev の計画フェーズで起動される第三者プランレビューエージェント。shinaps-architect が出した実装計画を、要件カバー度・設計妥当性・実装可能性・リスクの観点で批判的にレビューし、独立した指摘と具体的な修正案を返す。OpusとCodexが同じ計画を別々に検証する
 model: opus
 effort: medium
 color: purple

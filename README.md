@@ -147,12 +147,12 @@ codex mcp login shinaps-ai
 |---|---|
 | `shinaps-explorer` | コードベース探索、必読ファイル抽出 |
 | `shinaps-investigator` | `shinaps:explore` の現在の質問をコード・テスト・設定・履歴から調べ、確実性を分けて回答 |
-| `shinaps-architect` | 設計。Claude版では同じ担当がプラン統合・実装レビュー・全指摘の統合を行う |
-| `shinaps-plan-reviewer` | 計画レビュー (confidence 閾値 70)。Claude版はOpus 2体が独立して指摘と修正案を返す |
+| `shinaps-architect` | 設計。Claude版ではOpusが独立設計・Codex案との統合・プランと全指摘の最終判断を行う |
+| `shinaps-plan-reviewer` | 計画レビュー (confidence 閾値 70)。Claude版はOpus 1体＋独立したCodex CLI 1体が指摘と修正案を返す |
 | `shinaps-implementer` (Claudeのみ) | 確定した計画の実装・簡素化・検証、レビュー後の修正 (Opus) |
 | `shinaps-reviewer` | logic / design / security / performance / maintainability / rule 統合レビュー (confidence 閾値 80) |
 | `shinaps-review-validator` | reviewer 指摘の実コード検証 (confirmed / false positive / partial / out-of-scope 分類) |
-| `shinaps-simplifier` (Claudeのみ) | simplify から2体を起動し、目的を保つ削除・統合を独立して提案 (Opus / medium) |
+| `shinaps-simplifier` (Claudeのみ) | simplify のOpus担当。Codex CLI担当と独立して削除・統合を提案 |
 | `shinaps-refine-agent` | rule 照合の並列 dispatch (ファイル現状全文と照合、Violation / Improvement / Question 分類 + changed / pre-existing 切り分け) |
 | `shinaps-spec-writer` | ヒアリング + 調査結果を spec.md 構造化 |
 | `shinaps-tech-surveyor` | 外部技術調査 (WebSearch + WebFetch で 3-5 候補比較) |
@@ -163,9 +163,11 @@ codex mcp login shinaps-ai
 
 Claude版はMarkdown、Codex版はTOMLで役割を定義する。
 
-Claude版の `dev` は、委託が許可されている場合に `shinaps-implementer` 1体へ実装と修正を渡す。architect は `best / medium`、プランレビューは `opus / medium` 2体、実装担当は `opus / medium` を使う。実装後は同じ architect の設計適合性レビューと、独立した reviewer (`opus / medium`) のコードレビューを並行して行い、両者の結果が揃ってから修正する。
+Claude版は全15エージェントが `opus / medium`。`dev` は Opus architect と Codex CLI (`gpt-6-astra` / medium / service tier default、fastなし) が同じ要件を独立に設計し、Opus architect が根拠を比較して一つの計画にまとめる。プランレビューは別の Opus 1体＋Codex CLI 1体。実装と修正は Opus implementer 1体が担当する。
 
-Claude版の `dev` は `review` (開発レビュー)・`refine`・`simplify` を Skill ツールで明示的に呼び、担当のバックグラウンド起動後に全結果を待つ。`simplify` と `refine` はそれぞれ Opus / medium の2体で同じ対象を独立して確認する。architect が提案・指摘を根拠から統合し、実装担当へ一つの修正指示を返す。メインは Opus / medium で起動・待機・記録・指摘の重複整理とユーザーへの確認を担う。全指摘の出典・根拠・異論を残した整理結果を architect へ渡し、採否は architect が判断する。生レポートは保存し、必要な原文を参照できるようにする。実装後のレビューは初回と修正後の最大2ラウンドとし、2回目の修正後はテスト結果と残課題を報告する。最終修正が再レビューされていないことを明示し、重大な未解決事項を完了扱いにしない。UIレビューは別途Codex側で行う。
+実装後は `review` (開発レビュー)・`refine`・`simplify` を Skill ツールで呼び、並行して確認する。設計適合性は設計したCodexのセッションを再開し、独立コードレビューはOpus 1体。refine と simplify は各 Opus 1体＋新規Codex CLI 1体とする。メインのOpusが出典・根拠・異論を保って重複整理し、同じOpus architectが全指摘の採否と一つの修正指示を返す。Codexの役割ごとにセッションと成果物を分け、独立レビューへ他担当の結果を渡さない。
+
+実装後レビューは最大2ラウンド。最終修正後はテスト・残課題と再レビュー未実施を報告し、重大な未解決事項を完了扱いにしない。UIレビューは別途Codex側で行う。Claude版のこの構成にはログイン済みのCodex CLIが必要。利用不能時にFableへ切り替えず未完了の工程を報告する。個人用 `ggc` / `ccc` alias は使わず、[CLI担当の手順](plugins/shinaps-claude/skills/dev/references/codex-worker.md) に従う。
 
 Codex版は親モデルを継承する既存の構成を維持し、Claude専用の実装・簡素化担当は追加しない。
 
@@ -174,27 +176,30 @@ Codex版は親モデルを継承する既存の構成を維持し、Claude専用
 
 ## Claude版 dev の流れ
 
-全エージェントの effort は medium。architect は保持したIDで再開し、実装中は新しい作業を依頼しない。
+OpusとCodexの effort は medium。CodexはAstra・標準速度。Opus architect と設計したCodexはそれぞれのIDで再開する。
 
 ```mermaid
 flowchart TD
-    A["architect: best / medium<br/>設計・実装計画"] --> B["プランレビュー: Opus / medium × 2"]
-    B --> P["Opus のメインが指摘を重複整理"]
-    P --> C["同じ architect が統合・計画確定"]
-    C --> D["implementer: Opus / medium<br/>実装・テスト"]
-    D --> E["同じ差分でレビュー開始"]
-    E --> F["同じ architect: 設計適合性"]
-    E --> G["review: Opus / medium × 1"]
-    E --> H["refine: Opus / medium × 2"]
-    E --> I["simplify: Opus / medium × 2"]
-    F --> O["Opus のメインが指摘を重複整理"]
+    S["共通の要件・調査・規約"] --> A["Opus: 独立設計"]
+    S --> B["Codex Astra: 独立設計"]
+    A --> C["同じOpus architectが2案を統合"]
+    B --> C
+    C --> P["プランレビュー: Opus 1体＋別のCodex 1体"]
+    P --> Q["Opusメインが重複整理 → architectが計画確定"]
+    Q --> D["Opus implementer: 実装・テスト"]
+    D --> E["同じ差分で並行レビュー"]
+    E --> F["設計したCodex: 設計適合性"]
+    E --> G["Opus: 独立コードレビュー"]
+    E --> H["refine: Opus 1体＋Codex 1体"]
+    E --> I["simplify: Opus 1体＋Codex 1体"]
+    F --> O["Opusメインが指摘を重複整理"]
     G --> O
     H --> O
     I --> O
-    O --> J["同じ architect が全指摘を判断・統合"]
+    O --> J["同じOpus architectが全指摘を判断"]
     J --> K{"修正が必要？"}
     K -- いいえ --> N["検証結果・残課題を報告"]
-    K -- はい --> L["同じ implementer が修正・テスト"]
+    K -- はい --> L["同じOpus implementerが修正・テスト"]
     L --> M{"レビューを2回実施した？"}
     M -- まだ1回 --> E
     M -- 2回済み --> N

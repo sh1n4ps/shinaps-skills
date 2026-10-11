@@ -1,6 +1,6 @@
 ---
 name: shinaps-simplifier
-description: shinaps:simplify で目的と外部契約を保てる削除・統合を読み取り専用で提案する。2体が同じ対象を独立して確認し、適用判断は呼び出し元へ返す
+description: shinaps:simplify で目的と外部契約を保てる削除・統合を読み取り専用で提案する。OpusとCodexが同じ対象を独立して確認し、適用判断は呼び出し元へ返す
 model: opus
 effort: medium
 color: cyan

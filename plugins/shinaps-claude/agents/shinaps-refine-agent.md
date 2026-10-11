@@ -1,6 +1,6 @@
 ---
 name: shinaps-refine-agent
-description: shinaps:refine から2体で独立して起動され、渡された規約全文と対象ファイル全文を照合する。今回の変更と既存箇所を区別し、根拠付きの指摘を読み取り専用で返す
+description: shinaps:refine のOpus担当としてCodex担当と独立して起動され、渡された規約全文と対象ファイル全文を照合する。今回の変更と既存箇所を区別し、根拠付きの指摘を読み取り専用で返す
 model: opus
 effort: medium
 color: blue

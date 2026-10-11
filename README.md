@@ -142,7 +142,7 @@ codex mcp login shinaps-ai
 
 未登録の利用者は[Shinaps AI](https://app.shinaps.ai)でアカウントを作成する。未認証でもスキルの導入は完了できる。MCPが使えないときに照合済みと報告しない。`simplify`・`verify-ui`・`commit`・`create-pr`・`release` の基本手順はMCP接続を必須としない。
 
-## Subagents (Claude: 14 / Codex: 13)
+## Subagents (Claude: 15 / Codex: 13)
 
 | Subagent | 役割 |
 |---|---|
@@ -153,6 +153,7 @@ codex mcp login shinaps-ai
 | `shinaps-implementer` (Claudeのみ) | 確定した計画の実装・簡素化・検証、レビュー後の修正 (Opus) |
 | `shinaps-reviewer` | logic / design / security / performance / maintainability / rule 統合レビュー (confidence 閾値 80) |
 | `shinaps-review-validator` | reviewer 指摘の実コード検証 (confirmed / false positive / partial / out-of-scope 分類) |
+| `shinaps-simplifier` (Claudeのみ) | simplify から2体を起動し、目的を保つ削除・統合を独立して提案 (Opus / medium) |
 | `shinaps-refine-agent` | rule 照合の並列 dispatch (ファイル現状全文と照合、Violation / Improvement / Question 分類 + changed / pre-existing 切り分け) |
 | `shinaps-spec-writer` | ヒアリング + 調査結果を spec.md 構造化 |
 | `shinaps-tech-surveyor` | 外部技術調査 (WebSearch + WebFetch で 3-5 候補比較) |
@@ -163,7 +164,11 @@ codex mcp login shinaps-ai
 
 Claude版はMarkdown、Codex版はTOMLで役割を定義する。
 
-Claude版の `dev` は、委託が許可されている場合に `shinaps-implementer` 1体へ実装と修正を渡す。architect は `best / high`、プランレビューは `opus / high` 2体、実装担当は `opus / medium` を使う。実装後は同じ architect の設計適合性レビューと、独立した reviewer (`opus / high`) のコードレビューを並行して行い、両者の結果が揃ってから修正する。メインは仕様判断・進行管理と実際の差分・検証結果の確認を担う。Codex版は親モデルを継承する既存の構成を維持し、Claude専用の実装担当は追加しない。
+Claude版の `dev` は、委託が許可されている場合に `shinaps-implementer` 1体へ実装と修正を渡す。architect は `best / high`、プランレビューは `opus / high` 2体、実装担当は `opus / medium` を使う。実装後は同じ architect の設計適合性レビューと、独立した reviewer (`opus / high`) のコードレビューを並行して行い、両者の結果が揃ってから修正する。
+
+Claude版の `dev` は `simplify`・`refine` と必要な `verify-ui` を Skill ツールで明示的に呼ぶ。`simplify` と `refine` はそれぞれ Opus / medium の2体で同じ対象を独立して確認する。提案・指摘を統合してから実装担当が修正する。メインは仕様判断・進行管理と実際の差分・検証結果の確認を担う。
+
+Codex版は親モデルを継承する既存の構成を維持し、Claude専用の実装・簡素化担当は追加しない。
 
 **subagent 内では shinaps MCP を直接呼び出さず、rule 全文は Skill 側から prompt 経由で渡す** 原則を全 system prompt に明記する。MCP呼び出しの利用量が重複しないようにするため。
 

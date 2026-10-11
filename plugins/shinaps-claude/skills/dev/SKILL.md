@@ -32,8 +32,8 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 | エージェント | subagent_type | 役割 |
 |---|---|---|
 | Shinaps Explorer | `shinaps-explorer` | コードベース探索、必読ファイル抽出 (spec / explore の事前調査が十分なら再起動しない) |
-| Shinaps Architect | `shinaps-architect` | 複数観点を内包した実装ブループリント策定 |
-| Shinaps Plan Reviewer | `shinaps-plan-reviewer` | architect 初回案を批判 + Critical/Warning を反映した修正版最終 plan までを返す |
+| Shinaps Architect | `shinaps-architect` | 設計を担当し、実装後は再開して設計適合性をレビュー |
+| Shinaps Plan Reviewer | `shinaps-plan-reviewer` | Opus 2体で同じ計画を独立レビューし、指摘と修正案を返す |
 | Shinaps Implementer | `shinaps-implementer` | 確定した計画の実装・検証と、レビュー後に決まった修正 (Opus) |
 | Shinaps Reviewer | `shinaps-reviewer` | logic / design / security / performance / maintainability / rule の統合観点でレビュー |
 
@@ -43,16 +43,18 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 ```
 .shinaps/work/{YYYYMMDD-HHMMSS}-{slug}/
-├── plan.md                    ← Phase 4 で確定する最終 plan (plan-reviewer Part 2)
+├── plan.md                    ← Phase 4 で2体の指摘を統合した最終 plan
 ├── raw/                       ← 計画フェーズの生レポート (全文保存)
 │   ├── explorer.md            ← または explorer-1.md, explorer-2.md ... (事前調査 handoff 時は既存レポートを参照)
 │   ├── architect.md           ← architect の初回案
-│   ├── plan-review.md         ← plan-reviewer の Part 1 (レビュー結果のみ)
+│   ├── plan-review-{round}-{1,2}.md ← 各プランレビューの結果
 │   ├── refine.md              ← Phase 6 で走らせた Skill(shinaps:refine) の findings 集約
 │   ├── simplify.md            ← Phase 6 の簡素化レビューの生レポート
 │   └── architect-revised-{n}.md  ← 差し戻し再策定時のみ (n は 1 始まり)
 ├── implementation.md          ← 実装ログ・変更ファイル一覧・動作確認結果
-├── review.md                  ← shinaps-reviewer の生レポート
+├── architecture-review.md     ← architect の実装レビュー
+├── architecture-review-{n}.md ← 修正後の設計適合性レビュー
+├── review.md                  ← 独立 reviewer の生レポート
 ├── review-{n}.md              ← 修正後の再レビュー (n は 2 始まり)
 └── fix-log.md                 ← 修正ループの履歴 (修正があった場合のみ)
 ```
@@ -107,7 +109,7 @@ Phase 1 で読んだ成果物と同ディレクトリの raw report を取り込
 
 ### Phase 3: 実装ブループリント策定
 
-`shinaps-architect` を 1 体起動。
+`shinaps-architect` を 1 体起動。実装レビューで同じ担当を再開できるよう、応答時のエージェントIDを保持する。
 
 **プロンプトに含める情報**:
 - タスク内容
@@ -119,31 +121,19 @@ Phase 1 で読んだ成果物と同ディレクトリの raw report を取り込
 
 ### Phase 4: プランレビュー
 
-`shinaps-plan-reviewer` を 1 体起動する。
+委託が許可されている場合、`shinaps-plan-reviewer` (Opus / high) を **2体並列**で起動し、両者へ同じ情報を渡す。起動時にモデルを上書きしない。同時実行枠が不足する場合は順次起動し、2体分の独立した結果を揃える。
 
-**プロンプトに含める情報**:
-- タスク内容
-- Phase 2 の調査結果 (explorer または handoff 済み investigation)
-- Phase 3 の architect 初回案 (`raw/architect.md` 全文)
-- Phase 2 の search_rules 結果 (userRules + officialRules 全文)
-- 「architect 案を批判的にレビューし、Critical / Warning を反映した修正版最終 plan を Part 2 として返せ。rule はアーキテクチャ / 責務分割 / 依存方向など実装後に気付くと手戻りが大きい設計レベルの違反を拾い、コードレベルの規約 (コメントの WHY / 命名 / import 経路) には踏み込まなくてよい」
+- タスクの目的・受入条件、Phase 2 の調査結果と rule 全文
+- Phase 3 の architect 案全文 (再策定時は最新案)
+- 「設計・要件・実装可能性・リスク・テスト戦略・過剰設計をレビューし、判定と具体的な修正案を返す。他のプランレビュー担当の結果は読まず、意見を交換しない」
 
-計画段階で `Skill(shinaps:refine)` を併走させない理由: rule の大半はコードレベルの規約で、自然言語の plan からは検出できない。plan で拾う価値がある設計レベルの違反は plan-reviewer の担当範囲と重なるため、独立した照合層を挟んでも search_rules の二重取得と agent 起動コストに見合わない。コードレベルの rule 照合は Phase 6 で実装後の実ファイルに対して行う。
+両者の完了までは対象の計画を変更しない。メインは結果を `raw/plan-review-{round}-1.md` と `raw/plan-review-{round}-2.md` に保存する (round は 1 始まり)。片方が失敗・未完了なら2体で検証済みと扱わず、未完了分を完了させてから統合する。
 
-#### 統合
+メインが各指摘を要件・コード・規約と照合し、重複をまとめる。多数決では判断せず、採否と根拠を記録する。採用した修正を architect 案に反映し、単一の最終 `plan.md` を保存する。仕様判断や設計の対立が既存の合意で解決できない場合はユーザーへ一問ずつ確認する。
 
-応答を受け取ったら、メインスレッドで以下を Write:
+差し戻しがある場合は、その根拠を検証し、必要な再策定を同じ architect に依頼する。修正版を `raw/architect-revised-{n}.md` に保存し、2体とも同じ修正版を改めてレビューする。採用した Critical / Warning が計画に反映され、未解決の判断がなくなってから Phase 5 へ進む。委託不可の場合はメインが同じ観点で確認し、独立レビュー未実施と明記する。
 
-1. plan-reviewer Part 1 (レビュー結果のみ) を `raw/plan-review.md` に Write
-2. plan-reviewer Part 2 (修正版最終 plan、Full text) を `plan.md` として Write (これが最終 plan.md)
-
-#### 判定別のアクション
-
-| plan-reviewer 判定 | アクション |
-|---|---|
-| **承認** | Part 2 で確定した plan.md をそのまま Phase 5 へ |
-| **条件付き承認** | Part 2 で確定した plan.md をそのまま Phase 5 へ (条件は Phase 5 実装時に判断) |
-| **差し戻し** | `AskUserQuestion` で「再策定する / 指摘を未解決リスクとして明記して進む / タスク見直し」を確認。再策定の場合は Part 1 の差し戻し理由を渡して `shinaps-architect` を再起動、`raw/architect-revised-{n}.md` に保存 → 再度 plan-reviewer を起動 |
+計画段階では `refine` を併走させない。設計に効く規約はプランレビューで確認し、コードの規約照合は実装後に行う。
 
 ### Phase 5: 実装フェーズ
 
@@ -182,15 +172,24 @@ Phase 1 で読んだ成果物と同ディレクトリの raw report を取り込
 
 まず `simplify` を適用し、実装担当が行った簡素化を確認する。追加で必要な削除・統合は同じ実装担当に依頼し、仕様変更の提案は確認してから進める。影響する検証を再実行した結果をメインが `raw/simplify.md` に残す。委託不可の場合はメインが実施する。
 
-その後、最終差分（staged / unstaged / untrackedを含む）と現在のファイル、plan、implementation、ruleカタログを使ってレビューする。許可された独立レビューでは `shinaps-reviewer` に読み取りだけを依頼し、`refine` で規約と照合する。委託できなければメインで両観点を確認し、独立レビュー済みとは報告しない。
+簡素化後の同じ最終差分 (staged / unstaged / untrackedを含む) を、以下の2担当が **並行して読み取り専用でレビュー**する:
 
-結果は `review.md` と `raw/refine.md` に記録する。簡素化前の差分だけをレビューして完了しない。
+| 担当 | 主な観点 |
+|---|---|
+| Phase 3 の architect を再開 | 最終 plan・受入条件・合意済み変更に対して実装と検証が成立しているか |
+| 新しい `shinaps-reviewer` 1体 | コードの正しさ・安全性・性能・保守性・規約を独立して確認 |
+
+両者に最終 plan、実装報告、現在の差分とファイル、検証結果、rule 全文を渡す。architect には「実装レビューとして、初回案ではなく確定した計画と現在のコードを照合する」と明記する。再開できない場合は設計時の判断理由も渡して新しい architect を起動し、同じ担当の再開ではないことを記録する。
+
+両者は今回の相手のレビュー結果を読まず、意見を交換しない。メインと実装担当も、両者が完了するまで対象を編集しない。同時実行枠が不足する場合は順次実行し、独立性を保つ。`refine` はこの差分の**照合のみ**を依頼し、自動修正を行わせない。修正は全結果の統合後、Phase 7 で実装担当へ渡す。
+
+結果はそれぞれ `architecture-review.md`、`review.md`、`raw/refine.md` に保存する。メインが全指摘を実コードと照合し、重複を整理し、異なる判断は根拠から解決する。完了していない担当の確認を成功扱いにしない。委託不可の場合はメインが各観点を確認し、独立レビュー未実施と明記する。
 
 ### Phase 7: 修正ループ
 
-- **Critical は必ず自動修正** (reviewer Critical + refine の `scope=changed` な Violation、承認不要 — 動作を壊している / 規約違反の指摘)
+- **Critical は必ず自動修正** (architect / reviewer Critical + refine の `scope=changed` な Violation、承認不要 — 動作を壊している / 規約違反の指摘)
 - **Phase 5 で検出された検証の失敗** も Critical として修正
-- **Warning は `AskUserQuestion` で確認**: 「全部修正 / 個別に確認 / 後回し (Issue 化) / スコープ外として記録」 (reviewer Warning + refine Improvement)
+- **Warning は `AskUserQuestion` で確認**: 「全部修正 / 個別に確認 / 後回し (Issue 化) / スコープ外として記録」 (architect / reviewer Warning + refine Improvement)
 - **refine の `scope=pre-existing` な finding は自動修正しない**。今回の実装と無関係な差分が commit に混ざるため、Violation でも `AskUserQuestion` で「今回直す / 別タスクにする」を確認する
 - **Info は記録のみで修正しない**
 - **簡素化レビューの「仕様を変えない削除・統合」は自動適用**し、Phase 5 の動作確認を再実行する。削除は追加より検証しやすく、残すほうが保守の負債になるため。**「仕様変更を伴う提案」は `AskUserQuestion` で確認**: 「採用して仕様を変える / 現状維持 / 別タスクにする」
@@ -201,12 +200,12 @@ Phase 1 で読んだ成果物と同ディレクトリの raw report を取り込
 
 ### Phase 8: 修正後の再レビュー (Critical / Warning 修正時のみ)
 
-Phase 7 で **Critical または Warning を修正した場合のみ**、もう一度 `shinaps-reviewer` を起動する (refine の再発火は Phase 8 では不要)。
+Phase 7 で **Critical または Warning を修正した場合のみ**、Phase 6 と同じ分担で architect を再開し、独立した `shinaps-reviewer` を起動する。両者が同じ修正後の差分をレビューし、結果が揃うまで編集しない (refine の再発火は Phase 8 では不要)。
 
 これは「修正で別バグを生むリスク」を検出するため。
 
-- プロンプトには「修正後の差分」「修正前の指摘」「修正内容」を渡す
-- 応答は `review-{n}.md` として保存 (n は 2 始まり)
+- プロンプトには最新の最終 plan と「修正後の差分」「修正前の指摘」「修正内容」「検証結果」を渡す。今回の相手のレビュー結果は渡さない
+- 応答は `architecture-review-{n}.md` と `review-{n}.md` に保存 (n は 2 始まり)
 - 再レビューでさらに Critical が出た場合は再修正 → 再レビューを Critical が無くなるまで繰り返す
 - 各ラウンドの修正は `fix-log.md` に追記し、ラウンド数が判別できるようにする
 

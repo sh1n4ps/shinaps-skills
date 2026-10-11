@@ -148,8 +148,8 @@ codex mcp login shinaps-ai
 |---|---|
 | `shinaps-explorer` | コードベース探索、必読ファイル抽出 |
 | `shinaps-investigator` | `shinaps:explore` の現在の質問をコード・テスト・設定・履歴から調べ、確実性を分けて回答 |
-| `shinaps-architect` | 実装ブループリント策定 (複数観点 → 単一案収束) |
-| `shinaps-plan-reviewer` | architect 案の批判 + 修正版最終 plan (confidence 閾値 70) |
+| `shinaps-architect` | 設計。Claude版では実装後に再開し、設計適合性もレビュー |
+| `shinaps-plan-reviewer` | 計画レビュー (confidence 閾値 70)。Claude版はOpus 2体が独立して指摘と修正案を返す |
 | `shinaps-implementer` (Claudeのみ) | 確定した計画の実装・簡素化・検証、レビュー後の修正 (Opus) |
 | `shinaps-reviewer` | logic / design / security / performance / maintainability / rule 統合レビュー (confidence 閾値 80) |
 | `shinaps-review-validator` | reviewer 指摘の実コード検証 (confirmed / false positive / partial / out-of-scope 分類) |
@@ -163,7 +163,7 @@ codex mcp login shinaps-ai
 
 Claude版はMarkdown、Codex版はTOMLで役割を定義する。
 
-Claude版の `dev` は、委託が許可されている場合に `shinaps-implementer` 1体へ実装と修正を渡す。architect と plan-reviewer は `model: best`、実装担当を含む他のエージェントは `model: opus` を使う。メインは仕様判断・進行管理と実際の差分・検証結果の確認を担う。Codex版は親モデルを継承する既存の構成を維持し、Claude専用の実装担当は追加しない。
+Claude版の `dev` は、委託が許可されている場合に `shinaps-implementer` 1体へ実装と修正を渡す。architect は `best / high`、プランレビューは `opus / high` 2体、実装担当は `opus / medium` を使う。実装後は同じ architect の設計適合性レビューと、独立した reviewer (`opus / high`) のコードレビューを並行して行い、両者の結果が揃ってから修正する。メインは仕様判断・進行管理と実際の差分・検証結果の確認を担う。Codex版は親モデルを継承する既存の構成を維持し、Claude専用の実装担当は追加しない。
 
 **subagent 内では shinaps MCP を直接呼び出さず、rule 全文は Skill 側から prompt 経由で渡す** 原則を全 system prompt に明記する。MCP呼び出しの利用量が重複しないようにするため。
 

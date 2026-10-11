@@ -165,7 +165,7 @@ Claude版はMarkdown、Codex版はTOMLで役割を定義する。
 
 Claude版の `dev` は、委託が許可されている場合に `shinaps-implementer` 1体へ実装と修正を渡す。architect は `best / medium`、プランレビューは `opus / medium` 2体、実装担当は `opus / medium` を使う。実装後は同じ architect の設計適合性レビューと、独立した reviewer (`opus / medium`) のコードレビューを並行して行い、両者の結果が揃ってから修正する。
 
-Claude版の `dev` は `review` (開発レビュー)・`refine`・`simplify` を Skill ツールで明示的に呼び、担当のバックグラウンド起動後に全結果を待つ。`simplify` と `refine` はそれぞれ Opus / medium の2体で同じ対象を独立して確認する。architect が提案・指摘を根拠から統合し、実装担当へ一つの修正指示を返す。メインは起動・待機・記録とユーザーへの確認を担う。実装後のレビューは初回と修正後の最大2ラウンドとし、2回目の修正後はテスト結果と残課題を報告する。最終修正が再レビューされていないことを明示し、重大な未解決事項を完了扱いにしない。UIレビューは別途Codex側で行う。
+Claude版の `dev` は `review` (開発レビュー)・`refine`・`simplify` を Skill ツールで明示的に呼び、担当のバックグラウンド起動後に全結果を待つ。`simplify` と `refine` はそれぞれ Opus / medium の2体で同じ対象を独立して確認する。architect が提案・指摘を根拠から統合し、実装担当へ一つの修正指示を返す。メインは Opus / medium で起動・待機・記録・指摘の重複整理とユーザーへの確認を担う。全指摘の出典・根拠・異論を残した整理結果を architect へ渡し、採否は architect が判断する。生レポートは保存し、必要な原文を参照できるようにする。実装後のレビューは初回と修正後の最大2ラウンドとし、2回目の修正後はテスト結果と残課題を報告する。最終修正が再レビューされていないことを明示し、重大な未解決事項を完了扱いにしない。UIレビューは別途Codex側で行う。
 
 Codex版は親モデルを継承する既存の構成を維持し、Claude専用の実装・簡素化担当は追加しない。
 
@@ -179,17 +179,19 @@ Codex版は親モデルを継承する既存の構成を維持し、Claude専用
 ```mermaid
 flowchart TD
     A["architect: best / medium<br/>設計・実装計画"] --> B["プランレビュー: Opus / medium × 2"]
-    B --> C["同じ architect が統合・計画確定"]
+    B --> P["Opus のメインが指摘を重複整理"]
+    P --> C["同じ architect が統合・計画確定"]
     C --> D["implementer: Opus / medium<br/>実装・テスト"]
     D --> E["同じ差分でレビュー開始"]
     E --> F["同じ architect: 設計適合性"]
     E --> G["review: Opus / medium × 1"]
     E --> H["refine: Opus / medium × 2"]
     E --> I["simplify: Opus / medium × 2"]
-    F --> J["同じ architect が全指摘を統合"]
-    G --> J
-    H --> J
-    I --> J
+    F --> O["Opus のメインが指摘を重複整理"]
+    G --> O
+    H --> O
+    I --> O
+    O --> J["同じ architect が全指摘を判断・統合"]
     J --> K{"修正が必要？"}
     K -- いいえ --> N["検証結果・残課題を報告"]
     K -- はい --> L["同じ implementer が修正・テスト"]

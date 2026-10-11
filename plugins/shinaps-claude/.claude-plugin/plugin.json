@@ -1,7 +1,7 @@
 {
   "name": "shinaps",
   "description": "Shinaps AIの開発ワークフロー。プロジェクトの指示から条件を読み、調査・設計・実装・簡素化・レビュー・コミット・PR・リリースを支援する11スキル。",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "author": {
     "name": "shinaps",
     "email": "ryuta@shinaps.jp"

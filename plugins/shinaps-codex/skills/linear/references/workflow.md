@@ -5,7 +5,7 @@
 | 担当 | 責務 |
 | --- | --- |
 | Codex | Issueの作成・整理、仕様相談、Ready判定、依存・Cycle管理、進行判断、Bridgeでの依頼、Local・Staging・ProductionのAgent QA、許可されたPR・配備等の運用、結果の記録、人への依頼 |
-| Claude | Codexの指示に基づく技術調査、`shinaps:dev` による実装・自動テスト・簡素化・セルフレビュー、QA指摘の修正、成果と人の対応結果の報告 |
+| Claude | Codexの指示に基づく技術調査、`shinaps:dev` による実装・自動テスト・簡素化・セルフレビュー、QA指摘の修正、成果と人の対応結果の報告。実装を伴わない文書整理は、作業先リポジトリの規約に従い `shinaps:dev` の対象外にできる。スキル・コードの変更は文書の形でも実装として `shinaps:dev` を使う |
 | 人 | 未合意の仕様・権限の判断、設定で必要なコードレビュー・必要な修正、AIに許可していないコミット、本人の操作が必要な認証等、必要なHuman QA |
 
 人への質問と依頼はCodexが窓口になる。Claudeは人へ着手確認やコミット依頼をしない。人がClaudeへ直接伝えた指示や結果は、Claudeが保持してCodexへ報告する。
@@ -40,7 +40,7 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 | `ready` | Ready | 自分たちの作業を依存順に進めれば着手できる。開始時に、必要な前工程の成果を再確認する |
 | `coding` | Coding | Claudeが実装・自動検証・簡素化・セルフレビューを完了し、差分と結果を渡す |
 | `local_agent_qa` | Local Agent QA | Codexが受入条件を検証する。不合格なら `coding` へ戻す |
-| `code_review` | Code Review（人のレビューまたは省略の記録・コミット） | `human_code_review: required` では人がレビュー・修正する。`skip` では人へのレビュー依頼も待ちも作らず、省略を記録する。コミットは、Local Agent QAの合格後（`required` では人のレビュー完了の確認後）に、`commit` と `stage` の許可があればCodexの依頼でClaudeが行い、なければ人が行う。対象コミットと、人の完了通知または省略の記録を照合する |
+| `code_review` | Code Review（人のレビューまたは省略の記録・コミット） | `human_code_review: required` では人がレビュー・修正する。`skip` では人へのレビュー依頼も待ちも作らず、省略を記録する。コミットは、Local Agent QAの合格後（`required` では人のレビュー完了の確認後）に、`commit` と `stage` の許可があればCodexの依頼でClaudeが行い、なければ人が行う。対象コミットと、人の完了通知または省略の記録を照合する。`document_only_changes: ai_commit` があり、対象差分が文書だけの変更に当たる場合は、下の箇条に従う |
 | `post_commit` | コミット後の検証・PR準備 | 設定に従って、push前の最終Agent QA、必須検証、許可されたpush・PR作成を行う |
 | `staging_agent_qa` | Staging Agent QA | 配備されたPR候補版をCodexが検証する |
 | `staging_human_qa` | Staging Human QA | そのPRで必要な人の確認。不要なら理由を記録して省略する |
@@ -55,14 +55,23 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 - 終了地点の工程がそのIssueにない場合は、適用される最後の必要工程まで進めて止まる。そのとき必須受入条件をすべて満たしていればDoneにする。満たしていなければ、残る条件を記録してDoneにしない（push前QAで止める運用で、本番公開の受入条件が残るIssueなど）。
 - 人がレビュー中に修正した場合は `code_review` を続ける。AIへ追加実装を依頼する場合は、範囲と受入条件をIssueで更新してから `coding` へ戻す。
 - Human QAが新たに必要になった場合は、理由と具体的な残項目をIssueに記録して利用者に相談する。
-- プロジェクトの規約や補足が文書だけの変更のAIによるコミットを認めていても、このワークフローでは許可として扱わない。AIのコミットは [configuration.md](configuration.md) の「許可」の `commit` に従う。
-- `human_code_review: skip` で人のレビューを行わなかった場合、Codexは `code_review` の工程で、省略と、実施した確認（`shinaps:dev` 内のレビュー、Local Agent QA）への参照をIssueへ記録する。
+- プロジェクトの規約や補足の記述だけでは、AIのコミットの許可として扱わない。文書だけの変更であることを理由に人のレビューを省きAIがコミットする例外は、設定に `document_only_changes: ai_commit` があるときだけ適用する。適用しない場合は、通常のレビュー・コミットの条件（`human_code_review` と [configuration.md](configuration.md) の「許可」の `commit`）に従う。
+- `human_code_review: skip`、または下の文書だけの変更の例外で人のレビューを行わなかった場合、Codexは `code_review` の工程で、省略と、実施した確認（`shinaps:dev` 内のレビュー、Local Agent QA）への参照をIssueへ記録する。1行目には省略の根拠になった設定を書き、文書だけの変更の例外では判定の記録へのリンクを添える。
 
   ```text
-  人のコードレビュー: 省略（作業先リポジトリの設定 human_code_review: skip）
-  実施した確認: shinaps:dev 内のレビュー（Claudeの完了報告 <コメントへのリンク>）、Local Agent QA（<記録へのリンク>）
+  人のコードレビュー: 省略（作業先リポジトリの設定 <human_code_review: skip または document_only_changes: ai_commit>。文書だけの変更の例外では「判定: <Local Agent QAのコメントへのリンク>」を続ける）
+  実施した確認: shinaps:dev 内のレビュー（使った場合。Claudeの完了報告 <コメントへのリンク>）、Local Agent QA（<記録へのリンク>）
   コミット: <SHA>（<実際の実施者と方法>）
   ```
+
+- `document_only_changes: ai_commit` がある場合は、次のとおり進める（文書だけの変更の定義は [configuration.md](configuration.md) の「項目」）。
+  - Local Agent QAで、Codexは受入条件の検証に加え、対象差分の全体が文書だけの変更に当たるかを判定し、範囲と理由をQAコメントに一度だけ記録する。
+  - 当たる場合、`required` でも人へのレビュー依頼も待ちも作らない。CodexはClaudeへコミットを依頼し、依頼に判定の記録へのリンクを添える。
+  - Claudeは、設定にこのキーと `stage` の許可があること、依頼された対象差分が、作業ツリー上の同じ対象（ファイルと内容）の差分と一致することを確認してから `shinaps:commit` でコミットする。違えばコミットせずCodexへ返す。差分の性質は判定し直さない。
+  - コミット後、Codexはコミットの内容が判定した差分と一致し、対象作業の未コミット変更が残らないことを照合する。一致しなければ次の工程へ進まず、SHA・判定した差分・実際の差分の違いをIssueに記録して人に確認する。履歴の書き換えはその場で確認する。
+  - 判定の後に対象差分が変わったら、新しい対象で判定とQAをやり直す。
+  - 照合の後に、上の省略の記録をIssueへ書く。
+  - 当たらない場合は、通常の `code_review`（`human_code_review` と `commit` に従う）のまま進める。
 
 ## 待ち状態
 

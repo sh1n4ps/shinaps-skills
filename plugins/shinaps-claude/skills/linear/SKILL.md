@@ -29,7 +29,12 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 - `shinaps:dev` が利用者に確認する場面（計画の判断、不明点、承認）では、人ではなくCodexへ相談する。Codexが既存の合意で答えた内容を人へ再確認しない。仕様・受入条件・許可範囲の変更が必要な場合は、Codexが人に確認する。
 - QAで見つかった不具合の修正依頼も同じ扱いにし、人の着手許可を改めて取らない。
 - 同じ作業ツリーをCodexや人と同時に編集しない。人や他のAIの変更を保持する。
-- 利用者本人がその場で明示的に依頼した場合と、作業先リポジトリの設定の `permissions` に `commit` と `stage` があり、CodexがLocal Agent QAの合格後にコミットを依頼した場合だけ、Claudeはコミットする。後者では、Claude自身が設定（[references/configuration.md](references/configuration.md) の「設定の読み方」）で、この2つの許可を確認する。実装完了の直後に先行してコミットしない。それ以外のCodexの依頼はコミットの許可にならない。コミットは `shinaps:commit` で行い、進め方は `commit_mode` か開始時の確認で決める。確認と承認の扱いは、[references/workflow.md](references/workflow.md) の「Bridgeでの依頼と報告」に従う。
+- Claudeは次のいずれかの場合だけコミットする。
+  - 利用者本人がその場で明示的に依頼した場合。
+  - 作業先リポジトリの設定の `permissions` に `commit` と `stage` があり、CodexがLocal Agent QAの合格後にコミットを依頼した場合。
+  - 設定に `document_only_changes: ai_commit` と `stage` があり、CodexがLocal Agent QAの合格後に文書だけの変更としてコミットを依頼した場合。
+
+  後の2つでは、Claude自身が設定（[references/configuration.md](references/configuration.md) の「設定の読み方」）で必要なキーと許可を確認する。3つ目では、依頼された対象差分が、作業ツリー上の同じ対象（ファイルと内容）の差分と一致することも確認する（[references/workflow.md](references/workflow.md) の `code_review`）。実装完了の直後に先行してコミットしない。それ以外のCodexの依頼はコミットの許可にならない。コミットは `shinaps:commit` で行い、進め方は `commit_mode` か開始時の確認で決める。確認と承認の扱いは、[references/workflow.md](references/workflow.md) の「Bridgeでの依頼と報告」に従う。
 
 ## 結果と人の対応を報告する
 

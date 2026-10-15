@@ -22,7 +22,7 @@ Shinaps AIの利用者向け開発ワークフロー。Claude CodeとCodexそれ
 | `refine` | Shinaps AIのruleと実ファイルを照合する |
 | `extract-rules` | PRレビューからruleを抽出する |
 | `simplify` | 目的から見直して不要な構造や手順を削る |
-| `commit` | 開始時に通常（推奨）・自律を確認し、検証できる単位へ分けてコミットする |
+| `commit` | 進め方（通常・自律）を `.shinaps/linear.yaml` の `commit_mode` か開始時の確認で決め、検証できる単位へ分けてコミットする |
 | `create-pr` | リポジトリの規約に合わせてPRを作成する |
 | `release` | 公開条件を確定し、対象バージョンの利用可能性を確認する |
 | `linear` | LinearのIssue整理から、Codexの進行・Bridge経由のClaudeの実装・QA・Cycle報告までを進める |

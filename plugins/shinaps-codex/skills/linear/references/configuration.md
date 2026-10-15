@@ -38,7 +38,9 @@
 | `permissions` | 継続的に許可した操作の一覧（下の「許可」） | 何も許可していない |
 | `references` | `specifications`・`validation`・`environments`・`deployment`・`publication` ごとに、既存資料のパスまたはURLの一覧 | 各リポジトリのAGENTS.md・README・CIから読む |
 | `cycle_report` | Cycle報告の設定（下の「Cycle報告」） | Cycle報告を書き込まない |
+| `commit_mode` | 利用者が明示的にコミットを依頼したときの `shinaps:commit` の進め方。`normal`（単位ごとに承認を得る）または `autonomous`（個別の承認なしで単位ごとに検証してコミットする） | `shinaps:commit` が開始時に一問確認する。値が2つ以外のときも同じ |
 
+- `commit_mode` は進め方の既定値であり、コミットの許可ではない。コミットは利用者の明示的な依頼があるときだけ行い、設定があるだけでコミット・pushを始めず、人のレビュー済みと推測しない。その場の明示的な指定は設定に優先する。`normal` は人が自分でgit操作をする工程（`code_review`）とは別のもの。
 - 工程キーは [workflow.md](workflow.md) の工程表と同じ。`statuses` の値はチームに実在する正確な名前にする。操作時はLinearから取得した状態のIDを使う。対応が曖昧・欠落・実物と不一致なら、その対応に依存する更新を止める。ステータスを自動で新設しない。
 - `team_settings: manage_on_setup` の場合も、通常実行ではチーム設定を変更しない。
 
@@ -132,7 +134,7 @@ Codexが行う。
 1. アカウント、workspace、team、projectと、チームのステータス一覧・既存の運用をLinearから読む。
 2. 作業先リポジトリのAGENTS.md・CLAUDE.md・README・CI・検証や配備のスクリプトを読み、`references` の候補を決める。
 3. 設定案を一つ作る。チーム設定を管理できる場合だけ、FamilyStayを基にした工程の分離（[workflow.md](workflow.md) の工程表に対応するステータス）を変更案として示す。利用者のプロジェクトらしいという推測で `manage_on_setup` にしない。
-4. 既存の情報で決まらない運用上の決定（`stop_after`、`permissions`、`team_settings`、Cycle報告）だけを一問ずつ確認する。終了地点は上の一覧から選んでもらう。
+4. 既存の情報で決まらない運用上の決定（`stop_after`、`permissions`、`team_settings`、Cycle報告、`commit_mode`）だけを一問ずつ確認する。終了地点は上の一覧から選んでもらう。
 5. 合意した内容を保存し、読み直して確認する。
 6. Linearのチーム設定の変更は、ローカル設定の保存とは別に扱う。対象チームと変更差分（追加・改名するステータスと順序）を示し、合意を得てから反映して読み戻す。反映後に `statuses` を実物に合わせて確定する。
 

@@ -1,6 +1,6 @@
 ---
 name: linear
-description: LinearのIssue・Cycleを起点に、Issue整理、開発の進行とAgent QA、AI Terminal Bridge経由のClaudeへの実装依頼、設定に従った人のレビューの確認または省略の記録、許可されたコミットの依頼と確認、設定した終了地点までの進行とCycle完了報告を行う。.shinaps/linear.yamlの初期設定・変更にも使う。
+description: LinearのIssue・Cycleを起点に、作業先の規約か依頼が求める着手前のIssueへの紐づけ、Issue整理、開発の進行とAgent QA、AI Terminal Bridge経由のClaudeへの実装依頼、設定に従った人のレビューの確認または省略の記録、許可されたコミットの依頼と確認、設定した終了地点までの進行とCycle完了報告を行う。.shinaps/linear.yamlの初期設定・変更にも使う。
 ---
 
 # Linearを起点に開発を進める
@@ -31,7 +31,7 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 ## 設定と補足を読む
 
 - 設定の所在・読み方・補足との関係・不足時の止め方は、[references/configuration.md](references/configuration.md) の「設定の読み方」に従う。
-- 作業先リポジトリは、Issue本文の「対象・範囲外」で特定する。ローカルの場所は、自分の作業ディレクトリ、`list_sessions` の `project_path`、利用者の指示から確認し、確定できなければ一問確認する。ローカルの絶対パスをIssueに書かない。
+- 作業先リポジトリは、Issue本文の「対象・範囲外」で特定する。Issueがまだない作業では、依頼の内容で特定する。ローカルの場所は、自分の作業ディレクトリ、`list_sessions` の `project_path`、利用者の指示から確認し、確定できなければ一問確認する。ローカルの絶対パスをIssueに書かない。
 - 操作の許可は作業先リポジトリの設定で決める。同じLinear projectに属するだけでは、別のリポジトリの作業を現在の設定に含めない。作業先を特定できないIssueや、作業先に設定がないIssueでは、開発進行を始めない。
 - 設定がない場合は、Issueの読み取り、整理案、明示依頼された更新だけを行い、初期設定を案内する。
 
@@ -40,7 +40,7 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 | 作業 | 読む資料 |
 | --- | --- |
 | 初期設定・設定変更 | [references/configuration.md](references/configuration.md) |
-| Issueの作成・整理・本文の更新 | [references/issue.md](references/issue.md) |
+| 着手前の紐づけ、Issueの作成・整理・本文の更新 | [references/issue.md](references/issue.md) |
 | 担当、工程、待ち状態、Bridge、人への依頼、継続の範囲 | [references/workflow.md](references/workflow.md) |
 | QAの実施・記録・素材 | [references/qa.md](references/qa.md) |
 | Cycle完了QA・報告 | [references/cycle-report.md](references/cycle-report.md) |

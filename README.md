@@ -6,6 +6,8 @@ Shinaps AIの利用者向け開発ワークフロー。Claude CodeとCodexそれ
 
 共通スキルが持つのは判断手順。対象環境・必須検証・公開条件は、対象プロジェクトの `AGENTS.md` / `CLAUDE.md` と参照先、README、CI、既存スクリプトから読み取る。専用設定ファイルは必須にしない。
 
+例外として `linear` の開発進行とチーム設定の変更には、対象リポジトリの `.shinaps/linear.yaml` を必須にする。操作の継続的な許可と終了地点を会話から推測せず、合意した範囲だけを続けて進めるためである。設定はGit対象外の個人用ローカルファイルで、`.shinaps/.gitignore` の除外に含まれる。設定がなくてもIssueの読み取り・整理はできる。
+
 例えばPCブラウザのみのプロジェクトには対応ブラウザと確認コマンドを書く。iOSプロジェクトにはSimulatorと実機の使い分けを記す。スキルは一律の端末数やOS数を追加しない。既存の情報で決まらず結果を左右する条件だけ確認し、保存を了承された方針をプロジェクト側に残す。
 
 ## スキル
@@ -23,8 +25,11 @@ Shinaps AIの利用者向け開発ワークフロー。Claude CodeとCodexそれ
 | `commit` | 開始時に通常（推奨）・自律を確認し、検証できる単位へ分けてコミットする |
 | `create-pr` | リポジトリの規約に合わせてPRを作成する |
 | `release` | 公開条件を確定し、対象バージョンの利用可能性を確認する |
+| `linear` | LinearのIssue整理から、Codexの進行・Bridge経由のClaudeの実装・QA・Cycle報告までを進める |
 
 Claude版の `dev` は実装後にレビュー・規約照合・簡素化の提案を並行して集め、全結果を専任verifierが検証し、同じ architect が採否を統合して実装担当へ修正を依頼する。実装後のレビューは最大2ラウンドで終了する。コミット・PR・リリースは依頼された場合だけ進む。`autonomous-commit-review` の役割は `commit` に統合した。個人用の別AI呼び出し・ブラウザ管理・ゴール管理・動画制作はこのpluginに含めない。
+
+`linear` は初版では利用者本人の環境向けで、Codexが進行とAgent QA、ClaudeがAI Terminal Bridge経由の依頼で実装を担当する。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/` に置く。`references/` はClaude版を編集元としてCodex版へ同じ内容を複製し、テストで一致を確認する。
 
 ## Claude Code
 
@@ -37,7 +42,7 @@ Claude版の `dev` は実装後にレビュー・規約照合・簡素化の提�
 
 ## Codex
 
-Node.js 22以上と、`plugin marketplace add` / `plugin add` に対応したCodex CLIを使う。Claude Codeのインストールは不要。
+Node.js 22以上と、`plugin marketplace add` / `plugin add` に対応したCodex CLIを使う。Claude Codeのインストールは不要。ただし `linear` の開発進行には、Claude CodeとAI Terminal Bridgeが必要になる。
 
 導入・更新・削除:
 
@@ -139,7 +144,7 @@ codex mcp add shinaps-ai --url https://app.shinaps.ai/mcp
 codex mcp login shinaps-ai
 ```
 
-未登録の利用者は[Shinaps AI](https://app.shinaps.ai)でアカウントを作成する。未認証でもスキルの導入は完了できる。MCPが使えないときに照合済みと報告しない。`simplify`・`commit`・`create-pr`・`release` の基本手順はMCP接続を必須としない。
+未登録の利用者は[Shinaps AI](https://app.shinaps.ai)でアカウントを作成する。未認証でもスキルの導入は完了できる。MCPが使えないときに照合済みと報告しない。`simplify`・`commit`・`create-pr`・`release`・`linear` の基本手順はMCP接続を必須としない。
 
 ## Subagents (Claude: 16 / Codex: 13)
 
@@ -220,6 +225,8 @@ flowchart TD
 ```text
 .shinaps/
 ├── .gitignore             # *
+├── linear.yaml            # linear のプロジェクト設定（任意）
+├── linear/                # linear の補足（任意）
 └── work/
     ├── {日時}-{作業名}/
     ├── explorations/

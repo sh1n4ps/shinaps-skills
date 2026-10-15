@@ -14,6 +14,8 @@ description: 比較実行用。shinaps:dev の工程を Codex（gpt-6-astra / me
 | `$shinaps:dev-codex-astra 1体 <比較条件ファイルの絶対パス>` | P4 |
 | `$shinaps:dev-codex-astra 2体 <比較条件ファイルの絶対パス>` | P5 |
 
+依頼に明示された引数だけを使い、条件ファイルを探したり推定したりしない。
+
 担当数（`1体` / `2体`）と比較条件ファイルはどちらも必須。どちらかが無い、または担当数が `1体` / `2体` 以外なら、「`$shinaps:dev-codex-astra <1体|2体> <比較条件ファイル>` で指定してください」と返して終了する。
 
 ## 読む資料
@@ -25,12 +27,12 @@ description: 比較実行用。shinaps:dev の工程を Codex（gpt-6-astra / me
 - [起動手順](../../references/dev-comparison/launch.md)
 - [実行記録](../../references/dev-comparison/record.md)
 
-担当指示は工程の役割表から辿る `roles/` の各ファイルを使う。
+担当指示（工程の役割表から辿る `roles/` の各ファイル）は、そこから生成した比較専用の役割定義で担当に渡る。依頼の本文には入れない（[起動手順](../../references/dev-comparison/launch.md#codex-のサブエージェント)）。
 
 ## 守ること
 
-- 構成表のこの構成の行にある担当だけを、`codex exec` で起動する。構成表に無い AI への依頼（個人用のセカンドオピニオン、AI Terminal Bridge、他の AI を起動するスキルを含む）をしない。
-- 既存の `dev`・`review`・`refine`・`simplify` スキル、登録済みのカスタムエージェント、`spawn_agent` を使わない。
+- 構成表のこの構成の行にある担当だけを、[起動手順](../../references/dev-comparison/launch.md#codex-のサブエージェント)のとおり、比較専用の役割（`shinaps-comparison-*`）を指定した Codex のサブエージェントで起動する。`codex exec` を含め、構成表に無い AI への依頼（個人用のセカンドオピニオン、AI Terminal Bridge、他の AI を起動するスキルを含む）をしない。
+- 既存の `dev`・`review`・`refine`・`simplify` スキルと、比較専用の役割以外のカスタムエージェント（通常の dev の `shinaps-architect` などを含む）を使わない。
 
 ## 完了報告
 

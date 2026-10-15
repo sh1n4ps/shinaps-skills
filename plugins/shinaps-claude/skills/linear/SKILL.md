@@ -25,6 +25,7 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 
 - 依頼の範囲・受入条件・Gitの作業ディレクトリ・ブランチ・既存差分・許可範囲を確認する。
 - Codexから依頼された実装・修正は、依頼の対象Issueに紐づく。Claudeは別のIssueを作らない。
+- 比較用入口（`dev-mixed`・`dev-claude`）と比較条件ファイルを指定した比較実行の依頼は、このスキルの対象外にする。指定された入口を起動し、実行中の扱いと報告は入口に従う（[references/workflow.md](references/workflow.md) の「Bridgeでの依頼と報告」）。
 - 実装・修正には `shinaps:dev` を使う。`shinaps:dev` は内部で簡素化・規約照合・レビューを行うので、これらを別に起動しない。`shinaps:dev` を使えない場合は、独自の手順で代わりに実装せずCodexへ報告する。
 - `shinaps:dev` の委託（サブエージェントや別のCLI）は、依頼の許可範囲に `dev_delegation` が書かれている場合だけ使う。許可範囲に `dev_delegation` がない依頼では委託しない。worktreeの作成は含まない。
 - `shinaps:dev` が利用者に確認する場面（計画の判断、不明点、承認）では、人ではなくCodexへ相談する。Codexが既存の合意で答えた内容を人へ再確認しない。仕様・受入条件・許可範囲の変更が必要な場合は、Codexが人に確認する。

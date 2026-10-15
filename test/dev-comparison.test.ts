@@ -57,3 +57,13 @@ test('relative Markdown links resolve inside the same plugin directory', async (
   }
   assert.deepEqual(broken, []);
 });
+
+// Claude の比較用入口は、Codex が AI Terminal Bridge で依頼して Skill ツールから起動する。
+// disable-model-invocation: true を付けると、Skill ツールからの起動が拒否される。
+test('Claude comparison entries can be invoked through the Skill tool', async () => {
+  for (const skill of ['dev-mixed', 'dev-claude']) {
+    const text = await readFile(`plugins/shinaps-claude/skills/${skill}/SKILL.md`, 'utf8');
+    const frontmatter = text.split('---')[1];
+    assert.doesNotMatch(frontmatter, /^disable-model-invocation:\s*true\s*$/m, skill);
+  }
+});

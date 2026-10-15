@@ -1,8 +1,7 @@
 ---
 name: dev-claude
-description: 比較実行用。shinaps:dev の工程を Claude（Opus / medium）の担当だけで実行する（P2: 同じ役割1体、P3: 2体）。通常の開発には shinaps:dev を使う。
+description: 比較実行用。shinaps:dev の工程を Claude（Opus / medium）の担当だけで実行する（P2: 同じ役割1体、P3: 2体）。この入口・担当数・比較条件ファイルを明示した依頼（利用者本人、または利用者が委託した依頼元からの AI Terminal Bridge の依頼）でだけ使う。通常の開発には shinaps:dev を使う。
 argument-hint: <1体|2体> <比較条件ファイル>
-disable-model-invocation: true
 ---
 
 # 比較用 dev（Claude のみ）
@@ -15,6 +14,8 @@ disable-model-invocation: true
 |---|---|
 | `/shinaps:dev-claude 1体 <比較条件ファイルの絶対パス>` | P2 |
 | `/shinaps:dev-claude 2体 <比較条件ファイルの絶対パス>` | P3 |
+
+依頼に明示された引数だけを使い、条件ファイルを探したり推定したりしない。
 
 担当数（`1体` / `2体`）と比較条件ファイルはどちらも必須。どちらかが無い、または担当数が `1体` / `2体` 以外なら、「`/shinaps:dev-claude <1体|2体> <比較条件ファイル>` で指定してください」と返して終了する。
 
@@ -31,7 +32,7 @@ disable-model-invocation: true
 
 ## 守ること
 
-- 構成表のこの構成の行にある担当だけを、構成表の起動手段で起動する。構成表に無い AI への依頼（個人用のセカンドオピニオン、AI Terminal Bridge、他の AI を起動するスキルを含む）をしない。
+- 構成表のこの構成の行にある担当だけを、構成表の起動手段で起動する。構成表に無い AI への依頼（個人用のセカンドオピニオン、AI Terminal Bridge、他の AI を起動するスキルを含む）をしない。AI Terminal Bridge で起動を依頼された場合の、依頼元への終了・停止の報告は、これに当たらない（[工程](../../references/dev-comparison/workflow.md)の「実行の制約」）。
 - 既存の `dev`・`review`・`refine`・`simplify` スキルと、登録済みの Shinaps エージェントを使わない。
 
 ## 完了報告

@@ -22,6 +22,7 @@
     "test": "node --test \"test/*.test.ts\"",
     "check": "npm run format:check && tsc --noEmit",
     "verify:package": "node scripts/verify-package.ts",
+    "generate:agents": "node scripts/generate-comparison-agents.ts",
     "format": "biome format --write .",
     "format:check": "biome format ."
   },

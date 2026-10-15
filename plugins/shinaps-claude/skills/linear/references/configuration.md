@@ -38,9 +38,11 @@
 | `permissions` | 継続的に許可した操作の一覧（下の「許可」） | 何も許可していない |
 | `references` | `specifications`・`validation`・`environments`・`deployment`・`publication` ごとに、既存資料のパスまたはURLの一覧 | 各リポジトリのAGENTS.md・README・CIから読む |
 | `cycle_report` | Cycle報告の設定（下の「Cycle報告」） | Cycle報告を書き込まない |
-| `commit_mode` | 利用者が明示的にコミットを依頼したときの `shinaps:commit` の進め方。`normal`（単位ごとに承認を得る）または `autonomous`（個別の承認なしで単位ごとに検証してコミットする） | `shinaps:commit` が開始時に一問確認する。値が2つ以外のときも同じ |
+| `commit_mode` | `shinaps:commit` でコミットするときの進め方。`normal`（単位ごとに承認を得る）または `autonomous`（個別の承認なしで単位ごとに検証してコミットする） | `shinaps:commit` が開始時に一問確認する。値が2つ以外のときも同じ |
+| `human_code_review` | 人のコードレビューの要否。`required`（人がレビューする）または `skip`（人のレビューを行わない） | `required`。値が2つ以外のときも同じ |
 
-- `commit_mode` は進め方の既定値であり、コミットの許可ではない。コミットは利用者の明示的な依頼があるときだけ行い、設定があるだけでコミット・pushを始めず、人のレビュー済みと推測しない。その場の明示的な指定は設定に優先する。`normal` は人が自分でgit操作をする工程（`code_review`）とは別のもの。
+- `commit_mode` は進め方の既定値であり、コミットの許可ではない。コミットは利用者の明示的な依頼、または `permissions` の `commit`（条件は下の「許可」）があるときだけ行う。`commit_mode` があるだけではコミット・pushを始めず、人のレビュー済みと推測しない。その場の明示的な指定は設定に優先する。`normal` は人が自分でgit操作をする工程（`code_review`）とは別のもの。
+- `human_code_review: skip` は人のレビューの工程だけを省く。`shinaps:dev` 内のレビュー、Agent QA、必要なHuman QAは省かない。省略は、人のレビュー済みとして記録しない。`human_code_review`・`commit`・`stage`・`commit_mode` は互いに独立しており、一つから他を推測しない。
 - 工程キーは [workflow.md](workflow.md) の工程表と同じ。`statuses` の値はチームに実在する正確な名前にする。操作時はLinearから取得した状態のIDを使う。対応が曖昧・欠落・実物と不一致なら、その対応に依存する更新を止める。ステータスを自動で新設しない。
 - `team_settings: manage_on_setup` の場合も、通常実行ではチーム設定を変更しない。
 
@@ -50,7 +52,7 @@
 
 | `stop_after` | 止まる地点 |
 | --- | --- |
-| `pre_push_qa` | 人のレビュー・コミットの後、push前の最終Agent QAが合格し、記録した時点 |
+| `pre_push_qa` | `code_review` の工程を終えた後、push前の最終Agent QAが合格し、記録した時点 |
 | `pr_created` | 必須の検証と許可されたpush・PR作成を終え、IssueとPRの相互リンクを確認した時点。Staging QAが未実施なら残項目として記録する |
 | `issue_done` | Issueの必須受入条件をすべて満たし、Doneにした時点 |
 
@@ -63,7 +65,8 @@
 | --- | --- |
 | `issue_update` | 対象のteam・projectの中で、利用者が任せたIssue・Cycleの範囲に対する運用上の更新（本文・コメント・状態・依存・Linearへの添付、整理で必要になったIssueの作成・分割）。チーム設定の変更、未合意の範囲・期限の変更、Cycle外への進行、Issueの削除、外部への送信を含めない |
 | `bridge_request` | BridgeによるCodexからClaudeへの実装・修正の依頼と、ClaudeからCodexへの開発進行の引き渡し |
-| `stage` | レビュー対象の差分だけをステージする |
+| `stage` | レビュー・コミットの対象差分だけをステージする |
+| `commit` | 対象Issueの差分を、Local Agent QAの合格と `human_code_review` に従った工程の後に、`shinaps:commit` でローカルにコミットする。AIのコミットには `stage` の許可も併せて必要。push・PR・履歴の書き換え、人のレビューの省略を含めない |
 | `push` | 対象Issueの作業ブランチの通常のpush |
 | `pr_create` | 対象IssueのPRの作成と更新 |
 | `merge` | 必要なQA・承認が揃った対象PRのマージと、元のブランチへ戻る操作 |
@@ -74,7 +77,7 @@
 
 - 開発進行には `issue_update` と `bridge_request` が必要である。初期設定では、この2つと `stage`・`dev_delegation` を開発進行の標準の組として提案する。設定があるだけでは、どの許可も得ない。必要な許可がない設定では開発進行を始めず、不足している許可を示す。
 - 一つの操作が別の操作を伴う場合は、伴う操作の許可も必要とする（マージで本番へ自動配備される場合は `merge` と `deploy:production`）。
-- 次の操作は一覧に含めず、常にその場で確認する: force-push、履歴の書き換え、ブランチの削除、チーム設定の変更、AIのコミット。コミットは人が行う。
+- 次の操作は一覧に含めず、常にその場で確認する: force-push、履歴の書き換え、ブランチの削除、チーム設定の変更。
 - 設定の許可は、今回の依頼で任されたIssue・Cycleの範囲を広げない。
 
 ## Cycle報告
@@ -134,7 +137,7 @@ Codexが行う。
 1. アカウント、workspace、team、projectと、チームのステータス一覧・既存の運用をLinearから読む。
 2. 作業先リポジトリのAGENTS.md・CLAUDE.md・README・CI・検証や配備のスクリプトを読み、`references` の候補を決める。
 3. 設定案を一つ作る。チーム設定を管理できる場合だけ、FamilyStayを基にした工程の分離（[workflow.md](workflow.md) の工程表に対応するステータス）を変更案として示す。利用者のプロジェクトらしいという推測で `manage_on_setup` にしない。
-4. 既存の情報で決まらない運用上の決定（`stop_after`、`permissions`、`team_settings`、Cycle報告、`commit_mode`）だけを一問ずつ確認する。終了地点は上の一覧から選んでもらう。
+4. 既存の情報で決まらない運用上の決定（`stop_after`、`permissions`（`commit` を含む）、`human_code_review`、`team_settings`、Cycle報告、`commit_mode`）だけを一問ずつ確認する。終了地点は上の一覧から選んでもらう。
 5. 合意した内容を保存し、読み直して確認する。
 6. Linearのチーム設定の変更は、ローカル設定の保存とは別に扱う。対象チームと変更差分（追加・改名するステータスと順序）を示し、合意を得てから反映して読み戻す。反映後に `statuses` を実物に合わせて確定する。
 

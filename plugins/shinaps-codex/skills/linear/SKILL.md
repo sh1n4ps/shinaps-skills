@@ -1,6 +1,6 @@
 ---
 name: linear
-description: LinearのIssue・Cycleを起点に、Issue整理、開発の進行とAgent QA、AI Terminal Bridge経由のClaudeへの実装依頼、人のレビュー・コミットの確認、設定した終了地点までの進行とCycle完了報告を行う。.shinaps/linear.yamlの初期設定・変更にも使う。
+description: LinearのIssue・Cycleを起点に、Issue整理、開発の進行とAgent QA、AI Terminal Bridge経由のClaudeへの実装依頼、設定に従った人のレビューの確認または省略の記録、許可されたコミットの依頼と確認、設定した終了地点までの進行とCycle完了報告を行う。.shinaps/linear.yamlの初期設定・変更にも使う。
 ---
 
 # Linearを起点に開発を進める
@@ -45,4 +45,4 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 | QAの実施・記録・素材 | [references/qa.md](references/qa.md) |
 | Cycle完了QA・報告 | [references/cycle-report.md](references/cycle-report.md) |
 
-pushとPRの作成は `shinaps:create-pr`、公開は `shinaps:release` に従い、このスキルで手順を持たない。これらのスキルには設定で許可された操作を継続的な許可として渡し、許可済みの操作を再確認しない。
+コミットは `shinaps:commit`（Claudeへ依頼する）、pushとPRの作成は `shinaps:create-pr`、公開は `shinaps:release` に従い、このスキルで手順を持たない。これらのスキルには設定で許可された操作を継続的な許可として渡し、許可済みの操作を再確認しない。

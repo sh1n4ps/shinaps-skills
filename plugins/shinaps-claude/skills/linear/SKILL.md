@@ -1,6 +1,6 @@
 ---
 name: linear
-description: Codexが進行するLinearの開発で、AI Terminal Bridge経由の実装・修正依頼を受けて実行し、結果、許可されたコミット、人のレビュー・コミット完了をCodexへ報告する。利用者から明示的に依頼されたIssue整理も行う。
+description: Codexが進行するLinearの開発で、AI Terminal Bridge経由の実装・修正依頼を受けて実行し、結果、許可されたコミット、人のレビュー・コミット完了をCodexへ報告する。利用者から明示的に依頼されたIssue整理と、作業先の規約か依頼が求める着手前のIssueへの紐づけも行う。
 ---
 
 # Linearの開発でClaudeが行うこと
@@ -19,11 +19,12 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 
 依頼を受けたら、[references/workflow.md](references/workflow.md) の「担当と窓口」「再確認せず進める条件」「Bridgeでの依頼と報告」を読む。依頼に添えられたプロジェクトの補足と参照先も読む。
 
-他の資料は次の場合だけ読む: 依頼で指示された場合、Issue整理を依頼された場合（[references/issue.md](references/issue.md)）、設定を読む必要がある場合（[references/configuration.md](references/configuration.md) の「設定の読み方」）。
+他の資料は次の場合だけ読む: 依頼で指示された場合、Issue整理を依頼された場合（[references/issue.md](references/issue.md)）、Codexの依頼なしで実作業を依頼された場合（[references/issue.md](references/issue.md) の「着手前に作業をIssueへ紐づける」）、設定を読む必要がある場合（[references/configuration.md](references/configuration.md) の「設定の読み方」）。
 
 ## 依頼を受けて実行する
 
 - 依頼の範囲・受入条件・Gitの作業ディレクトリ・ブランチ・既存差分・許可範囲を確認する。
+- Codexから依頼された実装・修正は、依頼の対象Issueに紐づく。Claudeは別のIssueを作らない。
 - 実装・修正には `shinaps:dev` を使う。`shinaps:dev` は内部で簡素化・規約照合・レビューを行うので、これらを別に起動しない。`shinaps:dev` を使えない場合は、独自の手順で代わりに実装せずCodexへ報告する。
 - `shinaps:dev` の委託（サブエージェントや別のCLI）は、依頼の許可範囲に `dev_delegation` が書かれている場合だけ使う。許可範囲に `dev_delegation` がない依頼では委託しない。worktreeの作成は含まない。
 - `shinaps:dev` が利用者に確認する場面（計画の判断、不明点、承認）では、人ではなくCodexへ相談する。Codexが既存の合意で答えた内容を人へ再確認しない。仕様・受入条件・許可範囲の変更が必要な場合は、Codexが人に確認する。
@@ -43,5 +44,6 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 
 ## Codexの依頼なしで起動された場合
 
+- 利用者から直接依頼された実作業（開発進行の依頼を除く）は、着手前に [references/issue.md](references/issue.md) の「着手前に作業をIssueへ紐づける」に従う。Issueの作成は利用者がその場で依頼した場合だけ行い、設定の `issue_update` を根拠にしない。
 - 利用者から明示的にIssueの整理を依頼された場合は、[references/issue.md](references/issue.md) に従って整理する。Issueの更新は、依頼で指定された範囲だけにする（設定の有無にかかわらない）。
 - 開発進行（実装からQAを経て終了地点までの進行）を依頼された場合、Claudeは進行役を兼ねない。作業先リポジトリの設定で `bridge_request` が許可され、BridgeでCodexのセッションを特定できる場合は、[references/workflow.md](references/workflow.md) の「開発進行の引き渡し」の項目を添えてCodexへ引き渡す。設定は [references/configuration.md](references/configuration.md) の「設定の読み方」に従って読む。許可や相手のセッションがない場合は、必要な準備（設定、Codexセッションの起動、Bridgeの導入）を利用者へ案内する。

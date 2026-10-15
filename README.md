@@ -37,14 +37,14 @@ Claude版の `dev` は実装後にレビュー・規約照合・簡素化の提�
 
 ### 比較用 dev 入口
 
-`dev-mixed`・`dev-claude`・`dev-codex-astra`・`dev-codex-sol` は、同じ工程でモデル・同じ役割の担当数・実行環境の差を比べるための入口である。通常の開発には `dev` を使う。比較用入口は明示的に呼び出したときだけ使われ、Claude版は `disable-model-invocation: true`、Codex版は `agents/openai.yaml` の `allow_implicit_invocation: false` で自動選択の対象から外している。引数には担当数（`dev-mixed` を除く）と比較条件ファイルが必須。
+`dev-mixed`・`dev-claude`・`dev-codex-astra`・`dev-codex-sol` は、同じ工程でモデル・同じ役割の担当数・実行環境の差を比べるための入口である。通常の開発には `dev` を使う。比較用入口は、入口と比較条件ファイルを明示した依頼でだけ使う。引数には担当数（`dev-mixed` を除く）と比較条件ファイルが必須で、無ければ担当を起動せずに終わる。Codex版は `agents/openai.yaml` の `allow_implicit_invocation: false` で自動選択の対象から外している。Claude版は、利用者が委託したCodexがAI Terminal Bridgeで依頼して起動できるよう、モデルからの呼び出し（Skillツール）を許可している。Claude Codeには、モデルからの呼び出しを許したまま自動選択の候補からだけ外す設定が無い（`disable-model-invocation: true` はSkillツールからの起動も拒否する）。このため、Claude版は説明文で、入口と比較条件ファイルを明示した依頼だけが対象だと示す。誤って選ばれても、引数が無ければ上の必須検査で担当を起動せずに終わる。
 
 - 共通資料（工程・構成表・担当指示・起動手順・実行記録・比較手順）は plugin ルートの `references/dev-comparison/` に置く。Claude版を編集元としてCodex版の同じパスへディレクトリ全体を複製し、テストで一致と plugin 内での参照解決を確認する。
 - 工程は eafbbc5 の Claude版 `dev` から作り、既存の `dev` とは独立に管理する。既存の `dev` を変更したとき比較工程へ反映するかは、その都度判断する。
 - 1体／2体の設定が変えるのは、独立設計・計画レビュー・計画簡素化の担当2の有無だけである。実装は常に1体で、実装後の設計適合性・独立コードレビュー・refine・簡素化は1体の設定でも行う。
-- 担当には比較専用の担当指示を使い、Claudeの担当は汎用のAgent（Opus / medium を明示）、Codexの担当は `codex exec` で起動する。登録エージェントは追加・変更しない。Codexネイティブの子エージェント（`spawn_agent`）は子ごとのtier・sandboxを指定できず同時実行枠もあるため、Codexの親でも使わない。そのため、Codexネイティブの子エージェントの使い勝手は比較の対象外になる。
+- 担当には比較専用の担当指示（`references/dev-comparison/roles/`）を使う。Claudeの担当は汎用のAgent（Opus / medium を明示）、P1のCodexの担当は `codex exec` で起動し、担当指示の全文を依頼に入れる。Codexの親（P4〜P7）は、担当指示から生成した比較専用の役割（`plugins/shinaps-codex/agents/shinaps-comparison-*.toml`）をサブエージェントの `agent_type` に指定して起動し、モデル・推論は起動時に選ぶ。通常の dev の登録エージェントは比較に使わず、変更もしない。サブエージェントが親から引き継ぐ設定と同時実行の上限は、[構成表](plugins/shinaps-claude/references/dev-comparison/configurations.md)の「環境の条件」に書く。
 - P1 は現行の Claude版 `dev` の担当割当を再現するが、比較専用の担当指示を使い review / refine / simplify スキルを経由しないので、現行 `dev` の実行結果そのものではない。
-- 検証の限界: リポジトリのテストが確認するのは共通資料の一致と参照の解決まで。モデル・推論・tierは各実行の実行記録で指定値と観測値を分けて記録し、ローカル記録に実際の値が残らない項目（Codexのservice_tier、Claudeのpermission mode）は「指定のみ」として全構成で併記し、確認済みとは扱わない。7構成の工程の完走は保証しない。
+- 検証の限界: リポジトリのテストが確認するのは、共通資料の一致と参照の解決、Claude版の入口をSkillツールから起動できる設定であること、比較専用の役割定義が担当指示から生成されていることまで。モデル・推論・tierは各実行の実行記録で指定値と観測値を分けて記録し、ローカル記録に実際の値が残らない項目（Codexのservice_tier、Claudeのpermission mode）は「指定のみ」として全構成で併記し、確認済みとは扱わない。7構成の工程の完走は保証しない。
 
 手順は[比較手順](plugins/shinaps-claude/references/dev-comparison/comparison.md)と[構成表](plugins/shinaps-claude/references/dev-comparison/configurations.md)を参照する。
 
@@ -74,7 +74,7 @@ npx @shinaps/skills@latest recover codex
 
 ローカル開発では、このcheckoutから `node bin/skills.ts install codex` のように同じ操作を実行できる。Node.js 22.18以上なら型除去でTypeScriptをそのまま実行する (ビルド不要)。
 
-CLIはスキルをCodex pluginとして登録し、13個のカスタムエージェントを`${CODEX_HOME:-~/.codex}/agents/`へ配置する。新しいセッションで`shinaps:dev`、`shinaps:review`等が読み込まれる。エージェントのモデルと推論設定は親セッションから継承し、調査・レビュー担当は読み取り専用を既定にする。親セッションの実行時設定が優先される場合もあるため、権限の強制境界とは扱わない。
+CLIはスキルをCodex pluginとして登録し、13個のカスタムエージェントと、比較用入口だけが使う8個の比較専用の役割（`shinaps-comparison-*`）を`${CODEX_HOME:-~/.codex}/agents/`へ配置する。比較専用の役割も通常のセッションの役割一覧に表示されるが、説明文で比較用入口専用と示し、通常の `dev` は使わない。新しいセッションで`shinaps:dev`、`shinaps:review`等が読み込まれる。13個のカスタムエージェントのモデルと推論設定は親セッションから継承し、調査・レビュー担当は読み取り専用を既定にする。親セッションの実行時設定が優先される場合もあるため、権限の強制境界とは扱わない。
 
 配布物は`~/.local/share/shinaps-ai/skills/codex/`へ保持し、一時的なnpxキャッシュに依存しない。同じ親ディレクトリの`state.json`に配置したエージェントと内容のハッシュを記録する。管理対象外の同名ファイルや、導入後に編集されたエージェントは上書き・削除せず停止する。必要な変更を退避・整理してから再実行する。`CODEX_HOME`を変更する場合は元の配置先で先にuninstallする。
 
@@ -113,7 +113,7 @@ Claude Codeは標準のmarketplace自動更新機能を使う。`/plugin` のMar
 
 - Claude版: `plugins/shinaps-claude/`、marketplaceは`.claude-plugin/marketplace.json`
 - Codex版: `plugins/shinaps-codex/`、marketplaceは`.agents/plugins/marketplace.json`
-- Codexカスタムエージェント: `plugins/shinaps-codex/agents/`
+- Codexカスタムエージェント: `plugins/shinaps-codex/agents/`。`shinaps-comparison-*.toml` は `references/dev-comparison/roles/` から `npm run generate:agents` で生成し、直接編集しない
 - 配布CLI: ソースは `bin/skills.ts` と `lib/*.ts`。`npm run build` (`tsc`) で `dist/` にJSを出力し、npmにはそれを配布する。Node.jsは`node_modules`配下の`.ts`に型除去を適用しないため、ソースのままは配布できない。checkoutでは型除去で直接実行するので、`enum`など型除去で消せない構文は使わない (`tsconfig.json` の `erasableSyntaxOnly`)
 
 品質基準とプロジェクト設定の方針は揃えつつ、クライアント固有の実行手順・エージェント形式は別々に管理する。Claude向けのエージェント呼び出しをCodexに読み替えさせる方式は使わない。スキルを追加・変更した場合は両版への適用可否を判断する。
@@ -192,7 +192,7 @@ Claude版は全16エージェントが `opus / medium`。`dev` はOpus architect
 
 実装後レビューは最大2ラウンド。2回目の後に修正した場合はテスト・残課題と最終差分の再レビュー未実施を報告し、重大な未解決事項を完了扱いにしない。UIレビューは別途Codex側で行う。役割ごとにセッションと成果物を分け、今回の他担当の結果を独立レビューへ渡さない。Claude版のこの構成にはログイン済みのCodex CLIが必要。利用不能時にFableへ切り替えず未完了の工程を報告する。個人用 `ggc` / `ccc` aliasは使わず、[CLI担当の手順](plugins/shinaps-claude/skills/dev/references/codex-worker.md) に従う。
 
-Codex版の `dev` とカスタムエージェントは親モデルを継承する既存の構成を維持し、Claude専用の実装・簡素化・指摘検証担当は追加しない。比較用入口の担当指示は登録エージェントではないので、この節のSubagent数には含まれない。
+Codex版の `dev` とカスタムエージェントは親モデルを継承する既存の構成を維持し、Claude専用の実装・簡素化・指摘検証担当は追加しない。比較用入口だけが使う比較専用の役割（Codex版の `shinaps-comparison-*` 8個）は、この節のSubagent数に含めない。
 
 **subagent 内では shinaps MCP を直接呼び出さず、rule 全文は Skill 側から prompt 経由で渡す** 原則を全 system prompt に明記する。MCP呼び出しの利用量が重複しないようにするため。
 

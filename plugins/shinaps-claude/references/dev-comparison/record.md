@@ -12,7 +12,7 @@
 
 ## 開始前の照合
 
-Phase 1 で親の観測値（Claude: 自セッションの transcript、Codex: 自スレッドの rollout の `turn_context`）が読めれば、指定値と照合する。照合する項目は、Claude はモデル・推論・service_tier、Codex はモデル・推論・sandbox・承認である。不一致なら開始せず、構成表の起動コマンドで新しいセッションを開始し直すよう報告する。読めなければその項目を未検証として進める。観測手段の無い項目は照合せず、指定値を記録する。
+Phase 1 で親の観測値（Claude: 自セッションの transcript、Codex: 自スレッドの rollout の `turn_context`）が読めれば、指定値と照合する。照合する項目は、Claude はモデル・推論・service_tier、Codex はモデル・推論・sandbox・承認である。不一致なら開始せず、構成表の起動方法で新しいセッションを開始し直すよう報告する。読めなければその項目を未検証として進める。観測手段の無い項目は照合せず、指定値を記録する。
 
 ## 親の特定
 
@@ -25,8 +25,8 @@ Phase 1 で親の観測値（Claude: 自セッションの transcript、Codex: �
 
 ## run-record.md の様式
 
-- **実行の識別**: 構成、入口、担当数、比較セット ID、条件ファイルのハッシュ（条件ファイルが課題ファイル・規約スナップショットのハッシュを列挙する）、比較スキルの plugin version と `references/dev-comparison/` のツリーハッシュ（使った plugin の `references/dev-comparison` を cwd にして `find . -type f | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256` の出力）、課題側の開始コミット、開始・終了時刻。
-- **担当表**（1 担当 1 行）: 役割、担当番号、ラウンド、実行手段、ID（親セッション ID / Claude agent ID / Codex thread_id）、起動・再開・交代の履歴、指定（モデル・推論・tier・Fast・sandbox）、観測（同じ項目、根拠ファイルと時点）、判定（一致／不一致／未検証／指定のみ）、開始・終了時刻、終了状態、使用量（実測／推定／取得不可と出典）。
+- **実行の識別**: 構成、入口、担当数、比較セット ID、条件ファイルのハッシュ（条件ファイルが課題ファイル・規約スナップショットのハッシュを列挙する）、比較スキルの plugin version と `references/dev-comparison/` のツリーハッシュ（使った plugin の `references/dev-comparison` を cwd にして `find . -type f | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256` の出力）、課題側の開始コミット、開始・終了時刻。Codex の親では、Phase 1 で読んだ同時実行の枠の数と、配置済みの比較専用の役割定義のハッシュ（`$CODEX_HOME/agents` を cwd にした `ls shinaps-comparison-*.toml | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256` の出力）。
+- **担当表**（1 担当 1 行）: 役割、担当番号、ラウンド、実行手段、ID（親セッション ID / Claude agent ID / Codex thread_id / サブエージェントの task_name・返された ID と、rollout の thread_id）、起動・再開・交代の履歴、指定（モデル・推論・tier・Fast・sandbox）、観測（同じ項目、根拠ファイルと時点）、判定（一致／不一致／未検証／指定のみ）、開始・終了時刻、終了状態、起動待ち（同時実行の上限で後から起動した担当の、待ち始めと起動の時刻）、使用量（実測／推定／取得不可と出典）。
 - **時間**: 総経過時間と Phase ごとの開始・終了。時刻はメインが `date -u +%FT%TZ` で記録する。並行か順次かは担当表の時刻から導く。
 - **修正**: Phase 7 の修正回数、実装後レビューのラウンド数、計画の修正版数。検証の回数は担当表の verifier の行から数える。
 - **人の介入・中断**: 時刻、内容（質問・回答・承認・手作業・環境の復旧）、理由、所要時間。全件を記録する。
@@ -39,19 +39,24 @@ Phase 1 で親の観測値（Claude: 自セッションの transcript、Codex: �
   - 不一致: 観測値が指定値と違う項目がある。
   - 割当外の依頼あり: 担当表に無い AI への依頼がある（下記「割当外の依頼の確認」）。
   - 未完了: 未完了の担当がある。
+  - 制約違反あり: 実装担当の実行区間の外で、作業ツリー（未追跡ファイルを含む）が変わった（[工程](workflow.md)の作業ツリーの確認）。変化したパスを併記する。
 
 ## 観測値の読み方
 
 Phase 9、または読める時点で行う。抽出結果は `raw/settings/` に保存する。
 
 - **Claude（親・子）**: `$CLAUDE_CONFIG_DIR`（未指定なら `~/.claude`）の `projects/` 配下にある親の transcript と `<session-id>/subagents/agent-<id>.jsonl`・`.meta.json` の全 assistant メッセージから、`message.model`・各行の `effort`・`message.usage.service_tier` の組の一覧を抽出し、全期間で変化がないことを確認する。子は Agent が返した ID と対応付ける。
-- **Codex（親・子）**: rollout の全ターンの `turn_context`（`model`・`effort`・`sandbox_policy`・`approval_policy`）を読む。親の rollout は「親の特定」で決めたもの、codex exec の担当の rollout は `$CODEX_HOME/sessions/` 配下でファイル名に担当表の thread_id を含むもの。rollout が無ければ未検証とする。service_tier は指定のみ。
+- **Codex（親・子）**: rollout の全ターンの `turn_context`（`model`・`effort`・`sandbox_policy`・`approval_policy`）を読む。
+  - 親の rollout は、「親の特定」で決めたもの。
+  - `codex exec` の担当の rollout は、`$CODEX_HOME/sessions/` 配下で、ファイル名に担当表の thread_id を含むもの。
+  - サブエージェントの rollout は、最初の行の `session_meta.source.subagent.thread_spawn` で、`parent_thread_id` が親の ID、`agent_path` が担当表の `task_name` に対応し、`agent_role` が担当表の `agent_type` と一致するもの。この rollout の ID を担当表の thread_id に書く。1 件に決まらなければ未検証とする。サブエージェントの sandbox・承認の指定値は、親の値とする。
+  - rollout が無ければ未検証とする。service_tier は指定のみとする。サブエージェントの service_tier の指定値は、親の指定値とする（モデル・推論の指定値は、起動時に指定した値である）。
 - rollout は後で削除されることがあるので、各担当の完了後に読む。
 
 ## 使用量
 
 - **Claude**: 同じ `message.id` の行は一度だけ数える（同じ応答が transcript に複数行で記録されるため）。担当ごとの合計と総計で重ねて数えない。
-- **Codex（親・子）**: スレッドの rollout の最後の `token_count` の `info.total_token_usage`（スレッドの累計値。cached・reasoning の内訳を含む）をスレッドごとに一度だけ使い、スレッド間で合計する。resume の `turn.completed.usage` も累計値なので、イベントログの値を合計しない。イベントログは完了判定と thread_id の取得に使う。
+- **Codex（親・子）**: スレッドの rollout の最後の `token_count` の `info.total_token_usage`（スレッドの累計値。cached・reasoning の内訳を含む）をスレッドごとに一度だけ使い、スレッド間で合計する。resume の `turn.completed.usage` も累計値なので、イベントログの値を合計しない。イベントログは完了判定と thread_id の取得に使う。サブエージェントは、スレッドごとの値を書く。親の累計に子の使用量が含まれないことを確かめた場合だけ、確かめた方法と根拠を併記して合計を書く。確かめられなければ、総計は未確定とする。
 - 金額は取得できないので「取得不可」と書く。料金表からの換算は推定欄に根拠付きで書き、実測と合計しない。
 
 ## 割当外の依頼の確認
@@ -59,8 +64,8 @@ Phase 9、または読める時点で行う。抽出結果は `raw/settings/` �
 構成表に無い AI への依頼が無いことを、次の一つの手順で確認する。
 
 1. その実行の cwd の記録をすべて列挙する（Claude の project ディレクトリの transcript、`$CODEX_HOME/sessions/` 配下で `session_meta` の `cwd` が一致する rollout）。
-2. 親・子の記録から、AI への依頼に当たる呼び出しを列挙する（Claude: Agent・Skill・MCP の tool_use と Bash コマンド、Codex: rollout の function call・`spawn_agent`・シェルコマンド）。呼び出しの単位（tool_use 1 件、function call 1 件）で、その呼び出しが AI を起動したかを判定する。コマンドやプロンプトの本文に文字列が含まれるだけのものは数えない。
-3. 1 と 2 を担当表と突き合わせる。担当表に無い依頼があれば記録し、判定に「割当外の依頼あり」を書く。
+2. 親・子の記録から、AI への依頼に当たる呼び出しを列挙する（Claude: Agent・Skill・MCP の tool_use と Bash コマンド、Codex: rollout の function call（`spawn_agent`・`followup_task` を含む）・シェルコマンド）。呼び出しの単位（tool_use 1 件、function call 1 件）で、その呼び出しが AI を起動したかを判定する。コマンドやプロンプトの本文に文字列が含まれるだけのものは数えない。子の記録にある `spawn_agent`、`thread_spawn.depth` が 2 以上の rollout、Codex の親による `codex exec` の実行は、担当表に無い依頼として数える。
+3. 1 と 2 を担当表と突き合わせる。担当表に無い依頼があれば記録し、判定に「割当外の依頼あり」を書く。AI Terminal Bridge で起動を依頼された実行の、依頼の受信（`read_messages`・`ack_messages`）と依頼元への終了・停止の報告（`send_message`）は、割当外の依頼に数えない。
 
 ## 2体目の発見の分類
 

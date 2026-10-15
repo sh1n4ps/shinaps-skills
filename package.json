@@ -1,6 +1,6 @@
 {
   "name": "@shinaps/skills",
-  "version": "0.21.1",
+  "version": "0.22.0",
   "description": "Install Shinaps AI workflows and custom agents for Codex",
   "type": "module",
   "bin": {

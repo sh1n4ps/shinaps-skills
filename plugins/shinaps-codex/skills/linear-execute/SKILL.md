@@ -41,4 +41,4 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 | QAの実施・記録・素材 | [references/qa.md](../../references/linear/qa.md) |
 | Cycle完了QA・報告 | [references/cycle-report.md](../../references/linear/cycle-report.md) |
 
-コミットは `shinaps:commit`（Claudeの入口ではClaudeへ依頼し、Codexの入口では会話側がQA後に実装タスクへ依頼する）、pushとPRの作成は `shinaps:create-pr`、公開は `shinaps:release` に従い、このスキルで手順を持たない。これらのスキルには設定で許可された操作を継続的な許可として渡し、許可済みの操作を再確認しない。
+コミットは `shinaps:commit`（Claudeの入口ではClaudeへ依頼し、Codexの入口では会話側がQA後に実装タスクへ依頼する）、pushとPRの作成は `shinaps:create-pr`、公開は `shinaps:release` に従い、このスキルで手順を持たない。これらのスキルには[共通設定](../../references/linear/configuration.md)の許可と前工程の結果を渡す。必要な条件が揃えば再確認せずに進み、個別スキルの完了だけで進行を終えず、[終了条件](../../references/linear/execution.md)まで継続する。

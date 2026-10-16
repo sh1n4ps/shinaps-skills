@@ -25,7 +25,7 @@ sharedで採用する `instructions.md` は共有YAMLの `references.specificati
 | `refine` | Shinaps AIのruleと実ファイルを照合する |
 | `extract-rules` | PRレビューからruleを抽出する |
 | `simplify` | 目的から見直して不要な構造や手順を削る |
-| `commit` | 進め方（通常・自律）を `.shinaps/linear.yaml` の `commit_mode` か開始時の確認で決め、検証できる単位でコミットする |
+| `commit` | 進め方（通常・自律）を各単位の実効方針か確認で決め、検証できる単位でコミットする |
 | `create-pr` | リポジトリの規約に合わせてPRを作成する |
 | `release` | 公開条件を確定し、対象バージョンの利用可能性を確認する |
 | `linear-plan` | 相談・必要なspec/explore・Issue作成と整理・プロジェクト設定を行い、実装前で止める |
@@ -33,7 +33,11 @@ sharedで採用する `instructions.md` は共有YAMLの `references.specificati
 
 コミット・PR・リリースは、利用者の依頼またはLinear進行で合意済みの継続許可に従う。[共通設定](plugins/shinaps-claude/references/linear/configuration.md)・[担当と工程](plugins/shinaps-claude/references/linear/workflow.md)・[終了と待機](plugins/shinaps-claude/references/linear/execution.md)を参照し、必要な前工程が揃えば再確認せずに進む。単独スキル利用にはLinear進行や新しいゴールを必須にしない。`autonomous-commit-review` の役割は `commit` に統合した。個人用の別AI呼び出し・ブラウザ管理・ゴール管理・動画制作はこのpluginに含めない。
 
-`linear-execute` は初版では利用者本人の環境向けで、Codexが進行とAgent QAを担当する。運用項目は明示必須で、既存設定の `config_storage` 欠落以外は未記載を既定値で補わない。実装の担当は作業先の `.shinaps/linear.yaml` の `implementation_skill` で選ぶ。`dev-claude`・`dev-claude-ultra` を選ぶと、ClaudeがAI Terminal Bridge経由の依頼で実装する。`dev-codex`・`dev-codex-ultra` を選ぶと、会話側はゴール・進行・Agent QAを担当し、Issueごとの別Codexタスクが実装・QA指摘の修正・許可されたコミットを行う。タスク作成・連絡には `codex_task` とツールが要求する明示依頼が必要。どちらでも既存の許可は増えない。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/linear/` に置く。`references/linear/` はClaude版を編集元としてCodex版へ同じ内容を複製し、テストで一致を確認する。
+`linear-execute` は初版では利用者本人の環境向けで、Codexが進行とAgent QAを担当する。運用項目は明示必須で、既存設定の `config_storage`・`path_policy_overrides` 欠落は共通設定の説明に従い、それ以外は未記載を既定値で補わない。実装の担当は作業先の `.shinaps/linear.yaml` の `implementation_skill` で選ぶ。`dev-claude`・`dev-claude-ultra` を選ぶと、ClaudeがAI Terminal Bridge経由の依頼で実装する。`dev-codex`・`dev-codex-ultra` を選ぶと、会話側はゴール・進行・Agent QAを担当し、Issueごとの別Codexタスクが実装・QA指摘の修正・許可されたコミットを行う。タスク作成・連絡には `codex_task` とツールが要求する明示依頼が必要。どちらでも既存の許可は増えない。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/linear/` に置く。`references/linear/` はClaude版を編集元としてCodex版へ同じ内容を複製し、テストで一致を確認する。
+
+`path_policy_overrides` で、合意したパスの範囲に限り人レビュー・AIコミット許可・コミットモードを個別に上書きできる。たとえば `paths: ["docs/**", "README.md"]` と `human_code_review: skip` を指定すると、予定コミットの全変更がその範囲に収まる場合だけ人レビューを省く。同じコミットに対象外が混ざれば、そのコミット全体を通常方針とし、改名・移動は旧新両パスを判定する。同じ依頼でも自然な責務分割で独立した範囲内コミットには例外を適用できる。stage・push・公開の許可や必要なQAは変わらない。設定例と競合・照合の手順は[パス別の方針](plugins/shinaps-claude/references/linear/configuration.md#パス別の方針)を参照する。
+
+0.29.0では旧 `document_only_changes: ai_commit` を廃止した。利用先では依存工程を止め、具体的なパス例外への移行または例外廃止を合意する。説明だけの変更の許可とは同値でないため自動変換しない。旧 `none` は例外なしとして維持でき、新規設定は `path_policy_overrides: []` にする。
 
 `permissions` の `development_operations` を明示すると、既存アカウントのログイン・環境準備・依存導入・起動・テスト・QAを継続的に許可できる。コミット・公開・破壊的操作の許可や人レビューは別に扱う。
 

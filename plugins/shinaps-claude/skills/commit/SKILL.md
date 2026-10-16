@@ -19,7 +19,7 @@ description: 許可された差分を依存順のローカルコミットにし�
 
 ## 範囲と進め方
 
-コミットは、ユーザーが明示した場合と、linear の開発進行でCodexからLocal Agent QAの合格後に対象を指定して依頼され、作業先リポジトリの `.shinaps/linear.yaml` が次のどちらかに当たる場合だけ行う: `permissions` に `commit` と `stage` がある、または `document_only_changes: ai_commit` と `permissions` の `stage` があり文書だけの変更として依頼された（条件の詳細はlinearの `references/configuration.md` の「許可」、文書だけの変更の判定は同じファイルの「項目」）。開始時に、今回の対象についてユーザー自身が進め方を選択済みか確認する。未選択なら、プロジェクトの `.shinaps/linear.yaml`（Git対象外のため、worktreeで実行する場合はメインの作業ツリー、`git worktree list` の先頭にある）に `commit_mode` が `normal` または `autonomous` で書かれていれば、それをこのプロジェクトでユーザーが合意済みの選択として使う。linearの開発進行では設定の不足・不正値を解消してから進む。linear以外の単独のコミット依頼で設定による選択がない場合は、利用可能な入力ツール（なければ文章）で「今回のコミットはどちらで進めますか？」と一問だけ聞く。
+コミットは、ユーザーが明示した場合と、linear-execute の開発進行でCodexからLocal Agent QAの合格後に対象を指定して依頼され、作業先リポジトリの `.shinaps/linear.yaml` が次のどちらかに当たる場合だけ行う: `permissions` に `commit` と `stage` がある、または `document_only_changes: ai_commit` と `permissions` の `stage` があり文書だけの変更として依頼された（条件の詳細は[Linear共通設定](../../references/linear/configuration.md) の「許可」、文書だけの変更の判定は同じファイルの「項目」）。開始時に、今回の対象についてユーザー自身が進め方を選択済みか確認する。未選択なら、プロジェクトの `.shinaps/linear.yaml`（Git対象外のため、worktreeで実行する場合はメインの作業ツリー、`git worktree list` の先頭にある）に `commit_mode` が `normal` または `autonomous` で書かれていれば、それをこのプロジェクトでユーザーが合意済みの選択として使う。linear-executeの開発進行では設定の不足・不正値を解消してから進む。linear-execute以外の単独のコミット依頼で設定による選択がない場合は、利用可能な入力ツール（なければ文章）で「今回のコミットはどちらで進めますか？」と一問だけ聞く。
 
 - **通常（推奨）**: 人がレビューする単位ごとに、単位以外の変更をstashへ退避して差分・理由・検証結果・メッセージを提示し、承認を得てからコミットする。
 - **自律**: エージェントが検証できる単位を選び（許可された一連の変更をまとめてよい）、検証・レビューして個別の承認を求めずコミットする。

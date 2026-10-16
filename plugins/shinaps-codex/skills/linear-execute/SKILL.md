@@ -28,7 +28,7 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 - 設定の所在・読み方・補足との関係・不足時の止め方は、[references/configuration.md](../../references/linear/configuration.md) の「設定の読み方」に従う。
 - 作業先リポジトリは、Issue本文の「対象・範囲外」で特定する。Issueがまだない作業では、依頼の内容で特定する。ローカルの場所は、自分の作業ディレクトリ、`list_sessions` の `project_path`、利用者の指示から確認し、確定できなければ一問確認する。ローカルの絶対パスをIssueに書かない。
 - 操作の許可は作業先リポジトリの設定で決める。同じLinear projectに属するだけでは、別のリポジトリの作業を現在の設定に含めない。作業先を特定できないIssueや、作業先に設定がないIssueでは、開発進行を始めない。
-- 設定がない場合は、Issueの読み取り、整理案、明示依頼された更新だけを行い、初期設定を案内する。
+- 依頼の実行に設定が必要で、作業先の設定がない場合は、同じセッションで `shinaps:linear-plan` の初期設定ヒアリングに進む。保存・確認後に元の依頼へ戻り、設定と既存の許可の範囲で再開する。設定不要のIssueの読み取り、整理案、明示依頼された更新はそのまま行う。
 
 ## 作業ごとに読む資料
 
@@ -41,4 +41,4 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 | QAの実施・記録・素材 | [references/qa.md](../../references/linear/qa.md) |
 | Cycle完了QA・報告 | [references/cycle-report.md](../../references/linear/cycle-report.md) |
 
-コミットは `shinaps:commit`（Claudeの入口ではClaudeへ依頼し、Codexの入口では会話側がQA後に実装タスクへ依頼する）、pushとPRの作成は `shinaps:create-pr`、公開は `shinaps:release` に従い、このスキルで手順を持たない。これらのスキルには設定で許可された操作を継続的な許可として渡し、許可済みの操作を再確認しない。
+コミットは `shinaps:commit`（Claudeの入口ではClaudeへ依頼し、Codexの入口では会話側がQA後に実装タスクへ依頼する）、pushとPRの作成は `shinaps:create-pr`、公開は `shinaps:release` に従い、このスキルで手順を持たない。これらのスキルには[共通設定](../../references/linear/configuration.md)の許可と前工程の結果を渡す。必要な条件が揃えば再確認せずに進み、個別スキルの完了だけで進行を終えず、[終了条件](../../references/linear/execution.md)まで継続する。

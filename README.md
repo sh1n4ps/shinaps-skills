@@ -16,7 +16,8 @@ Shinaps AIの利用者向け開発ワークフロー。Claude CodeとCodexそれ
 |---|---|
 | `explore` | 対話しながら既存挙動と変更影響を調べる |
 | `spec` | 目的・仕様・実現方法を詰める |
-| `dev` | 計画・実装・簡素化・検証・レビューを進める |
+| `dev-claude-ultra` (Claudeのみ) / `dev-codex-ultra` (Codexのみ) | 計画・実装・簡素化・検証・レビューを進める。設計・計画レビュー・計画簡素化を同じ役割の2体で独立に確認する。実装依頼の既定 |
+| `dev-claude` (Claudeのみ) / `dev-codex` (Codexのみ) | 同じ工程を、設計・計画レビュー・計画簡素化の担当をそれぞれ1体にして進める |
 | `debug` | 不具合の原因を検証する |
 | `review` | 差分や既存コードをレビューする |
 | `refine` | Shinaps AIのruleと実ファイルを照合する |
@@ -25,28 +26,28 @@ Shinaps AIの利用者向け開発ワークフロー。Claude CodeとCodexそれ
 | `commit` | 進め方（通常・自律）を `.shinaps/linear.yaml` の `commit_mode` か開始時の確認で決め、検証できる単位でコミットする |
 | `create-pr` | リポジトリの規約に合わせてPRを作成する |
 | `release` | 公開条件を確定し、対象バージョンの利用可能性を確認する |
-| `linear` | LinearのIssue整理から、Codexの進行・Bridge経由のClaudeの実装・QA・Cycle報告までを進める |
-| `dev-mixed` (Claudeのみ) | 比較実行用。`dev` の工程をOpusとCodex Astraの混成の担当で実行する (P1) |
-| `dev-claude` (Claudeのみ) | 比較実行用。`dev` の工程をOpusの担当だけで実行する (P2: 1体 / P3: 2体) |
-| `dev-codex-astra` (Codexのみ) | 比較実行用。`dev` の工程を `gpt-6-astra` の担当だけで実行する (P4: 1体 / P5: 2体) |
-| `dev-codex-sol` (Codexのみ) | 比較実行用。`dev` の工程を `gpt-6.1-sol` の担当だけで実行する (P6: 1体 / P7: 2体) |
+| `linear` | LinearのIssue整理から、Codexの進行・設定で選んだ担当（Bridge経由のClaude、またはCodex）の実装・QA・Cycle報告までを進める |
 
-Claude版の `dev` は実装後にレビュー・規約照合・簡素化の提案を並行して集め、全結果を専任verifierが検証し、同じ architect が採否を統合して実装担当へ修正を依頼する。実装後のレビューは最大2ラウンドで終了する。コミット・PR・リリースは依頼された場合だけ進む。`autonomous-commit-review` の役割は `commit` に統合した。個人用の別AI呼び出し・ブラウザ管理・ゴール管理・動画制作はこのpluginに含めない。
+コミット・PR・リリースは依頼された場合だけ進む。`autonomous-commit-review` の役割は `commit` に統合した。個人用の別AI呼び出し・ブラウザ管理・ゴール管理・動画制作はこのpluginに含めない。
 
-`linear` は初版では利用者本人の環境向けで、Codexが進行とAgent QA、ClaudeがAI Terminal Bridge経由の依頼で実装を担当する。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/` に置く。`references/` はClaude版を編集元としてCodex版へ同じ内容を複製し、テストで一致を確認する。
+`linear` は初版では利用者本人の環境向けで、Codexが進行とAgent QAを担当する。実装の担当は作業先の `.shinaps/linear.yaml` の `implementation_skill` で選ぶ。未記載なら `dev-claude-ultra` で、ClaudeがAI Terminal Bridge経由の依頼で実装する。`dev-codex`・`dev-codex-ultra` を選ぶと、Codexが自分で実装・QA指摘の修正・許可されたコミットを行う。どちらでも既存の許可は増えない。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/` に置く。`references/` はClaude版を編集元としてCodex版へ同じ内容を複製し、テストで一致を確認する。
 
-### 比較用 dev 入口
+### dev の入口
 
-`dev-mixed`・`dev-claude`・`dev-codex-astra`・`dev-codex-sol` は、同じ工程でモデル・同じ役割の担当数・実行環境の差を比べるための入口である。通常の開発には `dev` を使う。比較用入口は、入口と比較条件ファイルを明示した依頼でだけ使う。引数には担当数（`dev-mixed` を除く）と比較条件ファイルが必須で、無ければ担当を起動せずに終わる。Codex版は `agents/openai.yaml` の `allow_implicit_invocation: false` で自動選択の対象から外している。Claude版は、利用者が委託したCodexがAI Terminal Bridgeで依頼して起動できるよう、モデルからの呼び出し（Skillツール）を許可している。Claude Codeには、モデルからの呼び出しを許したまま自動選択の候補からだけ外す設定が無い（`disable-model-invocation: true` はSkillツールからの起動も拒否する）。このため、Claude版は説明文で、入口と比較条件ファイルを明示した依頼だけが対象だと示す。誤って選ばれても、引数が無ければ上の必須検査で担当を起動せずに終わる。
+| 入口 | 配布 | 担当のモデル | 同じ役割の独立担当数 |
+|---|---|---|---|
+| `dev-claude` | Claude | Opus / medium（登録エージェントの定義） | 1体 |
+| `dev-claude-ultra` | Claude | Opus / medium（登録エージェントの定義） | 2体 |
+| `dev-codex` | Codex | `gpt-6-astra` / medium（起動時に指定） | 1体 |
+| `dev-codex-ultra` | Codex | `gpt-6-astra` / medium（起動時に指定） | 2体 |
 
-- 共通資料（工程・構成表・担当指示・起動手順・実行記録・比較手順）は plugin ルートの `references/dev-comparison/` に置く。Claude版を編集元としてCodex版の同じパスへディレクトリ全体を複製し、テストで一致と plugin 内での参照解決を確認する。
-- 工程は eafbbc5 の Claude版 `dev` から作り、既存の `dev` とは独立に管理する。既存の `dev` を変更したとき比較工程へ反映するかは、その都度判断する。
-- 1体／2体の設定が変えるのは、独立設計・計画レビュー・計画簡素化の担当2の有無だけである。実装は常に1体で、実装後の設計適合性・独立コードレビュー・refine・簡素化は1体の設定でも行う。
-- 担当には比較専用の担当指示（`references/dev-comparison/roles/`）を使う。Claudeの担当は汎用のAgent（Opus / medium を明示）、P1のCodexの担当は `codex exec` で起動し、担当指示の全文を依頼に入れる。Codexの親（P4〜P7）は、担当指示から生成した比較専用の役割（`plugins/shinaps-codex/agents/shinaps-comparison-*.toml`）をサブエージェントの `agent_type` に指定して起動し、モデル・推論は起動時に選ぶ。通常の dev の登録エージェントは比較に使わず、変更もしない。サブエージェントが親から引き継ぐ設定と同時実行の上限は、[構成表](plugins/shinaps-claude/references/dev-comparison/configurations.md)の「環境の条件」に書く。
-- P1 は現行の Claude版 `dev` の担当割当を再現するが、比較専用の担当指示を使い review / refine / simplify スキルを経由しないので、現行 `dev` の実行結果そのものではない。
-- 検証の限界: リポジトリのテストが確認するのは、共通資料の一致と参照の解決、Claude版の入口をSkillツールから起動できる設定であること、比較専用の役割定義が担当指示から生成されていることまで。モデル・推論・tierは各実行の実行記録で指定値と観測値を分けて記録し、ローカル記録に実際の値が残らない項目（Codexのservice_tier、Claudeのpermission mode）は「指定のみ」として全構成で併記し、確認済みとは扱わない。7構成の工程の完走は保証しない。
-
-手順は[比較手順](plugins/shinaps-claude/references/dev-comparison/comparison.md)と[構成表](plugins/shinaps-claude/references/dev-comparison/configurations.md)を参照する。
+- `ultra` は同じ役割の独立担当数が2体という意味で、推論・速度・権限は変えない。担当数が変えるのは、独立設計・計画レビュー・計画簡素化の担当2の有無だけである。実装は常に1体で、実装後の設計適合性・独立コードレビュー・refine・実装の簡素化・指摘の検証は1体の入口でも行う。
+- 工程は両版で同じ[dev の工程](plugins/shinaps-claude/references/dev/workflow.md)を使い、担当の起動手順だけを各版の `references/dev/launch.md` に分ける。工程はClaude版を編集元としてCodex版の同じパスへ複製し、テストで一致を確認する。
+- Claude版は登録エージェントを直接起動し、Codex CLIを使わない。Codex版は名前付きのカスタムエージェントをサブエージェントとして起動し、CLIで起動しない。どちらも親セッションの設定を変更しない。
+- 実装依頼と他スキル（explore・spec・review・debug）からの引き継ぎは、同じ runtime の `*-ultra` を既定にする。利用者が1体を指定した場合は1体の入口を使う。以前の dev 入口の別名は残さない。
+- Claude版の入口は、利用者が委託したCodexがAI Terminal Bridgeで依頼してSkillツールから起動できるよう、モデルからの呼び出しを許可している（`disable-model-invocation: true` を付けない）。
+- テスト方針の正本は両版の `references/testing.md`（同じ内容）で、dev の各役割の定義に同じ段落を写し、テストで一致を確認する。
+- 4つの入口は、SHINAPS-98・SHINAPS-108 の比較（同じ工程で担当のモデルと担当数を変えた比較）の結果から採用した。比較用の入口・資料・役割は v0.23.0 まで同梱していた（Git 履歴で参照できる）。
 
 ## Claude Code
 
@@ -55,11 +56,11 @@ Claude版の `dev` は実装後にレビュー・規約照合・簡素化の提�
 /plugin install shinaps@shinaps-skills
 ```
 
-ユーザースコープで利用する。呼び出しは `/shinaps:dev`、`/shinaps:create-pr` など。ローカル開発中はmarketplaceにこのcheckoutの絶対パスを登録し、変更後にpluginを更新する。pluginキャッシュへ直接編集しない。更新後は新しいセッションで確認する。
+ユーザースコープで利用する。呼び出しは `/shinaps:dev-claude-ultra`、`/shinaps:create-pr` など。ローカル開発中はmarketplaceにこのcheckoutの絶対パスを登録し、変更後にpluginを更新する。pluginキャッシュへ直接編集しない。更新後は新しいセッションで確認する。
 
 ## Codex
 
-Node.js 22以上と、`plugin marketplace add` / `plugin add` に対応したCodex CLIを使う。Claude Codeのインストールは不要。ただし `linear` の開発進行には、Claude CodeとAI Terminal Bridgeが必要になる。
+Node.js 22以上と、`plugin marketplace add` / `plugin add` に対応したCodex CLIを使う。Claude Codeのインストールは不要。ただし `linear` の開発進行をClaudeの入口（`implementation_skill` の既定）で行う場合は、Claude CodeとAI Terminal Bridgeが必要になる。
 
 導入・更新・削除:
 
@@ -74,7 +75,7 @@ npx @shinaps/skills@latest recover codex
 
 ローカル開発では、このcheckoutから `node bin/skills.ts install codex` のように同じ操作を実行できる。Node.js 22.18以上なら型除去でTypeScriptをそのまま実行する (ビルド不要)。
 
-CLIはスキルをCodex pluginとして登録し、13個のカスタムエージェントと、比較用入口だけが使う8個の比較専用の役割（`shinaps-comparison-*`）を`${CODEX_HOME:-~/.codex}/agents/`へ配置する。比較専用の役割も通常のセッションの役割一覧に表示されるが、説明文で比較用入口専用と示し、通常の `dev` は使わない。新しいセッションで`shinaps:dev`、`shinaps:review`等が読み込まれる。13個のカスタムエージェントのモデルと推論設定は親セッションから継承し、調査・レビュー担当は読み取り専用を既定にする。親セッションの実行時設定が優先される場合もあるため、権限の強制境界とは扱わない。
+CLIはスキルをCodex pluginとして登録し、16個のカスタムエージェントを`${CODEX_HOME:-~/.codex}/agents/`へ配置する。新しいセッションで`shinaps:dev-codex-ultra`、`shinaps:review`等が読み込まれる。dev の入口から起動した担当は入口が指定するモデルと推論（`gpt-6-astra` / medium）で動き、それ以外のスキルからの利用ではモデルと推論設定を親セッションから継承する。実装担当以外の調査・レビュー担当は読み取り専用を既定にする。0.23.0 まで配置していた比較専用の役割は、更新時に管理済みエージェントとして削除される。親セッションの実行時設定が優先される場合もあるため、権限の強制境界とは扱わない。
 
 配布物は`~/.local/share/shinaps-ai/skills/codex/`へ保持し、一時的なnpxキャッシュに依存しない。同じ親ディレクトリの`state.json`に配置したエージェントと内容のハッシュを記録する。管理対象外の同名ファイルや、導入後に編集されたエージェントは上書き・削除せず停止する。必要な変更を退避・整理してから再実行する。`CODEX_HOME`を変更する場合は元の配置先で先にuninstallする。
 
@@ -113,7 +114,7 @@ Claude Codeは標準のmarketplace自動更新機能を使う。`/plugin` のMar
 
 - Claude版: `plugins/shinaps-claude/`、marketplaceは`.claude-plugin/marketplace.json`
 - Codex版: `plugins/shinaps-codex/`、marketplaceは`.agents/plugins/marketplace.json`
-- Codexカスタムエージェント: `plugins/shinaps-codex/agents/`。`shinaps-comparison-*.toml` は `references/dev-comparison/roles/` から `npm run generate:agents` で生成し、直接編集しない
+- Codexカスタムエージェント: `plugins/shinaps-codex/agents/`
 - 配布CLI: ソースは `bin/skills.ts` と `lib/*.ts`。`npm run build` (`tsc`) で `dist/` にJSを出力し、npmにはそれを配布する。Node.jsは`node_modules`配下の`.ts`に型除去を適用しないため、ソースのままは配布できない。checkoutでは型除去で直接実行するので、`enum`など型除去で消せない構文は使わない (`tsconfig.json` の `erasableSyntaxOnly`)
 
 品質基準とプロジェクト設定の方針は揃えつつ、クライアント固有の実行手順・エージェント形式は別々に管理する。Claude向けのエージェント呼び出しをCodexに読み替えさせる方式は使わない。スキルを追加・変更した場合は両版への適用可否を判断する。
@@ -163,20 +164,20 @@ codex mcp login shinaps-ai
 
 未登録の利用者は[Shinaps AI](https://app.shinaps.ai)でアカウントを作成する。未認証でもスキルの導入は完了できる。MCPが使えないときに照合済みと報告しない。`simplify`・`commit`・`create-pr`・`release`・`linear` の基本手順はMCP接続を必須としない。
 
-## Subagents (Claude: 16 / Codex: 13)
+## Subagents (Claude: 16 / Codex: 16)
 
 | Subagent | 役割 |
 |---|---|
 | `shinaps-explorer` | コードベース探索、必読ファイル抽出 |
 | `shinaps-investigator` | `shinaps:explore` の現在の質問をコード・テスト・設定・履歴から調べ、確実性を分けて回答 |
-| `shinaps-architect` | 設計。Claude版ではOpusが独立設計・Codex案との統合・設計適合性・プランと全指摘の最終判断を行う |
-| `shinaps-plan-reviewer` | 計画レビュー (confidence 閾値 70)。Claude版はOpus 1体＋独立したCodex CLI 1体が指摘と修正案を返す |
-| `shinaps-implementer` (Claudeのみ) | 確定した計画の実装・簡素化・検証、レビュー後の修正 (Opus) |
+| `shinaps-architect` | 設計。dev では設計担当1 が設計・設計案統合・設計適合性・プランと全指摘の最終判断を行い、2体の入口では設計担当2 も独立設計を行う |
+| `shinaps-plan-reviewer` | 計画レビュー (confidence 閾値 70)。2体の入口では2体が独立に指摘と修正案を返す |
+| `shinaps-implementer` | 確定した計画の実装・簡素化・検証、レビュー後の修正 |
 | `shinaps-reviewer` | logic / design / security / performance / maintainability / rule 統合レビュー (confidence 閾値 80) |
 | `shinaps-review-validator` | reviewer 指摘の実コード検証 (confirmed / false positive / partial / out-of-scope 分類) |
-| `shinaps-review-verifier` (Claudeのみ) | devの4担当の指摘を検証・重複整理し、出典・反証・対立をarchitectへ渡す (Opus) |
-| `shinaps-simplifier` (Claudeのみ) | 計画簡素化のOpus担当。Codexと独立して仕様・構造の削減を提案 |
-| `shinaps-refine-agent` | rule 照合 (Claude版はOpus 1体) (ファイル現状全文と照合、Violation / Improvement / Question 分類 + changed / pre-existing 切り分け) |
+| `shinaps-review-verifier` | dev の計画段階と実装後の全担当の指摘を検証・重複整理し、出典・反証・対立をarchitectへ渡す |
+| `shinaps-simplifier` | 計画・実装の簡素化の提案。仕様・構造・処理の削減を読み取り専用で提案 |
+| `shinaps-refine-agent` | rule 照合 (ファイル現状全文と照合、Violation / Improvement / Question 分類 + changed / pre-existing 切り分け) |
 | `shinaps-spec-writer` | ヒアリング + 調査結果を spec.md 構造化 |
 | `shinaps-tech-surveyor` | 外部技術調査 (WebSearch + WebFetch で 3-5 候補比較) |
 | `shinaps-survey-validator` | tech-surveyor の出典を WebFetch で再確認 |
@@ -186,54 +187,10 @@ codex mcp login shinaps-ai
 
 Claude版はMarkdown、Codex版はTOMLで役割を定義する。
 
-Claude版は全16エージェントが `opus / medium`。`dev` はOpus architectとCodex CLI (`gpt-6-astra` / medium / service tier default、fastなし) が同じ要件を独立に設計し、同じOpus architectが一つの計画にまとめる。プランレビューは別のOpus 1体＋Codex 1体、計画簡素化もそれぞれ別のOpus 1体＋Codex 1体。同じ計画を4担当が確認し、専任Opus verifierが全指摘を検証・重複整理してarchitectへ渡す。architectが採否を決め、計画が変われば4担当による確認を繰り返す。計画段階に回数上限は設けず、新しい根拠のない再提案・反復は行わない。機能・UX・契約・受入条件の変更はユーザーへ確認する。
-
-実装と修正はOpus implementer 1体。実装後は `review` (開発レビュー)・`refine`・`simplify` をSkillツールで呼ぶ。同じOpus architectの設計適合性、別のCodexの独立コードレビュー、Opus 1体のrefine、Codex 1体のsimplifyを同じ差分で並行実行する。全4担当の結果を新しいOpus verifierが検証し、同じarchitectが全指摘の採否と一つの修正指示を返す。メインは起動・待機・記録・受け渡し・ユーザー確認を担い、指摘を先に選別・重複整理しない。
-
-実装後レビューは最大2ラウンド。2回目の後に修正した場合はテスト・残課題と最終差分の再レビュー未実施を報告し、重大な未解決事項を完了扱いにしない。UIレビューは別途Codex側で行う。役割ごとにセッションと成果物を分け、今回の他担当の結果を独立レビューへ渡さない。Claude版のこの構成にはログイン済みのCodex CLIが必要。利用不能時にFableへ切り替えず未完了の工程を報告する。個人用 `ggc` / `ccc` aliasは使わず、[CLI担当の手順](plugins/shinaps-claude/skills/dev/references/codex-worker.md) に従う。
-
-Codex版の `dev` とカスタムエージェントは親モデルを継承する既存の構成を維持し、Claude専用の実装・簡素化・指摘検証担当は追加しない。比較用入口だけが使う比較専用の役割（Codex版の `shinaps-comparison-*` 8個）は、この節のSubagent数に含めない。
+Claude版は全16エージェントが `opus / medium`。Codex版の役割定義はモデルを書かず、dev の入口が起動時にモデルと推論を指定する。dev での担当の割り当ては[dev の工程](plugins/shinaps-claude/references/dev/workflow.md)にある。
 
 **subagent 内では shinaps MCP を直接呼び出さず、rule 全文は Skill 側から prompt 経由で渡す** 原則を全 system prompt に明記する。MCP呼び出しの利用量が重複しないようにするため。
 
-
-## Claude版 dev の流れ
-
-OpusとCodexのeffortはmedium。CodexはAstra・標準速度。同じOpus architectが設計から最終判断まで担当する。
-
-```mermaid
-flowchart TD
-    S["共通の要件・調査・規約"] --> A["Opus: 独立設計"]
-    S --> B["Codex Astra: 独立設計"]
-    A --> C["同じOpus architectが2案を統合"]
-    B --> C
-    C --> P["同じ計画で4担当を並行起動"]
-    P --> P1["プランレビュー: Opus 1体＋Codex 1体"]
-    P --> P2["計画簡素化: 別のOpus 1体＋Codex 1体"]
-    P1 --> V["専任Opus verifier: 全指摘の検証・重複整理"]
-    P2 --> V
-    V --> Q["同じOpus architect: 採否・計画修正案"]
-    Q --> U["仕様変更はユーザー確認後に反映"]
-    U --> R{"計画が変わった？"}
-    R -- はい・回数上限なし --> P
-    R -- いいえ・必要な判断が解決 --> D["Opus implementer: 実装・テスト"]
-    D --> E["同じ差分で4担当を並行起動"]
-    E --> F["同じOpus architect: 設計適合性"]
-    E --> G["別のCodex: 独立コードレビュー"]
-    E --> H["refine: Opus 1体"]
-    E --> I["simplify: Codex 1体"]
-    F --> O["専任Opus verifier: 全指摘の検証・重複整理"]
-    G --> O
-    H --> O
-    I --> O
-    O --> J["同じOpus architect: 採否・修正指示"]
-    J --> K{"修正が必要？"}
-    K -- いいえ --> N["検証結果・残課題・未確認事項を報告"]
-    K -- はい --> L["同じOpus implementer: 修正・テスト"]
-    L --> M{"実装レビューを2回実施した？"}
-    M -- まだ1回 --> E
-    M -- 2回済み --> N
-```
 
 ## 作業成果物
 

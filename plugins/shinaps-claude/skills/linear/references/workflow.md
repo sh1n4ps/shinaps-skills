@@ -4,13 +4,15 @@
 
 | 担当 | 責務 |
 | --- | --- |
-| Codex | Issueの作成・整理、仕様相談、Ready判定、依存・Cycle管理、進行判断、Bridgeでの依頼、Local・Staging・ProductionのAgent QA、許可されたPR・配備等の運用、結果の記録、人への依頼 |
-| Claude | Codexの指示に基づく技術調査、`shinaps:dev` による実装・自動テスト・簡素化・セルフレビュー、QA指摘の修正、成果と人の対応結果の報告。実装を伴わない文書整理は、作業先リポジトリの規約に従い `shinaps:dev` の対象外にできる。スキル・コードの変更は文書の形でも実装として `shinaps:dev` を使う |
+| Codex | Issueの作成・整理、仕様相談、Ready判定、依存・Cycle管理、進行判断、Claudeの入口のときのBridgeでの依頼、Local・Staging・ProductionのAgent QA、許可されたPR・配備等の運用、結果の記録、人への依頼 |
+| 実装担当 | 技術調査、`implementation_skill` で選んだdevの入口による実装・自動テスト・簡素化・セルフレビュー、QA指摘の修正、成果と人の対応結果の報告。実装を伴わない文書整理は、作業先リポジトリの規約に従いdevの入口の対象外にできる。スキル・コードの変更は文書の形でも実装としてdevの入口を使う |
 | 人 | 未合意の仕様・権限の判断、設定で必要なコードレビュー・必要な修正、AIに許可していないコミット、本人の操作が必要な認証等、必要なHuman QA |
+
+実装担当は、作業先リポジトリの設定の `implementation_skill` で決まる（未記載は `dev-claude-ultra` でClaude）。Claudeの入口（`dev-claude`・`dev-claude-ultra`）では、ClaudeがCodexの指示に基づいてBridge経由で実装する。Codexの入口（`dev-codex`・`dev-codex-ultra`）では、この文書でClaudeが行うとした実装・修正・コミット・完了報告をCodexが自分で行い、そのためのBridgeの依頼・報告を使わない。どちらでもLocal Agent QAは実装とは別の工程として行い、実装担当の報告を合格の根拠にしない。
 
 人への質問と依頼はCodexが窓口になる。Claudeは人へ着手確認やコミット依頼をしない。人がClaudeへ直接伝えた指示や結果は、Claudeが保持してCodexへ報告する。
 
-CodexはQAで見つけた不具合を自分で実装修正せず、再現条件と証拠をClaudeへ返す。同じ作業ツリーを同時に編集せず、人や他のAIの変更を保持する。
+CodexはQAで見つけた不具合をQAの工程の中で修正せず、再現条件と証拠を実装担当へ返す。Codexの入口では、Codexが実装担当として同じ入口で修正し、改めてQAを行う。同じ作業ツリーを同時に編集せず、人や他のAIの変更を保持する。
 
 Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐付けなど）は、Codexが利用可能なブラウザで行う。MCPが対応していないという理由だけで人へ回さない。人の認証や権限が必要な場合だけ人へ依頼する。
 
@@ -19,8 +21,8 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 | 状況 | 必要な行動 |
 | --- | --- |
 | Codexから許可範囲と受入条件を伴う実装・修正の依頼を受けた | Claudeは人へ着手を再確認せず、指定されたスキルで実行する |
-| `shinaps:dev` の中で計画上の判断が必要になった | ClaudeはCodexへ相談する。Codexは既存の合意で判断できれば回答し、人へ再承認を求めない |
-| QAで受入条件の範囲内の不具合が見つかった | CodexがClaudeへ修正を依頼し、Claudeは人の着手許可を改めて取らずに修正する。Codexが再検証する |
+| devの入口の中で計画上の判断が必要になった | Claudeの入口ではClaudeがCodexへ相談する。Codexは既存の合意で判断できれば回答し、人へ再承認を求めない |
+| QAで受入条件の範囲内の不具合が見つかった | CodexがClaudeへ修正を依頼し（Codexの入口では自分で修正し）、実装担当は人の着手許可を改めて取らずに修正する。Codexが再検証する |
 | Claudeが人のレビュー・コミット完了をBridgeで報告した | Codexは人に同じ事実を聞き直さず、報告の対象とGitの状態を照合して次の工程へ進む |
 | 次の操作の継続的な許可があり、必要な工程の結果が揃った | Codexは「進めてもよいか」を再質問せずに実行する |
 | Cycle全体を任され、対象Issueが設定された終了地点に達した | CodexはCycleを読み直し、依存・優先順位から次の実行可能なIssueを選んで続ける |
@@ -38,9 +40,9 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 | `todo` | Todo | 未着手のIssue |
 | `refinement` | 仕様整理中 | 目的・仕様・範囲・依存・受入条件を整理する |
 | `ready` | Ready | 自分たちの作業を依存順に進めれば着手できる。開始時に、必要な前工程の成果を再確認する |
-| `coding` | Coding | Claudeが実装・自動検証・簡素化・セルフレビューを完了し、差分と結果を渡す |
+| `coding` | Coding | 実装担当が実装・自動検証・簡素化・セルフレビューを完了し、差分と結果を渡す |
 | `local_agent_qa` | Local Agent QA | Codexが受入条件を検証する。不合格なら `coding` へ戻す |
-| `code_review` | Code Review（人のレビューまたは省略の記録・コミット） | `human_code_review: required` では人がレビュー・修正する。`skip` では人へのレビュー依頼も待ちも作らず、省略を記録する。コミットは、Local Agent QAの合格後（`required` では人のレビュー完了の確認後）に、`commit` と `stage` の許可があればCodexの依頼でClaudeが行い、なければ人が行う。対象コミットと、人の完了通知または省略の記録を照合する。`document_only_changes: ai_commit` があり、対象差分が文書だけの変更に当たる場合は、下の箇条に従う |
+| `code_review` | Code Review（人のレビューまたは省略の記録・コミット） | `human_code_review: required` では人がレビュー・修正する。`skip` では人へのレビュー依頼も待ちも作らず、省略を記録する。コミットは、Local Agent QAの合格後（`required` では人のレビュー完了の確認後）に、`commit` と `stage` の許可があれば実装担当が行い（Claudeの入口ではCodexの依頼による）、なければ人が行う。対象コミットと、人の完了通知または省略の記録を照合する。`document_only_changes: ai_commit` があり、対象差分が文書だけの変更に当たる場合は、下の箇条に従う |
 | `post_commit` | コミット後の検証・PR準備 | 設定に従って、push前の最終Agent QA、必須検証、許可されたpush・PR作成を行う |
 | `staging_agent_qa` | Staging Agent QA | 配備されたPR候補版をCodexが検証する |
 | `staging_human_qa` | Staging Human QA | そのPRで必要な人の確認。不要なら理由を記録して省略する |
@@ -56,18 +58,18 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 - 人がレビュー中に修正した場合は `code_review` を続ける。AIへ追加実装を依頼する場合は、範囲と受入条件をIssueで更新してから `coding` へ戻す。
 - Human QAが新たに必要になった場合は、理由と具体的な残項目をIssueに記録して利用者に相談する。
 - プロジェクトの規約や補足の記述だけでは、AIのコミットの許可として扱わない。文書だけの変更であることを理由に人のレビューを省きAIがコミットする例外は、設定に `document_only_changes: ai_commit` があるときだけ適用する。適用しない場合は、通常のレビュー・コミットの条件（`human_code_review` と [configuration.md](configuration.md) の「許可」の `commit`）に従う。
-- `human_code_review: skip`、または下の文書だけの変更の例外で人のレビューを行わなかった場合、Codexは `code_review` の工程で、省略と、実施した確認（`shinaps:dev` 内のレビュー、Local Agent QA）への参照をIssueへ記録する。1行目には省略の根拠になった設定を書き、文書だけの変更の例外では判定の記録へのリンクを添える。
+- `human_code_review: skip`、または下の文書だけの変更の例外で人のレビューを行わなかった場合、Codexは `code_review` の工程で、省略と、実施した確認（devの入口内のレビュー、Local Agent QA）への参照をIssueへ記録する。1行目には省略の根拠になった設定を書き、文書だけの変更の例外では判定の記録へのリンクを添える。
 
   ```text
   人のコードレビュー: 省略（作業先リポジトリの設定 <human_code_review: skip または document_only_changes: ai_commit>。文書だけの変更の例外では「判定: <Local Agent QAのコメントへのリンク>」を続ける）
-  実施した確認: shinaps:dev 内のレビュー（使った場合。Claudeの完了報告 <コメントへのリンク>）、Local Agent QA（<記録へのリンク>）
+  実施した確認: devの入口内のレビュー（使った場合。実装担当の完了報告 <コメントへのリンク>）、Local Agent QA（<記録へのリンク>）
   コミット: <SHA>（<実際の実施者と方法>）
   ```
 
 - `document_only_changes: ai_commit` がある場合は、次のとおり進める（文書だけの変更の定義は [configuration.md](configuration.md) の「項目」）。
   - Local Agent QAで、Codexは受入条件の検証に加え、対象差分の全体が文書だけの変更に当たるかを判定し、範囲と理由をQAコメントに一度だけ記録する。
-  - 当たる場合、`required` でも人へのレビュー依頼も待ちも作らない。CodexはClaudeへコミットを依頼し、依頼に判定の記録へのリンクを添える。
-  - Claudeは、設定にこのキーと `stage` の許可があること、依頼された対象差分が、作業ツリー上の同じ対象（ファイルと内容）の差分と一致することを確認してから `shinaps:commit` でコミットする。違えばコミットせずCodexへ返す。差分の性質は判定し直さない。
+  - 当たる場合、`required` でも人へのレビュー依頼も待ちも作らない。Claudeの入口では、CodexはClaudeへコミットを依頼し、依頼に判定の記録へのリンクを添える。
+  - 実装担当は、設定にこのキーと `stage` の許可があること、判定した対象差分が、作業ツリー上の同じ対象（ファイルと内容）の差分と一致することを確認してから `shinaps:commit` でコミットする。違えばコミットしない（Claudeの入口ではCodexへ返す）。差分の性質は判定し直さない。
   - コミット後、Codexはコミットの内容が判定した差分と一致し、対象作業の未コミット変更が残らないことを照合する。一致しなければ次の工程へ進まず、SHA・判定した差分・実際の差分の違いをIssueに記録して人に確認する。履歴の書き換えはその場で確認する。
   - 判定の後に対象差分が変わったら、新しい対象で判定とQAをやり直す。
   - 照合の後に、上の省略の記録をIssueへ書く。
@@ -83,25 +85,25 @@ Linearの工程のステータスと、Codexのゴールの状態は別に扱う
 
 ## Bridgeでの依頼と報告
 
-AI Terminal Bridge（以下Bridge）の本体は同梱しない。導入済みのMCPとWebStormプラグインを使う。開発進行には必須で、Issue整理だけなら不要。
+AI Terminal Bridge（以下Bridge）の本体は同梱しない。導入済みのMCPとWebStormプラグインを使う。Claudeの入口で開発進行するときは必須で、Codexの入口やIssue整理だけなら不要。
 
-送信前に `list_sessions` で、相手の `project_path`、完全な `session_id`、受信の可否を確認する。`session_id` は保存せず、依頼のたびに一覧から取得する。`project_path` はIDEのプロジェクトのルートで、作業ディレクトリと一致するとは限らない。依頼と報告には、Gitの作業ディレクトリを別に書く。
+送信前に `list_sessions` で、相手の `project_path`、完全な `session_id`、受信の可否を確認する。`session_id` は保存せず、依頼のたびに一覧から取得する。`project_path` はIDEのプロジェクトのルートで、作業ディレクトリと一致するとは限らない。依頼と報告には、Gitの作業ディレクトリを別に書く。次の表のCodexとClaudeの間の依頼・報告は、Claudeの入口のときに使う。
 
 | 依頼・報告 | 含めるもの |
 | --- | --- |
-| 実装・修正の依頼（CodexからClaude） | Issueリンク、範囲・受入条件、Gitの作業ディレクトリ・ブランチ・既存差分、許可範囲（`dev_delegation` の有無を含む）、返信先のCodexの `session_id`、関係する補足と参照先、下の定型文。修正依頼では、再現手順・期待と実際・対象差分・証拠の場所を加える |
+| 実装・修正の依頼（CodexからClaude） | Issueリンク、使う入口（`implementation_skill` の値、またはその場の明示的な指定）、範囲・受入条件、Gitの作業ディレクトリ・ブランチ・既存差分、許可範囲（`dev_delegation` の有無を含む）、返信先のCodexの `session_id`、関係する補足と参照先、下の定型文。修正依頼では、再現手順・期待と実際・対象差分・証拠の場所を加える |
 | コミットの依頼（CodexからClaude） | Issueリンク、対象差分・Gitの作業ディレクトリ・ブランチ、Local Agent QAの結果、人のレビューの状態（完了通知の内容、または設定による省略）、返信先のCodexの `session_id` |
-| 完了の報告（ClaudeからCodex） | 対象差分、自動検証の結果、起動方法、確認観点、既知の制限、未解決の事項、`shinaps:dev` 内のレビュー結果の要約と未解決の指摘。コミットした場合は、コミットSHAと `shinaps:commit` の検証・レビューの結果 |
+| 完了の報告（ClaudeからCodex） | 対象差分、自動検証の結果、起動方法、確認観点、既知の制限、未解決の事項、devの入口内のレビュー結果の要約と未解決の指摘。コミットした場合は、コミットSHAと `shinaps:commit` の検証・レビューの結果 |
 | 人のレビュー・コミット完了の報告（ClaudeからCodex） | 下の「人のレビュー・コミット完了の報告」の項目 |
 | 開発進行の引き渡し（ClaudeからCodex） | 利用者からの依頼の内容、対象Issue・Cycle、作業先リポジトリ、利用者が示した範囲と条件。Codexは作業先リポジトリの設定と照合して進行を始め、不足する判断はCodexから利用者へ確認する |
-| 比較実行の依頼（CodexからClaude） | [比較手順](../../../references/dev-comparison/comparison.md#5-実行)の項目だけ。下の定型文と許可範囲は含めない。Claudeは指定された比較用入口で実行し、このスキルの実装・修正の手順（`shinaps:dev`、Codexへの相談、コミット）を適用しない |
 
 コミットの依頼では、`commit_mode` がない場合の開始時の確認と、通常モードの単位ごとの承認を、Codexが人へ取り次ぐ。Codexは自分で選択・承認しない。
 
 実装・修正の依頼には次の文を含める。
 
 ```text
-ユーザー承認済みの範囲でCodexが進行する。shinaps:linearを読み込み、この依頼の範囲と受入条件の中では人へ着手を再確認せず、shinaps:devで実行する。計画の相談・質問・障害・完了はBridgeで依頼元のCodexへ返す。人のレビュー・コミット完了を受けた場合も同じ返信先へ報告する。
+ユーザー承認済みの範囲でCodexが進行する。shinaps:linearを読み込み、この依頼の範囲と受入条件の中では人へ着手を再確認せず、指定した入口で実行する。計画の相談・質問・障害・完了はBridgeで依頼元のCodexへ返す。人のレビュー・コミット完了を受けた場合も同じ返信先へ報告する。
+入口: shinaps:<dev-claude または dev-claude-ultra>
 許可範囲: <設定と会話で許可された操作。dev_delegationの有無を含む>
 ```
 

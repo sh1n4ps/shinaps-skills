@@ -1,6 +1,6 @@
 ---
 name: review
-description: 差分・PR・既存コードをレビューする。単独実行では指摘検証と外部技術調査を行い、dev の開発レビューでは設計担当と独立 reviewer が同じ実装を確認する。
+description: 差分・PR・既存コードをレビューし、指摘の検証と外部技術調査を行う。
 argument-hint: <なし | PR番号 | ファイル/ディレクトリパス>
 ---
 
@@ -17,21 +17,6 @@ argument-hint: <なし | PR番号 | ファイル/ディレクトリパス>
 Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用できる場合は対応するツールを使う。現在のセッションで提供されていないツールは仮定しない。質問は一問ずつ確認して回答を待つ。
 
 別セッションへの委託・新しいworktreeは明示された許可がある場合だけ行う。委託不可なら現在のセッションで調査・計画・レビューの観点を順に確認し、独立レビューとは報告しない。独立レビューがプロジェクトの必須条件なら未完了として扱う。Shinapsのエージェント名はClaudeのpluginで公開された名前を使う。サービスのrule照合が必要な工程でMCPを利用できなければ、その工程を未確認として報告し、照合済みとしない。
-
-## dev からの開発レビュー
-
-引数に「開発レビュー」と指定された場合は、この節だけを実行し、以下の単独レビューの引数判定・外部調査・review-validator・devへの引き継ぎは実行しない。
-
-呼び出し元から対象ファイルと差分 (staged / unstaged / untracked を含む)、最終 plan・受入条件・合意済み変更、実装報告と検証結果、rule 全文、設計したOpus architectのエージェントIDと設計判断の理由を受け取る。
-
-- **設計適合性**: 同じ `shinaps-architect` (Opus / medium) を「設計適合性レビュー」として再開する。確定したplanと現在のコード・検証を照合し、自案の欠陥も確認する。再開できなければ同じモデルに設計判断・最新計画・採否を引き継ぎ、その旨を記録する。他担当の今回の結果を見る前に、このレビュー結果を確定する。
-- **独立レビュー**: 設計者とは別の新規Codex CLI 1体へ、コードの正しさ・安全性・性能・保守性・規約の確認を依頼する。[Codex CLI担当](../dev/references/codex-worker.md) の独立コードレビュー指示を使う。Opus reviewerを追加起動しない。
-
-両者へ同じ対象を渡し、読み取り専用で並行して確認する。今回の他担当の結果を読ませず、意見を交換させない。全担当が完了するまで対象を編集しない。Opus architectはエージェント定義、Codexは上記CLI手順のモデル・effort・service tierを使う。
-
-「起動のみ」と指定された場合は、対応する実行環境で両担当をバックグラウンド起動し、担当名・OpusのエージェントID・CodexのセッションIDと実行ハンドル・対象範囲・未起動分を返す。結果待ちと全文記録はdevのメインが行う。refine・simplifyを含む4担当の全結果をdevのverifierが検証し、同じarchitectが採否を統合し、implementerが修正する。ここでは指摘を整理・選別しない。起動済みをレビュー完了と報告しない。枠不足やバックグラウンド非対応なら実行可能な範囲を返し、devが残りを順次進める。委託不可の場合はその制約を返す。
-
-起動のみでない場合は両者の完了を待ち、結果と確認範囲を呼び出し元へ返す。指摘の修正は行わない。再レビューでは最新の計画・修正差分・前回の指摘・修正内容・検証結果を使い、今回の結果が揃うまで同じ独立性を保つ。
 
 ## 引数仕様
 
@@ -60,7 +45,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 ├── review.md                 ← shinaps-reviewer の生レポート
 ├── tech-survey.md            ← shinaps-tech-surveyor の生レポート
 ├── tech-survey-validated.md  ← shinaps-survey-validator の検証済みレポート (surveyor が具体推奨を出した場合のみ)
-└── review-validated.md       ← shinaps-review-validator の検証済み指摘リスト (dev にはこのパスを直接渡す)
+└── review-validated.md       ← shinaps-review-validator の検証済み指摘リスト (dev の入口にはこのパスを直接渡す)
 ```
 
 `{mode}` は `branch` / `pr-{N}` / `path-{slug}`。
@@ -132,16 +117,18 @@ tech-surveyor が「特筆事項なし」以外を返した場合のみ起動。
 ### Phase 5: 次アクション選択
 
 確定指摘が 1 件以上あれば `AskUserQuestion` で:
-- **修正実装に進む** (`/shinaps:dev` へ橋渡し) (推奨)
+- **修正実装に進む** (`/shinaps:dev-claude-ultra` へ橋渡し) (推奨)
 - **PR にコメント投稿する** (PR モードのみ)
 - **ローカル保存のみで終了**
 
 **修正実装選択時 (Phase 6 前) に ローカル成果物（implementation.md / 調査・レビューレポート）** で修正方針決定の記録を残す。
 
-### Phase 6: /shinaps:dev への橋渡し (修正実装選択時)
+### Phase 6: /shinaps:dev-claude-ultra への橋渡し (修正実装選択時)
+
+`review-validated.md` の確定指摘を修正タスクとして渡す。dev の入口は Phase 1 でこのファイルを読み、確定指摘を修正対象として扱う。利用者が1体での実行を指定した場合は `shinaps:dev-claude` を使う。
 
 ```
-Skill(skill="shinaps:dev", args="以下のレビュー指摘を修正する。詳細は .shinaps/work/reviews/{ts}-{mode}/review-validated.md を参照: {修正タスクの 1 行サマリ}")
+Skill(skill="shinaps:dev-claude-ultra", args="以下のレビュー指摘を修正する。詳細は .shinaps/work/reviews/{ts}-{mode}/review-validated.md を参照: {修正タスクの 1 行サマリ}")
 ```
 
 ### Phase 7: PR コメント投稿 (PR モードかつ選択時)
@@ -158,3 +145,4 @@ Skill(skill="shinaps:dev", args="以下のレビュー指摘を修正する。�
 - **生レポート保存厳守**: すべての subagent 応答を全文保存
 - **PR コメント投稿は要承認**: 外部影響のある操作は必ず本文確認
 - **diff が空ならエラー終了**: 何もしない旨を明示
+- **テストの判断**: [テスト方針](../../references/testing.md) に従う

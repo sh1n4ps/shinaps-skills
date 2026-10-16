@@ -5,7 +5,7 @@ description: Codexが進行するLinearの開発で、AI Terminal Bridge経由�
 
 # Linearの開発でClaudeが行うこと
 
-初版では、Codexが進行・Agent QA・人への窓口を担当する。ClaudeはAI Terminal Bridge（以下Bridge）経由の依頼で、技術調査と実装・修正を担当する。担当を入れ替えない。
+初版では、Codexが進行・Agent QA・人への窓口を担当する。作業先リポジトリの設定の `implementation_skill` がClaudeの入口（未記載を含む）のとき、ClaudeはAI Terminal Bridge（以下Bridge）経由の依頼で、技術調査と実装・修正を担当する。担当を入れ替えない。
 
 ## 再確認せず進める条件
 
@@ -25,10 +25,9 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 
 - 依頼の範囲・受入条件・Gitの作業ディレクトリ・ブランチ・既存差分・許可範囲を確認する。
 - Codexから依頼された実装・修正は、依頼の対象Issueに紐づく。Claudeは別のIssueを作らない。
-- 比較用入口（`dev-mixed`・`dev-claude`）と比較条件ファイルを指定した比較実行の依頼は、このスキルの対象外にする。指定された入口を起動し、実行中の扱いと報告は入口に従う（[references/workflow.md](references/workflow.md) の「Bridgeでの依頼と報告」）。
-- 実装・修正には `shinaps:dev` を使う。`shinaps:dev` は内部で簡素化・規約照合・レビューを行うので、これらを別に起動しない。`shinaps:dev` を使えない場合は、独自の手順で代わりに実装せずCodexへ報告する。
-- `shinaps:dev` の委託（サブエージェントや別のCLI）は、依頼の許可範囲に `dev_delegation` が書かれている場合だけ使う。許可範囲に `dev_delegation` がない依頼では委託しない。worktreeの作成は含まない。
-- `shinaps:dev` が利用者に確認する場面（計画の判断、不明点、承認）では、人ではなくCodexへ相談する。Codexが既存の合意で答えた内容を人へ再確認しない。仕様・受入条件・許可範囲の変更が必要な場合は、Codexが人に確認する。
+- 実装・修正には、依頼で指定された入口（`shinaps:dev-claude` または `shinaps:dev-claude-ultra`）を使う。指定がなければ `shinaps:dev-claude-ultra` を使い、受信側で入口を変えない。devの入口は内部で簡素化・規約照合・レビューを行うので、これらを別に起動しない。入口を使えない場合は、独自の手順で代わりに実装せずCodexへ報告する。
+- devの入口の委託（サブエージェント）は、依頼の許可範囲に `dev_delegation` が書かれている場合だけ使う。許可範囲に `dev_delegation` がない依頼では委託しない。worktreeの作成は含まない。
+- devの入口が利用者に確認する場面（計画の判断、不明点、承認）では、人ではなくCodexへ相談する。Codexが既存の合意で答えた内容を人へ再確認しない。仕様・受入条件・許可範囲の変更が必要な場合は、Codexが人に確認する。
 - QAで見つかった不具合の修正依頼も同じ扱いにし、人の着手許可を改めて取らない。
 - 同じ作業ツリーをCodexや人と同時に編集しない。人や他のAIの変更を保持する。
 - Claudeは次のいずれかの場合だけコミットする。

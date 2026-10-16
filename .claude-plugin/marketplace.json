@@ -11,7 +11,7 @@
     {
       "name": "shinaps",
       "source": "./plugins/shinaps-claude",
-      "description": "Shinaps AIの開発ワークフロー。プロジェクトの指示から条件を読み、調査・設計・実装・簡素化・レビュー・コミット・PR・リリースとLinearでの開発進行を支援する14スキル。",
+      "description": "Shinaps AIの開発ワークフロー。プロジェクトの指示から条件を読み、調査・設計・実装・簡素化・レビュー・コミット・PR・リリースとLinearでの開発進行を支援する。",
       "author": {
         "name": "shinaps",
         "email": "ryuta@shinaps.jp"

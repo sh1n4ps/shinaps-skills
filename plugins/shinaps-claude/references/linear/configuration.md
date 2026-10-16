@@ -47,7 +47,7 @@
 
 ## 項目
 
-以下の項目は明示必須（既存設定の `config_storage` 欠落だけは上記の扱い）。省略・不正値を既定値で補わず、依存する工程を止めて設定を確認する。`null`・`none`・空の一覧は、以下で認めた箇所だけで「使用しない」を表す。
+以下の項目は明示必須（既存設定の `config_storage` と `path_policy_overrides` の欠落はそれぞれの説明に従う）。省略・不正値を既定値で補わず、依存する工程を止めて設定を確認する。`null`・`none`・空の一覧は、以下で認めた箇所だけで「使用しない」を表す。
 
 | キー | 内容 |
 | --- | --- |
@@ -64,15 +64,49 @@
 | `implementation_skill` | Issueの実装・修正に使うdevの入口。`dev-claude`・`dev-claude-ultra`（CodexがBridgeでClaudeへ依頼し、Claudeがその入口で実行する）、または `dev-codex`・`dev-codex-ultra`（Issueごとの別Codexタスクがその入口を実行し、会話側は進行・Agent QAを担当する） |
 | `commit_mode` | `shinaps:commit` でコミットするときの進め方。`normal`（単位ごとに承認を得る）または `autonomous`（個別の承認なしで単位ごとに検証してコミットする） |
 | `human_code_review` | 人のコードレビューの要否。`required`（人がレビューする）または `skip`（人のレビューを行わない） |
-| `document_only_changes` | 文書だけの変更（下の説明）の扱い。`none` は例外なし。`ai_commit`: 対象差分が文書だけの変更のとき、人のコードレビューを行わず、Local Agent QAの合格後に実装担当が `shinaps:commit` でコミットする（Claudeの入口ではCodexの依頼でClaudeが行う） |
+| `path_policy_overrides` | パス別に人レビュー・AIコミット許可・コミットの進め方を上書きするルールの一覧。例外なしは `[]`。既存設定で欠落していれば例外なし（下の「パス別の方針」） |
 
-- `commit_mode` は進め方の設定であり、コミットの許可ではない。コミットは利用者の明示的な依頼、`permissions` の `commit`（条件は下の「許可」）、または `document_only_changes: ai_commit` による文書だけの変更のコミットのときだけ行う。`commit_mode` があるだけではコミット・pushを始めず、人のレビュー済みと推測しない。その場の明示的な指定は設定に優先する。`normal` は人が自分でgit操作をする工程（`code_review`）とは別のもの。
-- `implementation_skill` が決めるのは、実装・修正の担当と実行方式だけである。`permissions`・`stop_after`・`human_code_review`・`commit_mode`・`document_only_changes` の意味と、`dev_delegation`・worktreeの作成・別セッションの作成の許可を変えない。その場の明示的な指定は設定に優先する。既存の設定にキーがなくても、自動で書き加えない。担当と工程の対応は [workflow.md](workflow.md) の「担当と窓口」にある。
-- `human_code_review: skip` は人のレビューの工程だけを省く。devの入口内のレビュー、Agent QA、必要なHuman QAは省かない。省略は、人のレビュー済みとして記録しない。`human_code_review`・`commit`・`stage`・`commit_mode`・`document_only_changes` は互いに独立しており、一つから他を推測しない。
-- `document_only_changes: ai_commit` は、文書だけの変更について、`human_code_review: required` でも人のレビューを省き、`commit` の許可がなくてもAIのコミットを認める。`stage` の許可は通常のコミットと同じく必要で、ほかのキーの意味と許可は変えず、push以降の操作、利用中のツールの権限、利用者の停止・撤回（「設定の読み方」）を上書きしない。
-- 対象差分の全体（追加・削除・改名・移動・ファイルの実行権限の変更を含む、そのコミットに入るすべての変更）が、説明だけを変え、人またはAIを含む実行主体の動作・権限・必須の工程を変える内容を一つも含まないとき、文書だけの変更とする。動作・権限・必須の工程を変える内容には、実行コード、テスト、スクリプト、ビルド・CI・配備・フック・依存・環境・Linterの設定、生成物とその元、データやmigration、AIツールの権限やスキルの入口に加え、文書の中で実行主体の権限・担当・必須の工程や検証・コミットとレビューの条件を定める記述を含む。判定は各ファイルの役割と変更内容で行い、拡張子・ディレクトリ名・ファイル名のパターンだけを根拠にしない。判定できない差分は文書だけの変更として扱わない。例外を適用するために対象差分を分割しない。
+- `commit_mode` は進め方の設定であり、コミットの許可ではない。コミットは利用者の明示的な依頼、`permissions` の `commit`（条件は下の「許可」）、または適用されたパス別の `ai_commit: allow` に従う。`commit_mode` があるだけではコミット・pushを始めず、人のレビュー済みと推測しない。その場の明示的な指定は設定に優先する。`normal` は人が自分でgit操作をする工程（`code_review`）とは別のもの。
+- `implementation_skill` が決めるのは、実装・修正の担当と実行方式だけである。`permissions`・`stop_after`・人レビュー・コミットの方針と、`dev_delegation`・worktreeの作成・別セッションの作成の許可を変えない。その場の明示的な指定は設定に優先する。既存の設定にキーがなくても、自動で書き加えない。担当と工程の対応は [workflow.md](workflow.md) の「担当と窓口」にある。
+- `human_code_review: skip` は人のレビューの工程だけを省く。devの入口内のレビュー、検証、Agent QA、必要なHuman QAは省かない。省略は、人のレビュー済みとして記録しない。人レビュー・AIコミット許可・`stage`・`commit_mode` は互いに独立しており、一つから他を推測しない。
 - 工程キーは [workflow.md](workflow.md) の工程表と同じ。`statuses` の値はチームに実在する正確な名前にする。操作時はLinearから取得した状態のIDを使う。対応が曖昧・欠落・実物と不一致なら、その対応に依存する更新を止める。ステータスを自動で新設しない。
 - `team_settings: manage_on_setup` の場合も、通常実行ではチーム設定を変更しない。
+
+## パス別の方針
+
+`path_policy_overrides` は、各予定コミットに入る全変更を対象に方針を適用する。Linear進行でも単独の `commit` でも同じ規則を使う。新規設定は `path_policy_overrides: []` とし、具体的なパスと上書き項目を利用者と合意した場合だけルールを追加する。
+
+```yaml
+path_policy_overrides:
+  - paths: ["docs/**", "README.md"]
+    human_code_review: skip
+    ai_commit: allow
+    commit_mode: autonomous
+```
+
+- `paths` は空でないパターン一覧を必須とする。`human_code_review`（`required` / `skip`）、`ai_commit`（`allow` / `deny`）、`commit_mode`（`normal` / `autonomous`）は少なくとも一つ指定し、省略項目は通常設定を継承する。不正な値や構文は設定不備として依存工程を止める。
+- `ai_commit` の継承元は通常のコミット許可。`allow` はそのコミットのAIによる実行を認め、`deny` はそのコミットに対する継続的なコミット許可を取り消す。今回の利用者の明示指示を優先する。どちらも `stage` の許可を兼ねない。push・公開・終了地点・ツール権限や必要なQAも変更しない。
+- パス設定への合意は対象と工程の許可であり、変更内容に含まれる未合意仕様や権限拡張への承認ではない。内容や拡張子から例外許可を推定しない。
+
+### パターンとコミット全体の照合
+
+パスは作業対象リポジトリのルート相対、`/` 区切りで、大小文字を区別する。完全一致、同じ階層内の0文字以上に一致する `*`、独立したパス要素として0階層以上に一致する `**` だけを扱う（例: `docs/*` は直下、`docs/**` は配下全体、`**/README.md` はルートを含む各階層）。隠しファイルも通常の名前として扱う。リンク先を解決したり、現在存在するファイルへパターンを展開したりしない。絶対パス、`.` / `..` 要素、否定・文字クラス・波括弧展開などの未対応構文は設定不備として止める。
+
+各予定コミットの全変更に現れる旧・新パスが、一つのルールのパターン一覧で覆われる場合だけ、そのルールをそのコミット全体へ適用できる。追加は新パス、削除は旧パス、改名・移動は両方を含め、modeだけの変更も対象にする。新パスだけの一覧や現在残っているファイルだけでは判定しない。
+
+- コミット全体に適用できるルールがなければ、そのコミット全体を通常方針とする。複数ルールをファイル別・項目別に合成しない。
+- コミット全体に適用できるルールが複数ある場合、通常設定を継承した後の3項目がすべて同じならその方針を採用し、適用した全ルールを記録する。一つでも結果が異なれば依存工程を止めて競合の解消を求める。並び順やパターンの詳細度では優先しない。
+- モードによらず自然な責務単位を先に決め、その予定コミットごとに判定する。同じ依頼に別の変更があっても、独立した範囲内コミットには例外を適用できる。例外取得だけを目的とした恣意的な分割はしない。依頼全体は網羅性と最終照合に使い、方針を固定する単位にはしない。
+
+### 判定記録と変更時の扱い
+
+各予定単位について、設定の正本と内容、適用した全ルール（または適用なしの理由）、単位の比較元と全差分、継承後の実効3項目、今回の明示指示、`stage` の許可、検証・レビューの結果を記録する。差分の同一性はパスだけでなく内容・mode等も含めて確認する。Linear進行での担当間の引き渡しは [workflow.md](workflow.md)、コミット前後の単位照合と完了時の全体照合は [commit](../../skills/commit/SKILL.md) に従う。
+
+予定単位の内容・分割・統合を変更したら、変更した単位を再判定して必要なレビュー・許可確認・検証へ戻す。設定変更時も影響する未実行単位を再判定する。以前の判定や別単位の方針は流用しない。実コミットが予定と異なれば停止し、履歴を無断で書き換えない。
+
+### 旧設定の移行
+
+`document_only_changes: none` は例外なしとして読めるため、自動変更や再合意は不要。旧 `document_only_changes: ai_commit` は廃止し、新設定と共存していても依存工程を止める。具体的なパスと上書き項目への移行、または例外廃止を利用者と合意してから旧キーを除く。説明だけの変更の許可とパスの許可は同値ではないため、自動変換・二重運用をしない。既存プロジェクトへ例外許可を自動追加しない。
 
 ## 終了地点
 
@@ -96,7 +130,7 @@
 | `codex_task` | 対象IssueごとのCodex実装タスクの新規作成・状態確認・実装や修正や許可済みコミットの依頼。worktree作成、操作許可の追加、タスク側でのゴールや実装タスクの再作成は含めない。ツールの明示依頼要件も満たす（[codex-task.md](codex-task.md)） |
 | `bridge_request` | BridgeによるCodexからClaudeへの実装・修正の依頼と、ClaudeからCodexへの開発進行の引き渡し |
 | `stage` | レビュー・コミットの対象差分だけをステージする |
-| `commit` | 対象Issueの差分を、Local Agent QAの合格と `human_code_review` に従った工程の後に、`shinaps:commit` でローカルにコミットする。AIのコミットには `stage` の許可も併せて必要。push・PR・履歴の書き換え、人のレビューの省略を含めない。`document_only_changes: ai_commit` による文書だけの変更のコミットは、`commit` がなくても行える（`stage` は必要） |
+| `commit` | 対象Issueの差分を、Local Agent QAの合格と `human_code_review` に従った工程の後に、`shinaps:commit` でローカルにコミットする。AIのコミットには `stage` の許可も併せて必要。push・PR・履歴の書き換え、人のレビューの省略を含めない。パス別の `ai_commit` を含む実効方針に従う（上の「パス別の方針」） |
 | `push` | 対象Issueの作業ブランチの通常のpush |
 | `pr_create` | 対象IssueのPRの作成と更新 |
 | `merge` | 必要なQA・承認が揃った対象PRのマージと、元のブランチへ戻る操作 |
@@ -153,7 +187,7 @@ stop_after: pre_push_qa
 implementation_skill: dev-claude-ultra # CodexがBridgeでClaudeへ依頼する。Codexが実装する場合は dev-codex-ultra など
 human_code_review: required
 commit_mode: autonomous
-document_only_changes: none
+path_policy_overrides: []
 cycle_report: null
 permissions:
   - development_operations # この範囲を利用者が合意した場合だけ記載
@@ -185,7 +219,7 @@ Claudeもこの手順で初期設定を行える。合意した設定の保存�
 1. アカウント、workspace、team、projectと、チームのステータス一覧・既存の運用をLinearから読む。
 2. 作業先リポジトリのAGENTS.md・CLAUDE.md・README・CI・検証や配備のスクリプトを読み、`references` の候補を決める。
 3. 設定案を一つ作る。チーム設定を管理できる場合だけ、FamilyStayを基にした工程の分離（[workflow.md](workflow.md) の工程表に対応するステータス）を変更案として示す。利用者のプロジェクトらしいという推測で `manage_on_setup` にしない。
-4. 既存の情報で決まらない運用上の決定（`config_storage`、`stop_after`、`permissions`（`commit` を含む）、`human_code_review`、`team_settings`、Cycle報告、`commit_mode`、`implementation_skill`）だけを一問ずつ確認する。終了地点は上の一覧から選んでもらう。作業先リポジトリの既存の規約に文書だけの変更の例外がある場合だけ、その範囲と `document_only_changes` の範囲（「項目」の説明）を示して、`ai_commit` を設定するかを確認する。例外を使わない場合は `none` を記載する。
+4. 既存の情報で決まらない運用上の決定（`config_storage`、`stop_after`、`permissions`（`commit` を含む）、`human_code_review`、`team_settings`、Cycle報告、`commit_mode`、`implementation_skill`）だけを一問ずつ確認する。終了地点は上の一覧から選んでもらう。パス別の例外が必要な場合は、具体的な対象パターンと上書き項目、通常設定からの変更を示して合意する。例外を使わない新規設定には `path_policy_overrides: []` を記載する。旧設定の移行は上の手順に従う。
 5. 合意した方式の正本へ、下の保存手順に従って保存する。sharedでは採用する補足の `references` と共有対象を照合し、別checkoutでも同じ条件を読めるようにする。正本と補足を読み直して確認する。
 6. Linearのチーム設定の変更は、設定の保存とは別に扱う。対象チームと変更差分（追加・改名するステータスと順序）を示し、合意を得てから反映して読み戻す。反映後に `statuses` を実物に合わせて確定する。
 

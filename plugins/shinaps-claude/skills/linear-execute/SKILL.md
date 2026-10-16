@@ -48,4 +48,4 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 
 - 利用者から直接依頼された実作業（開発進行の依頼を除く）は、着手前に [references/issue.md](../../references/linear/issue.md) の「着手前に作業をIssueへ紐づける」に従う。Issueの作成は利用者がその場で依頼した場合だけ行い、設定の `issue_update` を根拠にしない。
 - 利用者から明示的にIssueの整理を依頼された場合は、[references/issue.md](../../references/linear/issue.md) に従って整理する。Issueの更新は、依頼で指定された範囲だけにする（設定の有無にかかわらない）。
-- 開発進行（実装からQAを経て終了地点までの進行）を依頼された場合、Claudeは進行役を兼ねない。作業先リポジトリの設定で `bridge_request` が許可され、BridgeでCodexのセッションを特定できる場合は、[references/workflow.md](../../references/linear/workflow.md) の「開発進行の引き渡し」の項目を添えてCodexへ引き渡す。設定は [references/configuration.md](../../references/linear/configuration.md) の「設定の読み方」に従って読む。許可や相手のセッションがない場合は、必要な準備（設定、Codexセッションの起動、Bridgeの導入）を利用者へ案内する。
+- 開発進行（実装からQAを経て終了地点までの進行）を依頼された場合、Claudeは進行役を兼ねない。作業先の設定がない場合は、同じセッションで `shinaps:linear-plan` の初期設定ヒアリングに進み、保存・確認後に元の依頼の引き渡しへ戻る。作業先リポジトリの設定で `bridge_request` が許可され、BridgeでCodexのセッションを特定できる場合は、[references/workflow.md](../../references/linear/workflow.md) の「開発進行の引き渡し」の項目を添えてCodexへ引き渡す。設定は [references/configuration.md](../../references/linear/configuration.md) の「設定の読み方」に従って読む。許可や相手のセッションがない場合は、必要な準備（設定、Codexセッションの起動、Bridgeの導入）を利用者へ案内する。

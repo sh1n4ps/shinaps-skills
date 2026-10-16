@@ -30,7 +30,7 @@ Shinaps AIの利用者向け開発ワークフロー。Claude CodeとCodexそれ
 
 コミット・PR・リリースは依頼された場合だけ進む。`autonomous-commit-review` の役割は `commit` に統合した。個人用の別AI呼び出し・ブラウザ管理・ゴール管理・動画制作はこのpluginに含めない。
 
-`linear` は初版では利用者本人の環境向けで、Codexが進行とAgent QAを担当する。実装の担当は作業先の `.shinaps/linear.yaml` の `implementation_skill` で選ぶ。未記載なら `dev-claude-ultra` で、ClaudeがAI Terminal Bridge経由の依頼で実装する。`dev-codex`・`dev-codex-ultra` を選ぶと、Codexが自分で実装・QA指摘の修正・許可されたコミットを行う。どちらでも既存の許可は増えない。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/` に置く。`references/` はClaude版を編集元としてCodex版へ同じ内容を複製し、テストで一致を確認する。
+`linear` は初版では利用者本人の環境向けで、Codexが進行とAgent QAを担当する。運用項目はすべて明示必須で、未記載を既定値で補わない。実装の担当は作業先の `.shinaps/linear.yaml` の `implementation_skill` で選ぶ。`dev-claude`・`dev-claude-ultra` を選ぶと、ClaudeがAI Terminal Bridge経由の依頼で実装する。`dev-codex`・`dev-codex-ultra` を選ぶと、Codexが自分で実装・QA指摘の修正・許可されたコミットを行う。どちらでも既存の許可は増えない。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/` に置く。`references/` はClaude版を編集元としてCodex版へ同じ内容を複製し、テストで一致を確認する。
 
 ### dev の入口
 
@@ -60,7 +60,7 @@ Shinaps AIの利用者向け開発ワークフロー。Claude CodeとCodexそれ
 
 ## Codex
 
-Node.js 22以上と、`plugin marketplace add` / `plugin add` に対応したCodex CLIを使う。Claude Codeのインストールは不要。ただし `linear` の開発進行をClaudeの入口（`implementation_skill` の既定）で行う場合は、Claude CodeとAI Terminal Bridgeが必要になる。
+Node.js 22以上と、`plugin marketplace add` / `plugin add` に対応したCodex CLIを使う。Claude Codeのインストールは不要。ただし `linear` の開発進行をClaudeの入口で行う場合は、Claude CodeとAI Terminal Bridgeが必要になる。
 
 導入・更新・削除:
 

@@ -5,7 +5,7 @@ description: Codexが進行するLinearの開発で、AI Terminal Bridge経由�
 
 # Linearの開発でClaudeが行うこと
 
-初版では、Codexが進行・Agent QA・人への窓口を担当する。作業先リポジトリの設定の `implementation_skill` がClaudeの入口（未記載を含む）のとき、ClaudeはAI Terminal Bridge（以下Bridge）経由の依頼で、技術調査と実装・修正を担当する。担当を入れ替えない。
+初版では、Codexが進行・Agent QA・人への窓口を担当する。作業先リポジトリの設定の `implementation_skill` がClaudeの入口のとき、ClaudeはAI Terminal Bridge（以下Bridge）経由の依頼で、技術調査と実装・修正を担当する。担当を入れ替えない。
 
 ## 再確認せず進める条件
 

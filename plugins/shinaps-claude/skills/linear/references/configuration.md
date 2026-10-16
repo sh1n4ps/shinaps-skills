@@ -28,23 +28,25 @@
 
 ## 項目
 
-| キー | 内容 | 未記載のとき |
-| --- | --- | --- |
-| `target.workspace` | Linearのworkspace | 開発進行を始めない |
-| `target.team` | チームのキー（例 `SHINAPS`） | 開発進行を始めない |
-| `target.project` | 使うprojectのURL。projectを使わない運用では `null` | 未決として扱い、project未使用とは推測しない。projectに依存する操作の前で止める |
-| `team_settings` | `existing_only`（既存の定義に合わせ、変更しない）または `manage_on_setup`（初期設定・設定変更のときだけ変更案を示し、合意後に整備できる） | `existing_only` |
-| `statuses` | 工程キーと待ち状態の `human_input` から、実在するステータス名への対応。複数のキーに同じステータスを指定できる | そのキーの状態更新の前で止める |
-| `stop_after` | 終了地点（下の「終了地点」） | 開発進行を始めない |
-| `permissions` | 継続的に許可した操作の一覧（下の「許可」） | 何も許可していない |
-| `references` | `specifications`・`validation`・`environments`・`deployment`・`publication` ごとに、既存資料のパスまたはURLの一覧 | 各リポジトリのAGENTS.md・README・CIから読む |
-| `cycle_report` | Cycle報告の設定（下の「Cycle報告」） | Cycle報告を書き込まない |
-| `implementation_skill` | Issueの実装・修正に使うdevの入口。`dev-claude`・`dev-claude-ultra`（CodexがBridgeでClaudeへ依頼し、Claudeがその入口で実行する）、または `dev-codex`・`dev-codex-ultra`（Codexが自分でその入口を実行する） | `dev-claude-ultra`。値が4つ以外のときは、`coding` の工程の前で止めて一問確認する |
-| `commit_mode` | `shinaps:commit` でコミットするときの進め方。`normal`（単位ごとに承認を得る）または `autonomous`（個別の承認なしで単位ごとに検証してコミットする） | `shinaps:commit` が開始時に一問確認する。値が2つ以外のときも同じ |
-| `human_code_review` | 人のコードレビューの要否。`required`（人がレビューする）または `skip`（人のレビューを行わない） | `required`。値が2つ以外のときも同じ |
-| `document_only_changes` | 文書だけの変更（下の説明）の扱い。`ai_commit`: 対象差分が文書だけの変更のとき、人のコードレビューを行わず、Local Agent QAの合格後に実装担当が `shinaps:commit` でコミットする（Claudeの入口ではCodexの依頼でClaudeが行う） | 例外を使わない。値が `ai_commit` 以外のときも同じ |
+以下の項目はすべて明示必須。省略・不正値を既定値で補わず、依存する工程を止めて設定を確認する。`null`・`none`・空の一覧は、以下で認めた箇所だけで「使用しない」を表す。
 
-- `commit_mode` は進め方の既定値であり、コミットの許可ではない。コミットは利用者の明示的な依頼、`permissions` の `commit`（条件は下の「許可」）、または `document_only_changes: ai_commit` による文書だけの変更のコミットのときだけ行う。`commit_mode` があるだけではコミット・pushを始めず、人のレビュー済みと推測しない。その場の明示的な指定は設定に優先する。`normal` は人が自分でgit操作をする工程（`code_review`）とは別のもの。
+| キー | 内容 |
+| --- | --- |
+| `target.workspace` | Linearのworkspace |
+| `target.team` | チームのキー（例 `SHINAPS`） |
+| `target.project` | 使うprojectのURL。projectを使わない運用では `null` |
+| `team_settings` | `existing_only`（既存の定義に合わせ、変更しない）または `manage_on_setup`（初期設定・設定変更のときだけ変更案を示し、合意後に整備できる） |
+| `statuses` | 工程キーと待ち状態の `human_input` から、実在するステータス名への対応。複数のキーに同じステータスを指定できる |
+| `stop_after` | 終了地点（下の「終了地点」） |
+| `permissions` | 継続的に許可した操作の一覧（下の「許可」）。許可なしは `[]` |
+| `references` | `specifications`・`validation`・`environments`・`deployment`・`publication` の5分類をすべて記載し、既存資料のパスまたはURLの一覧を指定する。該当資料なしは `[]` |
+| `cycle_report` | Cycle報告の設定（下の「Cycle報告」）。報告を使わない場合は `null` |
+| `implementation_skill` | Issueの実装・修正に使うdevの入口。`dev-claude`・`dev-claude-ultra`（CodexがBridgeでClaudeへ依頼し、Claudeがその入口で実行する）、または `dev-codex`・`dev-codex-ultra`（Codexが自分でその入口を実行する） |
+| `commit_mode` | `shinaps:commit` でコミットするときの進め方。`normal`（単位ごとに承認を得る）または `autonomous`（個別の承認なしで単位ごとに検証してコミットする） |
+| `human_code_review` | 人のコードレビューの要否。`required`（人がレビューする）または `skip`（人のレビューを行わない） |
+| `document_only_changes` | 文書だけの変更（下の説明）の扱い。`none` は例外なし。`ai_commit`: 対象差分が文書だけの変更のとき、人のコードレビューを行わず、Local Agent QAの合格後に実装担当が `shinaps:commit` でコミットする（Claudeの入口ではCodexの依頼でClaudeが行う） |
+
+- `commit_mode` は進め方の設定であり、コミットの許可ではない。コミットは利用者の明示的な依頼、`permissions` の `commit`（条件は下の「許可」）、または `document_only_changes: ai_commit` による文書だけの変更のコミットのときだけ行う。`commit_mode` があるだけではコミット・pushを始めず、人のレビュー済みと推測しない。その場の明示的な指定は設定に優先する。`normal` は人が自分でgit操作をする工程（`code_review`）とは別のもの。
 - `implementation_skill` が決めるのは、実装・修正の担当と実行方式だけである。`permissions`・`stop_after`・`human_code_review`・`commit_mode`・`document_only_changes` の意味と、`dev_delegation`・worktreeの作成・別セッションの作成の許可を変えない。その場の明示的な指定は設定に優先する。既存の設定にキーがなくても、自動で書き加えない。担当と工程の対応は [workflow.md](workflow.md) の「担当と窓口」にある。
 - `human_code_review: skip` は人のレビューの工程だけを省く。devの入口内のレビュー、Agent QA、必要なHuman QAは省かない。省略は、人のレビュー済みとして記録しない。`human_code_review`・`commit`・`stage`・`commit_mode`・`document_only_changes` は互いに独立しており、一つから他を推測しない。
 - `document_only_changes: ai_commit` は、文書だけの変更について、`human_code_review: required` でも人のレビューを省き、`commit` の許可がなくてもAIのコミットを認める。`stage` の許可は通常のコミットと同じく必要で、ほかのキーの意味と許可は変えず、push以降の操作、利用中のツールの権限、利用者の停止・撤回（「設定の読み方」）を上書きしない。
@@ -81,12 +83,14 @@
 | `dev_delegation` | `implementation_skill` で選んだdevの入口の中で、サブエージェントへ委託する。許可がない場合は、入口のメインが同じ観点を自分で確認し、独立確認とは報告しない。worktreeの作成は含まない |
 | `evidence:<保存先>` | Linear以外の指定した保存先へQA素材を保存する（LinearのIssueへの添付は `issue_update` に含む） |
 
-- 開発進行には `issue_update` が必要である。`implementation_skill` がClaudeの入口（未記載を含む）のときは `bridge_request` も必要で、Codexの入口のときは不要である。初期設定では、`issue_update`・`bridge_request`・`stage`・`dev_delegation` を開発進行の標準の組として提案する（Codexの入口を選ぶ場合は `bridge_request` を除く）。設定があるだけでは、どの許可も得ない。必要な許可がない設定では開発進行を始めず、不足している許可を示す。
+- 開発進行には `issue_update` が必要である。`implementation_skill` がClaudeの入口のときは `bridge_request` も必要で、Codexの入口のときは不要である。初期設定では、`issue_update`・`bridge_request`・`stage`・`dev_delegation` を開発進行の標準の組として提案する（Codexの入口を選ぶ場合は `bridge_request` を除く）。設定があるだけでは、どの許可も得ない。必要な許可がない設定では開発進行を始めず、不足している許可を示す。
 - 一つの操作が別の操作を伴う場合は、伴う操作の許可も必要とする（マージで本番へ自動配備される場合は `merge` と `deploy:production`）。
 - 次の操作は一覧に含めず、常にその場で確認する: force-push、履歴の書き換え、ブランチの削除、チーム設定の変更。
 - 設定の許可は、今回の依頼で任されたIssue・Cycleの範囲を広げない。
 
 ## Cycle報告
+
+報告を使う場合は次のサブキーをすべて記載する。使わない場合は `cycle_report: null` とする。
 
 | サブキー | 内容 |
 | --- | --- |
@@ -94,7 +98,7 @@
 | `destination` | 報告本文の保存先（例 `linear_cycle_document`） |
 | `index` | 索引のURL、または `null` |
 | `audience` | 読み手 |
-| `format` | 既存の書式や直近の報告への参照（任意） |
+| `format` | 既存の書式や直近の報告への参照。個別の書式指定なしは `null`（共通テンプレートを使う） |
 
 書き込むのは `destination` と `index` だけ。記載のない報告先や送信先には、補足ファイルに書かれていても書き込まない。
 
@@ -122,12 +126,20 @@ statuses:
   done: Done
 stop_after: pre_push_qa
 implementation_skill: dev-claude-ultra # CodexがBridgeでClaudeへ依頼する。Codexが実装する場合は dev-codex-ultra など
+human_code_review: required
+commit_mode: autonomous
+document_only_changes: none
+cycle_report: null
 permissions:
   - issue_update
   - bridge_request
   - stage
   - dev_delegation
 references:
+  specifications:
+    - README.md
+  environments: []
+  deployment: []
   validation:
     - README.md#開発と配布
     - package.json
@@ -144,7 +156,7 @@ Codexが行う。
 1. アカウント、workspace、team、projectと、チームのステータス一覧・既存の運用をLinearから読む。
 2. 作業先リポジトリのAGENTS.md・CLAUDE.md・README・CI・検証や配備のスクリプトを読み、`references` の候補を決める。
 3. 設定案を一つ作る。チーム設定を管理できる場合だけ、FamilyStayを基にした工程の分離（[workflow.md](workflow.md) の工程表に対応するステータス）を変更案として示す。利用者のプロジェクトらしいという推測で `manage_on_setup` にしない。
-4. 既存の情報で決まらない運用上の決定（`stop_after`、`permissions`（`commit` を含む）、`human_code_review`、`team_settings`、Cycle報告、`commit_mode`、`implementation_skill`（既定値 `dev-claude-ultra` を示す））だけを一問ずつ確認する。終了地点は上の一覧から選んでもらう。作業先リポジトリの既存の規約に文書だけの変更の例外がある場合だけ、その範囲と `document_only_changes` の範囲（「項目」の説明）を示して、設定するかを確認する。
+4. 既存の情報で決まらない運用上の決定（`stop_after`、`permissions`（`commit` を含む）、`human_code_review`、`team_settings`、Cycle報告、`commit_mode`、`implementation_skill`）だけを一問ずつ確認する。終了地点は上の一覧から選んでもらう。作業先リポジトリの既存の規約に文書だけの変更の例外がある場合だけ、その範囲と `document_only_changes` の範囲（「項目」の説明）を示して、`ai_commit` を設定するかを確認する。例外を使わない場合は `none` を記載する。
 5. 合意した内容を保存し、読み直して確認する。
 6. Linearのチーム設定の変更は、ローカル設定の保存とは別に扱う。対象チームと変更差分（追加・改名するステータスと順序）を示し、合意を得てから反映して読み戻す。反映後に `statuses` を実物に合わせて確定する。
 

@@ -13,4 +13,4 @@ description: 再現手順、コード、ログと必要な外部情報から不�
 
 結論、証拠、再現状況、最小の修正方針と未確認を報告する。修正まで依頼されている場合は$shinaps:dev-codex-ultraへ引き継ぐ。1体での実行を指定された場合は$shinaps:dev-codexを使う。調査だけなら変更しない。
 
-必要な記録は.shinaps/work/debug/へ保存し、.shinaps/.gitignoreに`*`の除外を既存内容を保持して設定する。秘密情報・既存記録の削除・外部投稿は含めない。
+必要な記録は.shinaps/work/debug/へ保存し、[作業記録の共通手順](../../references/work-records.md)に従って初期化・保全する。秘密情報・既存記録の削除・外部投稿は含めない。

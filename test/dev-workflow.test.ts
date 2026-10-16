@@ -4,7 +4,11 @@ import { access, readFile } from 'node:fs/promises';
 
 const CLAUDE = 'plugins/shinaps-claude';
 const CODEX = 'plugins/shinaps-codex';
-const SHARED_REFERENCES = ['references/dev/workflow.md', 'references/testing.md'];
+const SHARED_REFERENCES = [
+  'references/dev/workflow.md',
+  'references/testing.md',
+  'references/work-records.md',
+];
 const TESTING_POLICY_ROLES = [
   'shinaps-architect',
   'shinaps-implementer',
@@ -17,7 +21,7 @@ const TESTING_POLICY_ROLES = [
 
 // Codex のインストーラは plugins/shinaps-codex だけを配るので、dev の工程とテスト方針を両版に置いている。
 // 片方だけを更新すると、runtime によって工程や判断基準が変わる。
-test('dev workflow and testing policy are identical in the Claude and Codex plugins', async () => {
+test('shared workflow references are identical in the Claude and Codex plugins', async () => {
   for (const path of SHARED_REFERENCES) {
     assert.equal(
       await readFile(`${CODEX}/${path}`, 'utf8'),

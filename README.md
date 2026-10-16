@@ -6,7 +6,9 @@ Shinaps AIの利用者向け開発ワークフロー。Claude CodeとCodexそれ
 
 共通スキルが持つのは判断手順。対象環境・必須検証・公開条件は、対象プロジェクトの `AGENTS.md` / `CLAUDE.md` と参照先、README、CI、既存スクリプトから読み取る。専用設定ファイルは必須にしない。
 
-例外として `linear-execute` の開発進行とチーム設定の変更には、対象リポジトリの `.shinaps/linear.yaml` を必須にする。操作の継続的な許可と終了地点を会話から推測せず、合意した範囲だけを続けて進めるためである。設定はGit対象外の個人用ローカルファイルで、`.shinaps/.gitignore` の除外に含まれる。設定がなくてもIssueの読み取り・整理はできる。設定が必要な実行でファイルがない場合は、同じセッションで `linear-plan` の初期設定ヒアリングへ進み、合意した設定の保存・確認後に元の依頼を再開する。
+例外として `linear-execute` の開発進行とチーム設定の変更には、対象リポジトリの `.shinaps/linear.yaml` を必須にする。操作の継続的な許可と終了地点を会話から推測せず、合意した範囲だけを続けて進めるためである。設定は `config_storage: shared` でGit共有、`local` でメインの作業ツリーだけに保存する。既存設定でキーがない場合だけ従来のlocal扱いを維持し、自動追記・許可の再合意は求めない。sharedは現在のcheckout、localはメインの設定と補足を正本とする。共有設定が欠けていても端末別のlocal設定では補わない。[共通設定](plugins/shinaps-claude/references/linear/configuration.md)の読取・保存手順に従う。設定がなくてもIssueの読み取り・整理はできる。設定が必要な実行で共通の読取手順により真に未設定と確認できた場合だけ、同じセッションで `linear-plan` の初期設定ヒアリングへ進み、合意した設定の保存・確認後に元の依頼を再開する。
+
+sharedで採用する `instructions.md` は共有YAMLの `references.specifications` に明記して開始・再開時に読み、他の必要補足は内容に対応する `references` に記載する。必要補足の欠落・読取不能は依存工程を止め、未採用とは扱わない。設定・採用補足・ignoreの個別例外を一緒に共有するか、共有済み資料への参照に置き換える。端末の絶対パスやsession/thread ID、進捗・QA結果は `.shinaps/work/` に分け、秘密値はどちらにも保存しない。保存方式の合意だけでstage・commit・push・追跡解除を許可しない。
 
 例えばPCブラウザのみのプロジェクトには対応ブラウザと確認コマンドを書く。iOSプロジェクトにはSimulatorと実機の使い分けを記す。スキルは一律の端末数やOS数を追加しない。既存の情報で決まらず結果を左右する条件だけ確認し、保存を了承された方針をプロジェクト側に残す。
 
@@ -31,7 +33,7 @@ Shinaps AIの利用者向け開発ワークフロー。Claude CodeとCodexそれ
 
 コミット・PR・リリースは、利用者の依頼またはLinear進行で合意済みの継続許可に従う。[共通設定](plugins/shinaps-claude/references/linear/configuration.md)・[担当と工程](plugins/shinaps-claude/references/linear/workflow.md)・[終了と待機](plugins/shinaps-claude/references/linear/execution.md)を参照し、必要な前工程が揃えば再確認せずに進む。単独スキル利用にはLinear進行や新しいゴールを必須にしない。`autonomous-commit-review` の役割は `commit` に統合した。個人用の別AI呼び出し・ブラウザ管理・ゴール管理・動画制作はこのpluginに含めない。
 
-`linear-execute` は初版では利用者本人の環境向けで、Codexが進行とAgent QAを担当する。運用項目はすべて明示必須で、未記載を既定値で補わない。実装の担当は作業先の `.shinaps/linear.yaml` の `implementation_skill` で選ぶ。`dev-claude`・`dev-claude-ultra` を選ぶと、ClaudeがAI Terminal Bridge経由の依頼で実装する。`dev-codex`・`dev-codex-ultra` を選ぶと、会話側はゴール・進行・Agent QAを担当し、Issueごとの別Codexタスクが実装・QA指摘の修正・許可されたコミットを行う。タスク作成・連絡には `codex_task` とツールが要求する明示依頼が必要。どちらでも既存の許可は増えない。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/linear/` に置く。`references/linear/` はClaude版を編集元としてCodex版へ同じ内容を複製し、テストで一致を確認する。
+`linear-execute` は初版では利用者本人の環境向けで、Codexが進行とAgent QAを担当する。運用項目は明示必須で、既存設定の `config_storage` 欠落以外は未記載を既定値で補わない。実装の担当は作業先の `.shinaps/linear.yaml` の `implementation_skill` で選ぶ。`dev-claude`・`dev-claude-ultra` を選ぶと、ClaudeがAI Terminal Bridge経由の依頼で実装する。`dev-codex`・`dev-codex-ultra` を選ぶと、会話側はゴール・進行・Agent QAを担当し、Issueごとの別Codexタスクが実装・QA指摘の修正・許可されたコミットを行う。タスク作成・連絡には `codex_task` とツールが要求する明示依頼が必要。どちらでも既存の許可は増えない。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/linear/` に置く。`references/linear/` はClaude版を編集元としてCodex版へ同じ内容を複製し、テストで一致を確認する。
 
 `permissions` の `development_operations` を明示すると、既存アカウントのログイン・環境準備・依存導入・起動・テスト・QAを継続的に許可できる。コミット・公開・破壊的操作の許可や人レビューは別に扱う。
 
@@ -199,11 +201,11 @@ Claude版は全16エージェントが `opus / medium`。Codex版の役割定義
 
 ## 作業成果物
 
-作業記録はプロジェクトルートの `.shinaps/work/` に保存する。初回作成時に `.shinaps/.gitignore` を内容 `*` と改行で作成する。既存のignoreは保持し、必要な場合だけ `*` を追記する。これによりignore自身を含む配下の未追跡ファイルが除外され、ユーザーによるグローバルignoreやプロジェクトルートのignore設定は不要になる。追跡済みファイルには効かないため、無断で追跡解除せず報告する。
+作業記録は現在の作業先の `.shinaps/work/` に保存する。[作業記録の共通手順](plugins/shinaps-claude/references/work-records.md)に従い、既存の共有例外を保持し、workの除外が不足する場合だけ `/work/` を追加する。設定の共有方式は記録作成では変更しない。共通手順はClaude版を編集元としてCodex版へ複製し、テストで一致を確認する。
 
 ```text
 .shinaps/
-├── .gitignore             # *
+├── .gitignore             # 保存方式に応じた除外・共有対象の例外
 ├── linear.yaml            # linear のプロジェクト設定（任意）
 ├── linear/                # linear の補足（任意）
 └── work/

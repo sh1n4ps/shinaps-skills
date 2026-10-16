@@ -1,0 +1,6 @@
+*
+!/.gitignore
+!/linear.yaml
+!/linear/
+!/linear/instructions.md
+/work/

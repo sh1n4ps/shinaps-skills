@@ -1,2 +1,5 @@
 node_modules/
 dist/
+
+# グローバル除外があっても、共有対象を .shinaps/.gitignore で選べるようにする。
+!/.shinaps/

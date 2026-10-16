@@ -8,7 +8,7 @@
 | 実装担当 | 技術調査、`implementation_skill` で選んだdevの入口による実装・自動テスト・簡素化・セルフレビュー、QA指摘の修正、成果と人の対応結果の報告。実装を伴わない文書整理は、作業先リポジトリの規約に従いdevの入口の対象外にできる。スキル・コードの変更は文書の形でも実装としてdevの入口を使う |
 | 人 | 未合意の仕様・権限の判断、設定で必要なコードレビュー・必要な修正、AIに許可していないコミット、本人の操作が必要な認証等、必要なHuman QA |
 
-実装担当は、作業先リポジトリの設定の `implementation_skill` で決まる（未記載は `dev-claude-ultra` でClaude）。Claudeの入口（`dev-claude`・`dev-claude-ultra`）では、ClaudeがCodexの指示に基づいてBridge経由で実装する。Codexの入口（`dev-codex`・`dev-codex-ultra`）では、この文書でClaudeが行うとした実装・修正・コミット・完了報告をCodexが自分で行い、そのためのBridgeの依頼・報告を使わない。どちらでもLocal Agent QAは実装とは別の工程として行い、実装担当の報告を合格の根拠にしない。
+実装担当は、作業先リポジトリの設定の `implementation_skill` で決まる。Claudeの入口（`dev-claude`・`dev-claude-ultra`）では、ClaudeがCodexの指示に基づいてBridge経由で実装する。Codexの入口（`dev-codex`・`dev-codex-ultra`）では、この文書でClaudeが行うとした実装・修正・コミット・完了報告をCodexが自分で行い、そのためのBridgeの依頼・報告を使わない。どちらでもLocal Agent QAは実装とは別の工程として行い、実装担当の報告を合格の根拠にしない。
 
 人への質問と依頼はCodexが窓口になる。Claudeは人へ着手確認やコミット依頼をしない。人がClaudeへ直接伝えた指示や結果は、Claudeが保持してCodexへ報告する。
 

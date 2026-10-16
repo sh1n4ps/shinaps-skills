@@ -5,7 +5,7 @@ description: LinearのIssue・Cycleを起点に、作業先の規約か依頼が
 
 # Linearを起点に開発を進める
 
-Issueの責務・受入条件・ステータスを、実際の成果と一致させる。初版は利用者本人の環境向けで、Codexが進行・Agent QA・人への窓口を担当する。実装担当は作業先リポジトリの設定の `implementation_skill` で決まる。Claudeの入口（未記載を含む）ではClaudeがAI Terminal Bridge（以下Bridge）経由の依頼で実装し、Codexの入口（`dev-codex`・`dev-codex-ultra`）ではCodexが `$shinaps:<入口>` で実装・QA指摘の修正を行う（[references/workflow.md](references/workflow.md) の「担当と窓口」）。設定と異なる担当への入れ替えは扱わない。
+Issueの責務・受入条件・ステータスを、実際の成果と一致させる。初版は利用者本人の環境向けで、Codexが進行・Agent QA・人への窓口を担当する。実装担当は作業先リポジトリの設定の `implementation_skill` で決まる。Claudeの入口ではClaudeがAI Terminal Bridge（以下Bridge）経由の依頼で実装し、Codexの入口（`dev-codex`・`dev-codex-ultra`）ではCodexが `$shinaps:<入口>` で実装・QA指摘の修正を行う（[references/workflow.md](references/workflow.md) の「担当と窓口」）。設定と異なる担当への入れ替えは扱わない。
 
 ## 再確認せず進める条件
 

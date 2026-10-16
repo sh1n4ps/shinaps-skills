@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
-const CLAUDE_REFERENCES = 'plugins/shinaps-claude/skills/linear/references';
-const CODEX_REFERENCES = 'plugins/shinaps-codex/skills/linear/references';
+const CLAUDE_REFERENCES = 'plugins/shinaps-claude/references/linear';
+const CODEX_REFERENCES = 'plugins/shinaps-codex/references/linear';
 
 async function readTree(root: string): Promise<Record<string, string>> {
   const files = await readdir(root, { recursive: true, withFileTypes: true });

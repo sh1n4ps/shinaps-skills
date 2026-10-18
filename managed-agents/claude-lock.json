@@ -9,30 +9,30 @@
     "./agents/shinaps-architect.md": {
       "kind": "agent",
       "id": "agent_014nS9C78iHUM49edBdJNmCW",
-      "version": "2",
-      "hash": "2f43f7ebc1ede33c3bc3cf41fe20789a",
-      "remote_hash": "32d6e68721aaaca81d0bc1cddb32ffcd"
+      "version": "3",
+      "hash": "d6642bec8f11769b65283238b359daf3",
+      "remote_hash": "bace43ae1d52e6166fa6c04653f66cb2"
     },
     "./agents/shinaps-dev-managed-cc-ultra.md": {
       "kind": "agent",
       "id": "agent_01RFvXKLv2byBopu7Sgmq8L2",
-      "version": "1",
-      "hash": "db4a8d4bd4db65878f751ae3a9bd8d97",
-      "remote_hash": "26348c8abf53d8647e58f3b439065eca"
+      "version": "2",
+      "hash": "6b4e3402a8a7df4c0de91c2632c0f17e",
+      "remote_hash": "58ef892b53b7b72baa68eaba5a4bc69b"
     },
     "./agents/shinaps-dev-managed-cc.md": {
       "kind": "agent",
       "id": "agent_018RsB13dBRw5wpX7k9Bju9t",
-      "version": "1",
-      "hash": "d6dd2a805aaf66e7f85697b001858aaf",
-      "remote_hash": "d4a35daca58a208dffed18501295cc32"
+      "version": "2",
+      "hash": "353ca0d45eae63a87a757c973ec973f2",
+      "remote_hash": "3c4168c8bddaca29798e4cfe0a59a135"
     },
     "./agents/shinaps-explorer.md": {
       "kind": "agent",
       "id": "agent_017Eik5WoWFXgQAnqTpU3dxT",
-      "version": "2",
-      "hash": "659ceb60bae8a66f002cae9526ba38b4",
-      "remote_hash": "33838c5c9220712b118d47402b00bacc"
+      "version": "3",
+      "hash": "41cfd57c29a50d9555d41d30b643b9d0",
+      "remote_hash": "35801cbf6fb798b8edb9345b24189f0f"
     },
     "./agents/shinaps-implementer.md": {
       "kind": "agent",
@@ -44,30 +44,30 @@
     "./agents/shinaps-plan-reviewer.md": {
       "kind": "agent",
       "id": "agent_01CZJRn5Cj1UpEMqX8PJbEUV",
-      "version": "2",
-      "hash": "24e103f34bc593f8ee60e3933b2ecf7c",
-      "remote_hash": "cb675b8dd41db9b30edc8b3a4a63ad39"
+      "version": "3",
+      "hash": "a27f18eab28205dcb59bdb019b9ada24",
+      "remote_hash": "db5d9e915770c36b63f4fa7e5892f091"
     },
     "./agents/shinaps-refine-agent.md": {
       "kind": "agent",
       "id": "agent_01QKqHavZLV1M3o6TF8Z75rX",
-      "version": "2",
-      "hash": "72058a54129062a14bd732e9bf8ef7a8",
-      "remote_hash": "62eecc3c11d9ebe1bf7329cab09bdbe3"
+      "version": "3",
+      "hash": "fa28a44035461fa8ab2ec1067799fd35",
+      "remote_hash": "a9dda69d3a37b2eb054cb16a899c1eb1"
     },
     "./agents/shinaps-review-verifier.md": {
       "kind": "agent",
       "id": "agent_01AcZU7nQg39gT98D1BzZaTJ",
-      "version": "2",
-      "hash": "f491ed3ec03833a28265fc81155fe80e",
-      "remote_hash": "0164ad31ac1dd66d276b68f5652c9712"
+      "version": "3",
+      "hash": "ab83b94c2cd2abd48ca4603677025912",
+      "remote_hash": "8fd54b88cb8eb5be06d876a06ff8c9c3"
     },
     "./agents/shinaps-reviewer.md": {
       "kind": "agent",
       "id": "agent_01Pn62prPJ51yL2Cim6nPN3C",
-      "version": "2",
-      "hash": "ecf753d3352b9f18b09bdbfc0adde123",
-      "remote_hash": "3098be19b7d539a73afd3f25fd32e3b8"
+      "version": "3",
+      "hash": "52e0b6b5c95eec3355dd4efd82818eda",
+      "remote_hash": "4da3d6f344b26086aae0a3b9c2c113e8"
     },
     "./agents/shinaps-simplifier.md": {
       "kind": "agent",

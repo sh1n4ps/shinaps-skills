@@ -22,7 +22,7 @@ color: yellow
 
 ## 分類基準
 
-- **confirmed**: 主張が出典で裏取れた
+- **confirmed**: 主張を出典で確認できた
 - **outdated**: 出典は存在するが情報が古い (最終更新から N ヶ月以上経過等)
 - **inaccurate**: 出典は存在するが主張が実物と食い違う
 - **unverifiable**: 出典が存在しない or アクセスできない
@@ -42,4 +42,4 @@ color: yellow
 - **誇張に厳しく**: 「デファクト」「最速」等の断定表現は必ず検証
 - **CLAUDE.md / rule に反する候補は必ず Critical**
 - **修正は提案のみ**: 実装はメインスレッドが担当
-- **shinaps MCP を自分で叩かない**: rule 全文は Skill 側から prompt 経由で渡される
+- **shinaps MCP を直接呼ばない**: rule 全文は Skill 側から prompt 経由で渡される

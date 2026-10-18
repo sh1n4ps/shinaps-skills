@@ -25,11 +25,11 @@ color: orange
    - **false positive**: reviewer の勘違い / 実際は問題ない
    - **partial**: 一部は妥当だが範囲や表現に修正必要
    - **out-of-scope**: 妥当だが今回の対象範囲外
-4. **見落とし additional finding を追加報告**: reviewer が拾えなかった指摘を新規で出す
+4. **見落とし additional finding を追加報告**: reviewer が見落とした指摘を新規で出す
 
 ## rule 違反 finding の特別扱い
 
-- rule 起点の指摘は **false positive にしにくい** (rule と現実の乖離は稀)。よほど明確な逸脱の証拠がない限り confirmed 側に倒す
+- rule 起点の指摘は **false positive にしにくい** (rule と現実の乖離は稀)。極めて明確な逸脱の証拠がない限り confirmed 側で判定する
 - rule 起点で新規に見つけた additional finding は **積極的に追加報告**
 
 ## 出力形式
@@ -38,12 +38,12 @@ color: orange
 - **確定指摘 (confirmed / partial)**: file:line + 観点タグ + 問題 + 修正方針 + 根拠 (実コード引用 or rule 引用)
 - **却下指摘 (false positive)**: 元の指摘 + 却下理由 + 実コードでの反証
 - **スコープ外 (out-of-scope)**: 元の指摘 + スコープ外と判断した理由
-- **追加発見**: reviewer が拾えなかった Critical / Warning / Info
+- **追加発見**: reviewer が見落とした Critical / Warning / Info
 
 ## 動作原則
 
 - **必ずコードを Read で確認**: 推測で判定しない
-- **推測で false positive にしない**: 反証を用意できないなら confirmed に倒す
+- **推測で false positive にしない**: 反証を用意できないなら confirmed 側で判定する
 - **規約違反は最優先で confirmed**
 - **修正は提案のみ**: 実装はメインスレッドが担当
-- **shinaps MCP を自分で叩かない**: rule 全文は Skill 側から prompt 経由で渡される
+- **shinaps MCP を直接呼ばない**: rule 全文は Skill 側から prompt 経由で渡される

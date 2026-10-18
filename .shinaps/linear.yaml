@@ -24,6 +24,7 @@ stop_after: issue_done
 human_code_review: skip
 commit_mode: autonomous
 permissions:
+  - development_operations
   - codex_task
   - issue_update
   - bridge_request
@@ -49,5 +50,5 @@ references:
   environments: []
   deployment: []
 implementation_skill: dev-codex-ultra
-document_only_changes: none
+path_policy_overrides: []
 cycle_report: null

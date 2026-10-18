@@ -1,6 +1,6 @@
 ---
 name: extract-rules
-description: 過去 PR のレビューコメントから shinaps-ai の rules を bulk 生成する skill。新規リポジトリ着手時、または search_rules の userRules が空 / 少ない (5 件未満) ときに提案・起動。owner / repo / since を確認し、bot 除外 + gh api pulls で 100 PR ブロック単位に fetch → LLM で規約抽出 → record_rules で投入 → 続行確認 → 完了 report まで完走。shinaps-ai server 未登録時は search_rules 呼び出しが自動で失敗して abort する。
+description: 過去 PR のレビューコメントから shinaps-ai の rules を bulk 生成する skill。新規リポジトリ着手時、または search_rules の userRules が空 / 少ない (5 件未満) ときに提案・起動。owner / repo / since を確認し、bot 除外 + gh api pulls で 100 PR ブロック単位に fetch → LLM で規約抽出 → record_rules で投入 → 続行確認 → 完了 report まで実行する。shinaps-ai server 未登録時は search_rules 呼び出しが自動で失敗して abort する。
 argument-hint: (引数なし、対話で owner-repo / since を確認)
 ---
 
@@ -18,7 +18,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 # shinaps:extract-rules — 過去 PR review から rules を bulk 生成
 
-新規リポジトリ着手時、または既存 userRules が薄いときに、過去 PR のレビューコメントから規約を bulk import する skill。shinaps-ai サーバは GitHub API も LLM も呼ばず、すべて Claude Code 側のあなた (= AI) が `gh` / 既存 MCP tools 経由で実行する (token / repo 内容をサーバ境界に置かない)。
+新規リポジトリ着手時、または既存 userRules が少ないときに、過去 PR のレビューコメントから規約を bulk import する skill。shinaps-ai サーバは GitHub API も LLM も呼ばず、すべて Claude Code 側のあなた (= AI) が `gh` / 既存 MCP tools 経由で実行する (token / repo 内容をサーバ境界に置かない)。
 
 ## Step 0. 対象 repo を環境から決定する (MUST)
 
@@ -63,7 +63,7 @@ PR description (本文) は対象外。あくまで「レビュー観点」を�
 
 ## Step 6. 既存 rules 把握
 
-100 PR を 1 ブロックとして処理する。ブロックの開始時に必ず shinaps-ai MCP server の `search_rules({ repoOwner, repoName })` を呼んで、既存 userRules を取得する (facet を渡さないので officialRules は空、userRules は継承マージで scope=user / repo_owner / repo の全件、最大 200)。これを「新規 (= `record_rules` の投入対象に含める) か、既存に被せる `update_rule` か」を判断する material にする。
+100 PR を 1 ブロックとして処理する。ブロックの開始時に必ず shinaps-ai MCP server の `search_rules({ repoOwner, repoName })` を呼んで、既存 userRules を取得する (facet を渡さないので officialRules は空、userRules は継承マージで scope=user / repo_owner / repo の全件、最大 200)。これを「新規 (= `record_rules` の投入対象に含める) か、既存 rule を更新する `update_rule` か」を判断する材料にする。
 
 ## Step 7. rules 生成と投入
 
@@ -86,7 +86,7 @@ Good/Bad サンプルコード (examples) の付け方:
 
 投入手順:
 
-- 候補を既存 rules と照合し、**新規** (該当 rule 不在) だけを集めて `record_rules({ scope: 'repo', repoOwner, repoName, rules: [{ title, why, recommend?, avoid?, kind?, labels?, examples?, sourceUrls? }, ...] })` で **1 call bulk 投入** する。`labels` は language / platform / framework / topic の slug 配列 (`list_search_facets` の master 登録済みのみ、language/platform/framework は 1 rule に各 1 つまで) (1 call 最大 100 件、超えたら分割。同一 title の重複は入力段階で INPUT_INVALID)。extract-rules は対象 repo の PR レビューから抽出する性質上 scope=repo (当該 repo 限定) がデフォルト。横断ルールとして残したい場合だけユーザー判断で `scope: 'user'` に格上げ。**格上げするときは why / recommend / avoid / examples を当該 repo の固有文脈 (内部 API 名・モジュール構成・ドメイン固有の識別子) から切り離し、他プロジェクトでも適用イメージが湧く汎用的な表現・汎用サンプルに解釈し直してから登録する** (scope=repo のままなら repo 固有の具体的な記述・コード片で良い)。title は 200 字以内、規約本文は why (必須、なぜこの規約か、2000 字以内) / recommend (推奨行動、任意、1000 字以内) / avoid (避けるべきこと、任意、1000 字以内) の 3 フィールドに構造化する
+- 候補を既存 rules と照合し、**新規** (該当 rule 不在) だけを集めて `record_rules({ scope: 'repo', repoOwner, repoName, rules: [{ title, why, recommend?, avoid?, kind?, labels?, examples?, sourceUrls? }, ...] })` で **1 call bulk 投入** する。`labels` は language / platform / framework / topic の slug 配列 (`list_search_facets` の master 登録済みのみ、language/platform/framework は 1 rule に各 1 つまで) (1 call 最大 100 件、超えたら分割。同一 title の重複は入力段階で INPUT_INVALID)。extract-rules は対象 repo の PR レビューから抽出する性質上 scope=repo (当該 repo 限定) がデフォルト。横断ルールとして残したい場合だけユーザー判断で `scope: 'user'` に格上げ。**格上げするときは why / recommend / avoid / examples を当該 repo の固有文脈 (内部 API 名・モジュール構成・ドメイン固有の識別子) から切り離し、他プロジェクトでも適用場面を想定できる汎用的な表現・汎用サンプルに解釈し直してから登録する** (scope=repo のままなら repo 固有の具体的な記述・コード片で良い)。title は 200 字以内、規約本文は why (必須、なぜこの規約か、2000 字以内) / recommend (推奨行動、任意、1000 字以内) / avoid (避けるべきこと、任意、1000 字以内) の 3 フィールドに構造化する
 - 戻り値の `skipped: { title, existingRuleId, existingWhy, existingRecommend, existingAvoid, existingLabels, existingExamples, existingSourceUrls }[]` は「既存と title 重複して投入されなかった候補」。新しい why/recommend/avoid と existing* が異なるなら **ユーザーに diff を提示して同意を取る** (examples / sourceUrls の差分も同様):
 
 > 既存 rule "no-unused-vars" が見つかりました。why/recommend/avoid の差分:

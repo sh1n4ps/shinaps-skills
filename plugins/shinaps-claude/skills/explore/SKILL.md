@@ -1,6 +1,6 @@
 ---
 name: explore
-description: バグか確定していない違和感、既存挙動の「なぜ」、実装方針や変更影響について、人間が理解・納得できるまで質問を重ねる対話型 read-only 調査スキル。質問ごとにコード、テスト、設定、git history、必要な公式情報を調べ、confirmed / inference / unknown を分けて根拠付きで回答する。debug のように根本原因確定を急がず、spec のように仕様策定を目的にせず、実装は行わない。理解が揃い実装内容に合意したら exploration.md を /shinaps:dev-claude-ultra に直接橋渡しする。「今の実装はどうなっている？」「なぜこうなる？」「この変更はどこに効く？」「実装前に一緒に調べたい」「質問しながら理解したい」で使う
+description: バグか確定していない違和感、既存挙動の「なぜ」、実装方針や変更影響について、人間が理解・納得できるまで質問を重ねる対話型 read-only 調査スキル。質問ごとにコード、テスト、設定、git history、必要な公式情報を調べ、confirmed / inference / unknown を分けて根拠付きで回答する。debug のように根本原因確定を急がず、spec のように仕様策定を目的にせず、実装は行わない。理解が揃い実装内容に合意したら exploration.md を /shinaps:dev-claude-ultra に直接渡す。「今の実装はどうなっている？」「なぜこうなる？」「この変更はどこに効く？」「実装前に一緒に調べたい」「質問しながら理解したい」で使う
 argument-hint: <調べたいバグ・挙動・実装上の疑問（省略可）>
 ---
 
@@ -55,7 +55,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 ```
 .shinaps/work/explorations/{YYYYMMDD-HHMMSS}-{slug}/
-├── exploration.md                 ← 現在の理解と dev handoff 契約を保つ living document
+├── exploration.md                 ← 現在の理解と dev handoff 契約を保つ、随時更新する文書
 ├── question-log.md                ← 質問と回答の要約。会話の逐語録にはしない
 └── raw/
     ├── investigation-001.md       ← 各ラウンドの investigator 生レポート
@@ -115,7 +115,7 @@ investigator の回答をそのまま転送しない。結論を支える主要�
 - production deploy、外部データ変更、依存追加など調査を越える操作は行わない
 - 確認できない主張は `inference` または `unknown` に下げ、解消に必要な証拠を示す
 
-### Phase 4: 回答と living document 更新
+### Phase 4: 回答と exploration.md 更新
 
 各ラウンドの回答は次の順で短く提示する。
 
@@ -123,7 +123,7 @@ investigator の回答をそのまま転送しない。結論を支える主要�
 2. **確認できたこと (`confirmed`)** — file:line / test / docs URL を添える
 3. **推測 (`inference`)** — 推測である理由と確信度を添える
 4. **まだ分からないこと (`unknown`)** — 何を見れば確定できるかを添える
-5. **次に掘る価値が高い論点** — 最大 3 件
+5. **次に調べる価値が高い論点** — 最大 3 件
 
 回答後、`question-log.md` には質問と回答の要約だけを追記し、`exploration.md` を現在の理解へ更新する。confirmed finding を支えるローカルファイルは、現在内容の hash (`git hash-object` など、object を書き込まない read-only 計算) を関連リソースへ記録する。過去の誤った仮説を残す必要がある場合は「却下済み」と明記し、現在の結論と混ぜない。
 
@@ -180,7 +180,7 @@ investigator の回答をそのまま転送しない。結論を支える主要�
 
 実装内容がまだ曖昧な状態で「実装へ進む」が選ばれたら、望む変更を 1 問ずつ確認する。未解決点が残る場合は、残したまま実装するか調査を続けるかを選んでもらう。
 
-### Phase 6: `/shinaps:dev-claude-ultra` への橋渡し
+### Phase 6: `/shinaps:dev-claude-ultra` への引き継ぎ
 
 実装へ進む前に `exploration.md` の「実装 handoff」セクションを確定する。
 

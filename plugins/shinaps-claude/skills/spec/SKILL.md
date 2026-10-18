@@ -1,7 +1,7 @@
 ---
 name: spec
-description: ざっくりした要望を入力に、対話的なヒアリング + 既存実装調査 (shinaps-explorer) + フィジビリティ調査 (shinaps-tech-surveyor で外部情報 + shinaps-survey-validator で出典検証 + 採用候補決定 + 必要ならプロトタイプ実装) + 技術選定を行い、「ほぼ実現できる」と確信できるレベルまで仕様を詰めて仕様書 (spec.md) を作成するスキル。spec 段階で実現可能性をしっかり検証することで dev の入口での差し戻しをほぼゼロにする。shinaps-spec-writer で構造化し、そのまま /shinaps:dev-claude-ultra へ橋渡しできる
-argument-hint: <ざっくりした要望（省略可）>
+description: 大まかな要望を入力に、対話的なヒアリング + 既存実装調査 (shinaps-explorer) + フィジビリティ調査 (shinaps-tech-surveyor で外部情報 + shinaps-survey-validator で出典検証 + 採用候補決定 + 必要ならプロトタイプ実装) + 技術選定を行い、「ほぼ実現できる」と確信できるレベルまで仕様を詰めて仕様書 (spec.md) を作成するスキル。spec 段階で実現可能性を十分に検証することで dev の入口での差し戻しを最小限にする。shinaps-spec-writer で構造化し、そのまま /shinaps:dev-claude-ultra へ渡せる
+argument-hint: <大まかな要望（省略可）>
 ---
 
 ## 作業記録の保存先
@@ -62,7 +62,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 ### Phase 2: 段階的ヒアリング
 
-**ヒアリング前の準備**: `list_search_facets()` + 予備 `search_rules({ repoOwner, repoName, ...推定 facet })` を呼び、rule カタログを頭に入れる (制約セクションを rule 起点で組み立てるため)。
+**ヒアリング前の準備**: `list_search_facets()` + 予備 `search_rules({ repoOwner, repoName, ...推定 facet })` を呼び、rule カタログを把握する (制約セクションを rule 起点で組み立てるため)。
 
 メインエージェントがインタビュアーとして、以下の観点を順次 `AskUserQuestion` で確認する。**1 観点ずつ**、回答を踏まえて次の質問を決める。回数に制限なし、不明な点は必ず聞く。
 
@@ -70,7 +70,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 1. **機能要件の核**: 「具体的にどういう操作・機能が必要か」
 2. **想定ユーザー**: 「誰が使うのか (役割・知識レベル)」
-3. **スコープの境界**: 「どこまでをやり、どこからはやらないか」
+3. **スコープの境界**: 「どこまでを対象にし、どこからを対象外にするか」
 4. **優先度**: 「必須 / 重要 / あると良い をどう分けるか」
 5. **制約**: 「技術スタック / 期限 / 既存システムとの関係 など」
 6. **非機能要件**: 「パフォーマンス・セキュリティ・可用性で気にする点はあるか」 (該当時のみ)
@@ -85,7 +85,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 - ユーザーから「もう十分」と意思表示があれば Phase 3 へ
 - 観点 1〜7 を一通り終えたら自動的に Phase 3 へ
 
-### Phase 3: 既存実装調査 (フィジビリ調査)
+### Phase 3: 既存実装調査 (フィジビリティ調査)
 
 `AskUserQuestion` で「既存コードベースを調査するか」を確認 (Recommended: Yes)。
 スキップする選択肢: 「新規プロジェクト / 既存に関連実装が無いことが明白」な場合。
@@ -103,7 +103,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 ### Phase 4: フィジビリティ調査 (外部情報 + 必要ならプロトタイプ)
 
-「実現できそうか」「どんなアプローチがあるか」「ハマりどころは何か」を確認するフェーズ。2 段階に分かれる。
+「実現できそうか」「どんなアプローチがあるか」「落とし穴は何か」を確認するフェーズ。2 段階に分かれる。
 
 #### 4-A: 外部情報調査 + 技術選定
 
@@ -119,7 +119,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
    - Phase 3 の explorer 結果 (実施した場合)
    - プロジェクト `CLAUDE.md` の関連抜粋 (既存スタック制約があれば)
    - **Phase 2 前準備で取得した `search_rules` 結果 (userRules + officialRules 全文)**
-   - 「この機能を実装する際の関連ライブラリ / 公式推奨パターン / 知られた落とし穴 / 似たユースケースの実装例を WebSearch / WebFetch で調査せよ。**実現可能性を判断する材料を集めると同時に、複数候補がある場合は観点別に比較すること**。既存スタック + rule カタログ整合性を最初の予選条件に」
+   - 「この機能を実装する際の関連ライブラリ / 公式推奨パターン / 知られた落とし穴 / 似たユースケースの実装例を WebSearch / WebFetch で調査せよ。**実現可能性を判断する材料を集めると同時に、複数候補がある場合は観点別に比較すること**。既存スタック + rule カタログ整合性を最初の絞り込み条件に」
 3. 生レポートをメインが Write で `raw/survey.md` に全文保存
 4. `shinaps-survey-validator` を起動 (プロンプトに search_rules 結果も渡す)、メインが Write で `raw/survey-validated.md` に全文保存
 5. **採用候補の決定**:
@@ -134,19 +134,19 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 `AskUserQuestion` で「実現可能性を確かめるプロトタイプを試すか」を確認 (Recommended: No、ただし以下に該当するなら Yes 推奨):
 - 不確定な技術要素がある (新規ライブラリ / 試したことのない API / パフォーマンス懸念)
-- 4-A で「実装パターンが複数提示されたがどれが筋か不明」
+- 4-A で「実装パターンが複数提示されたがどれが適切か不明」
 - 「動かしてみないと分からない」と感じる論点がある
 
 実施する場合:
 
-1. **隔離スペース** `.shinaps/work/specs/{ts}-{slug}/prototype/` を作成 (既存コードベースを汚さない)
+1. **隔離スペース** `.shinaps/work/specs/{ts}-{slug}/prototype/` を作成 (既存コードベースへの影響を避ける)
 2. 必要最小限のコードを書いて動かす:
-   - 既存コードベースに統合する必要があれば最小の touch のみ
-   - 主目的は「動くか / 期待した振る舞いか / どこで詰まるか」を確認すること
+   - 既存コードベースに統合する必要があれば最小限の変更のみ
+   - 主目的は「動くか / 期待した振る舞いか / どこで問題が起きるか」を確認すること
 3. 結果を `prototype/prototype-report.md` に記録
 
 4-A / 4-B どちらかでも実施した場合、結果を踏まえて Phase 2 に戻って追加ヒアリングが必要か判断:
-- フィジビリ調査で「ユーザー要望が実現困難 / 想定より大規模」と分かれば `AskUserQuestion` で「スコープ縮小 / 別アプローチ / そのまま進める」を確認
+- フィジビリティ調査で「ユーザー要望が実現困難 / 想定より大規模」と分かれば `AskUserQuestion` で「スコープ縮小 / 別アプローチ / そのまま進める」を確認
 
 ### Phase 5: ヒアリングログ整理
 
@@ -179,10 +179,10 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 `AskUserQuestion` で次のアクションを確認:
 
-- **`/shinaps:dev-claude-ultra` に進む (橋渡し)**: 仕様書を入力に、計画策定・実装・セルフレビューまでを続けて実行する
+- **`/shinaps:dev-claude-ultra` に進む (引き継ぎ)**: 仕様書を入力に、計画策定・実装・セルフレビューまでを続けて実行する
 - **ローカル保存のみで終了**
 
-### Phase 9: /shinaps:dev-claude-ultra への橋渡し (選択時)
+### Phase 9: /shinaps:dev-claude-ultra への引き継ぎ (選択時)
 
 中間ファイル (旧 `plan-handoff.md`) は生成しない。`Skill` ツールで `shinaps:dev-claude-ultra` を起動し、引数に **`spec.md` のパスを直接渡す**。利用者が1体での実行を指定した場合は `shinaps:dev-claude` を使う。
 
@@ -201,5 +201,5 @@ Skill(skill="shinaps:dev-claude-ultra", args="以下の仕様書を実装する�
 - **未解決は隠さない**: 答えが出なかった項目は仕様書で `[未解決]` 明示
 - **生レポート保存厳守**: ヒアリングログ・仕様書・調査結果は全文保存 (メインが Write)
 - **subagent は文字列応答のみ**: ファイル書き込みは必ずメインが担当
-- **フィジビリ調査は spec で済ませる**: dev での差し戻しを減らすため、Phase 3/4 の調査を惜しまない
+- **フィジビリティ調査は spec で済ませる**: dev での差し戻しを減らすため、Phase 3/4 の調査を惜しまない
 - **rule カタログを制約に反映**: `search_rules` 結果を spec.md の制約セクションに集約

@@ -20,11 +20,11 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 呼び出し時に「照合のみ」と指定された場合は、以下の修正工程を実行せず、findings と修正案を呼び出し元へ返す。並行レビューが同じ差分を確認できるよう、対象ファイルとルールを変更せず、修正の質問も呼び出し元に集約する。
 
-このスキルは「commit / report 直前の self-review」を確実にやるためのバッチ照合手順書。CLAUDE.md に「セルフレビュー直前 → search_rules で規約照合」と書かれていても AI (あなた) が頻繁にスキップする現実への対症療法として、ユーザーが手動で発火するためにある。
+このスキルは「commit / report 直前の self-review」を確実に行うためのバッチ照合手順書。CLAUDE.md に「セルフレビュー直前 → search_rules で規約照合」と書かれていても AI (あなた) が頻繁にスキップするので、その対策としてユーザーが手動で起動するためにある。
 
-照合対象は **ファイルの現状全文** であって diff ではない。diff の hunk だけでは「この関数全体の責務が正しいか」「この命名は周囲と揃っているか」「規約が要求する構造がファイル内に揃っているか」を判断できず、追加行だけ見て規約準拠に見えても、ファイル全体としては規約から外れているケースを取り逃すため。git は **どのファイルを見るか** を決める用途と、finding が **今回の変更に含まれる箇所か** を判定する用途に使う。
+照合対象は **ファイルの現状全文** であって diff ではない。diff の hunk だけでは「この関数全体の責務が正しいか」「この命名は周囲と揃っているか」「規約が要求する構造がファイル内に揃っているか」を判断できず、追加行だけ見て規約準拠に見えても、ファイル全体としては規約から外れているケースを見落とすため。git は **どのファイルを見るか** を決める用途と、finding が **今回の変更に含まれる箇所か** を判定する用途に使う。
 
-計画段階では発火しない。rule の大半はコメントの WHY / 命名 / import 経路といったコードレベルの規約で、自然言語の計画テキストからは検出できないため。計画段階で拾う価値がある設計レベルの規約違反は `shinaps-plan-reviewer` が担当する。
+計画段階では起動しない。rule の大半はコメントの WHY / 命名 / import 経路といったコードレベルの規約で、自然言語の計画テキストからは検出できないため。計画段階で指摘する価値がある設計レベルの規約違反は `shinaps-plan-reviewer` が担当する。
 
 shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて Claude Code 側のあなたが手元の `git` / `Read` / 既存 MCP tools で実行する (private repo の内容をサーバ境界に渡さない設計)。
 
@@ -45,11 +45,11 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
    - **ファイル / ディレクトリ path** (例: `apps/api/src/mcp/`) → その path 配下のファイルをそのまま対象集合にする (変更の有無を問わない)。ディレクトリなら `git ls-files <path>` で列挙する
    - **PR URL** (例: `https://github.com/owner/repo/pull/123`) → `gh pr diff 123 --repo owner/repo --name-only` で変更ファイル一覧を取得。カレント repo と同じなら `--repo` は省略可
    - **commit SHA / range** (例: `abc123` / `main..feature` / `HEAD~3..HEAD`) → `git diff --name-only <range>` で変更ファイル一覧を取得
-2. 明示指定がなければ `git diff --name-only HEAD` (= staged + unstaged の合計、ローカルで触ったファイル全部)
+2. 明示指定がなければ `git diff --name-only HEAD` (= staged + unstaged の合計、ローカルで変更したファイルすべて)
 3. それでも 0 件なら **ユーザーに確認**: 「変更がありません。直近の commit (`git diff --name-only HEAD~`) または特定のファイル / commit / PR を対象にしますか?」
 4. 削除されたファイルは対象集合から除く (現状が存在しない)
 
-対象が決まったらユーザーに「以下 N ファイルの現状を refine します」と 1 行で宣言してから先に進む。**Step 3 で各 agent に渡すファイル一覧と「変更範囲の確認コマンド」も、ここで決めた集合に必ず合わせること** (agent が独立に `git diff HEAD` を叩いて対象を取り違えないよう prompt に具体コマンドを埋め込む)。
+対象が決まったらユーザーに「以下 N ファイルの現状を refine します」と 1 行で宣言してから先に進む。**Step 3 で各 agent に渡すファイル一覧と「変更範囲の確認コマンド」も、ここで決めた集合に必ず合わせること** (agent が独立に `git diff HEAD` を実行して対象を取り違えないよう prompt に具体コマンドを埋め込む)。
 
 **ファイル数による一律の上限は設けない**。確定した対象集合を維持し、件数の多さだけを理由に対象の縮小やユーザーへの分割確認を求めない。対象の内容量が大きい場合は、ファイルの行数・内容量と関連性（ディレクトリ、機能、依存関係）を見て自動的にバッチへ分ける。小規模なら分割は不要。関連ファイルはできるだけ同じバッチにまとめ、バッチをまたぐ契約は集約時に照合する。
 
@@ -59,9 +59,9 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 
 - shinaps-ai MCP server の `list_search_facets()` で facet master (languages / platforms / frameworks / topics の登録済 slug 空間) を取得 → 対象ファイルの拡張子・パス・内容から関係する facet slug を推定して確定
 - `list_search_facets()` の `versionTargets` と manifest / lockfile / compiler config / deployment target を照合し、確認できたバージョンだけを `projectVersions: [{ targetKind, targetSlug, version }]` に指定する。facet取得後に検索する。targetやバージョンは推測しない。確認できない対象は条件付きルールが除外されるため、共通ルールのみの照合になったことを結果に明記する。
-- shinaps-ai MCP server の `search_rules({ repoOwner, repoName, languages?, platforms?, frameworks?, topics?, kind?, projectVersions? })` を呼ぶ → userRules + officialRules (両方を照合対象にする。userRules は facet に関係なく継承マージ全件、officialRules は admin が保存した rule のうち指定 facet とバージョン適用条件に一致するものへ絞られる（承認操作は不要）)。**repoOwner / repoName は現在の git workspace から必ず渡す** (`gh repo view` or `git remote get-url origin` から取得)。userRules は scope=user (横断) + scope=repo_owner (owner 一致) + scope=repo (owner+name 一致) の継承マージで返る。各 rule に乗る `scope` flag を見て「横断 / owner 限定 / repo 限定」を判別できる。facet を 1 つも指定せずに呼ぶと officialRules は空配列で返るので、必ず推定 facet を 1 つ以上指定すること。`kind` は通常指定しない (対象ファイル全体を rule 集合と広く照合する用途のため、絞り込むと見落としが増える)
+- shinaps-ai MCP server の `search_rules({ repoOwner, repoName, languages?, platforms?, frameworks?, topics?, kind?, projectVersions? })` を呼ぶ → userRules + officialRules (両方を照合対象にする。userRules は facet に関係なく継承マージ全件、officialRules は admin が保存した rule のうち指定 facet とバージョン適用条件に一致するものへ絞られる（承認操作は不要）)。**repoOwner / repoName は現在の git workspace から必ず渡す** (`gh repo view` or `git remote get-url origin` から取得)。userRules は scope=user (横断) + scope=repo_owner (owner 一致) + scope=repo (owner+name 一致) の継承マージで返る。各 rule に付く `scope` flag を見て「横断 / owner 限定 / repo 限定」を判別できる。facet を 1 つも指定せずに呼ぶと officialRules は空配列で返るので、必ず推定 facet を 1 つ以上指定すること。`kind` は通常指定しない (対象ファイル全体を rule 集合と広く照合する用途のため、絞り込むと見落としが増える)
 - repo root の `AGENTS.md` / `CLAUDE.md` を Read (プロジェクト規約)
-- AGENTS.md が `docs/` 等を「source of truth」として参照していたら **その docs も Read** (今回触った領域に関連するものに限定して良い)
+- AGENTS.md が `docs/` 等を「source of truth」として参照していたら **その docs も Read** (今回変更した領域に関連するものに限定して良い)
 - グローバル `~/.claude/CLAUDE.md` の `## コメントルール` `## 実装・設計に関して` 等の節 (一度読んだセッションなら conversation history で代替可)
 - 該当 repo の auto-memory `~/.claude/projects/<slug>/memory/MEMORY.md` がもしあれば Read
 
@@ -148,7 +148,7 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 集約後の finding を振り分ける。**`scope` が第一の分岐**:
 
 - **`changed`** (今回の変更に含まれる箇所) → 以下の「自明な修正」なら自動適用、それ以外は要確認
-- **`pre-existing`** (今回触っていない既存箇所) → severity を問わず **必ず要確認に回す**。自動修正しない
+- **`pre-existing`** (今回変更していない既存箇所) → severity を問わず **必ず要確認に回す**。自動修正しない
 
 `pre-existing` を自動修正しないのは、今回の作業と無関係な差分が commit に混入して、レビュアーが「この変更は何のためか」を追えなくなるため。既存箇所の指摘は「別 commit に分ける」「後回しにする」判断がユーザー側にある。
 
@@ -160,11 +160,11 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 - 既存パターンへの機械的な追従 (隣接コードと同じ流儀に揃えるだけ)
 - import 経路や命名の規約違反で、直し先が明白なもの
 
-自動修正を終えたら型 / lint / test を回して green を確認する。修正内容は Step 6 のサマリで「何をどう直したか」を file 単位で必ず一覧報告する (ユーザーが事後確認できるように)。
+自動修正を終えたら型 / lint / test を回して、すべて成功することを確認する。修正内容は Step 6 のサマリで「何をどう直したか」を file 単位で必ず一覧報告する (ユーザーが事後確認できるように)。
 
 ### 判断が必要なもの (要確認)
 
-以下に該当する finding は `AskUserQuestion` で確認する。**迷ったら確認側に倒す**:
+以下に該当する finding は `AskUserQuestion` で確認する。**迷ったら要確認にする**:
 
 - **`scope` が `pre-existing` のもの全般** (今回の変更と切り離して判断すべきなので、自明に見えても確認する)
 - 設計トレードオフがある (複数の修正方針があり得る / 影響範囲が広い / 構造変更を伴う)
@@ -174,9 +174,9 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 選択肢は 4 つ:
 
 1. **修正する** — どう直すかを 1-2 文で提案 (agent が返した `detail` を活用)。承認されたら `Edit` / `Write` で実行
-2. **このまま許容する** — 妥当な理由があるとき。理由を今回のローカル成果物（implementation.md / 調査・レビューレポート）に残す (将来の自分が「なぜ違反のままにしたか」を辿れるように)
+2. **このまま許容する** — 妥当な理由があるとき。理由を今回のローカル成果物（implementation.md / 調査・レビューレポート）に残す (後から「なぜ違反のままにしたか」を辿れるように)
 3. **ルールの方を修正する** — 規約自体が現実と乖離している場合。shinaps-ai MCP server の `record_rule` (新規) or `update_rule` (既存修正) を実行。新規 record_rule のときは scope (user / repo_owner / repo) も選ばせる (横断的なら user、この repo 限定なら repo)
-4. **後回し** — 別タスクとして扱う。`TaskCreate` で TODO 化し、後の作業セッションで拾えるようにする
+4. **後回し** — 別タスクとして扱う。`TaskCreate` で TODO 化し、後の作業セッションで着手できるようにする
 
 **提示順は `changed` を先、`pre-existing` を後**。それぞれの中では Violation → Improvement → Question の順。各 finding には `pre-existing` かどうかを明示して提示する (ユーザーが「今回の commit に混ぜるか」を判断する材料になるため)。件数が少なければ 1 回の `AskUserQuestion` に複数 question をまとめてよい (各 finding には前提説明を添える)。
 
@@ -189,17 +189,17 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 - 検出 / 処理した finding の総数と内訳 (自動修正 X 件 / 確認の上修正 Y 件 / 許容 Z 件 / rule 更新 W 件 / 後回し V 件)
 - **`changed` と `pre-existing` の内訳** (既存箇所の指摘が何件あり、そのうち何件を今回直したか。今回の変更に無関係な修正がどれだけ混ざったかをユーザーが把握できるように)
 - **自動修正した内容の一覧** (file + 1 行の何をどう直したか。ユーザーが事後確認する唯一の接点なので省略しない)
-- 新しく `record_rule` / `update_rule` した内容があれば「次セッション以降に効きます」と明示
+- 新しく `record_rule` / `update_rule` した内容があれば「次セッション以降に適用されます」と明示
 - まだ未処理の Question / 後回しの TaskCreate id を列挙
 
-この後 user は通常 `git add` / commit に進む想定なので、refine 自体は commit しない (ユーザー操作の自然な境界を奪わない)。
+この後 user は通常 `git add` / commit に進む想定なので、refine 自体は commit しない (commit はユーザーが行う操作として残す)。
 
 ## 注意点
 
 - テストに関わる指摘と修正の判断は [テスト方針](../../references/testing.md) に従う
-- **Info レベルは report しない**。Critical / Warning 相当だけを扱う。ノイズが多いと「規約照合は手間」というネガティブ印象が定着するため
+- **Info レベルは report しない**。Critical / Warning 相当だけを扱う。ノイズが多いと「規約照合は手間」という否定的な印象が定着するため
 - **1体で対象全体を確認する**。対象量が増えても担当数を増やさず、同じ担当へ続きのバッチを渡す
-- **Agent への rule 受け渡しは full text**。id + title だけを渡して agent 側に search_rules を再取得させると shinaps MCP を N 回叩くことになるため無駄。メインスレッドが 1 度取得したものを prompt に貼る
+- **Agent への rule 受け渡しは full text**。id + title だけを渡して agent 側に search_rules を再取得させると shinaps MCP を N 回呼ぶことになるため無駄。メインスレッドが 1 度取得したものを prompt に貼る
 - **根拠を確認する**: 担当は渡された規約と対象全体を照合し、規約や docs の根拠がある指摘だけを返す
 - finding 同士が重複していたら Step 4 の集約で統合する (「同じファイルで console.log 3 件、まとめて削除しますか?」等)
 - 規約が 0 件 (= `search_rules` の userRules / officialRules が空) のとき: 「rule が登録されていません。今日の作業で rule 化したい習慣はありますか?」と逆に質問して、`record_rule` を引き出すきっかけにする (この場合 Step 2-4 はスキップ)

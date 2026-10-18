@@ -138,6 +138,10 @@ npm pack --dry-run
 
 公開前にはnpmスコープ`@shinaps`の利用権限とtarball内容を確認する。CLIのバージョンと両pluginのバージョンを揃える。開発中の同一バージョンも`update codex`で再配置できる。
 
+### Codexでの人レビュー
+
+人レビューやコミット単位の承認を依頼する際、CodexはPlasmaで対象checkoutと差分を提示します。変更の目的と確認点は会話に示し、利用者の明示的なレビュー完了を待ちます。Plasmaは別途導入するツールで、未導入時も人レビューを省略しません。表示差分とコミット対象の照合、修正後の再確認は[共通手順](plugins/shinaps-codex/references/human-review.md)に従います。人レビューを省略するプロジェクトへ新たなレビュー待ちは追加しません。
+
 ### CIとnpm自動公開
 
 `.github/workflows/publish.yml` はmainへのpush・PR・手動実行でテストと配布内容を検証する。通常のGitHub Releaseを公開すると、検証成功後に同じtagのパッケージをnpmへpublic公開する。prereleaseは公開しない。手動実行は検証専用で、npmへの公開は行わない。

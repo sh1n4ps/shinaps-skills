@@ -4,13 +4,19 @@ import { access, readFile, readdir } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 
 const PLUGINS = ['plugins/shinaps-claude', 'plugins/shinaps-codex'];
+const MANAGED_SKILLS = 'managed-agents/skills';
 
-// 配布先は plugin ディレクトリだけを持つので、plugin の外を指すリンクは導入後に解決できない。
-// Codex のインストーラは plugin ディレクトリをそのままコピーするため、リポジトリ上で
-// 解決できれば配置先でも解決できる。
-test('relative Markdown links resolve inside the same plugin directory', async () => {
+// 配布先は配布単位のディレクトリだけを持つので、その外を指すリンクは導入後に解決できない。
+// Codex のインストーラは plugin ディレクトリを、ant apply は Managed Agents の skill ディレクトリを
+// そのまま送るため、リポジトリ上で単位の中に解決できれば配置先でも解決できる。Managed 版の
+// skill を readdir で列挙するのは、skill を足したときに検査から漏れないようにするため。
+test('relative Markdown links resolve inside the same distribution unit', async () => {
+  const managed = (await readdir(MANAGED_SKILLS, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => join(MANAGED_SKILLS, entry.name));
+  assert.ok(managed.length > 0, 'Managed 版の skill が見つからない');
   const broken: string[] = [];
-  for (const plugin of PLUGINS) {
+  for (const plugin of [...PLUGINS, ...managed]) {
     const root = resolve(plugin);
     const files = await readdir(root, { recursive: true, withFileTypes: true });
     for (const entry of files) {
@@ -23,7 +29,7 @@ test('relative Markdown links resolve inside the same plugin directory', async (
         const target = resolve(dirname(file), decodeURI(href.split('#')[0]));
         const label = `${relative(process.cwd(), file)} -> ${href}`;
         if (!target.startsWith(root + sep)) {
-          broken.push(`${label} (plugin の外)`);
+          broken.push(`${label} (配布単位の外)`);
           continue;
         }
         await access(target).catch(() => broken.push(`${label} (存在しない)`));

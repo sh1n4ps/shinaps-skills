@@ -6,7 +6,14 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!!**/package-lock.json", "!!**/.idea", "!!**/.shinaps", "!!**/dist"]
+    "includes": [
+      "**",
+      "!!**/package-lock.json",
+      "!!**/claude-lock.json",
+      "!!**/.idea",
+      "!!**/.shinaps",
+      "!!**/dist"
+    ]
   },
   "formatter": {
     "enabled": true,

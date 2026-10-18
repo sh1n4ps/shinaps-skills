@@ -91,7 +91,7 @@ YAML
 
 ## 取り出し
 
-1. `ant beta:files list --scope-id <session> --max-items -1 --format jsonl` から、`出力:` 行の各名前について、tより後に作られた最新の1件を選ぶ。
+1. `ant beta:files list --scope-id <session> --beta managed-agents-2026-04-01 --max-items -1 --format jsonl` から、`出力:` 行の各名前について、tより後に作られた最新の1件を選ぶ。`--beta` がないと `scope_id: unknown field` で拒否される。
 2. 進行役の作業記録の、ラウンドごとのディレクトリへ `ant files download --file-id <file_id> -o <保存先>` で保存する。
 
 一覧への表示が数秒遅れることがあるので、名前が揃わなければ最大30秒待って1回だけ読み直す。それでも揃わなければ「未完了の扱い」に従う。

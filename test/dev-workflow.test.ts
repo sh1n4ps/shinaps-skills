@@ -1,14 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { access, readFile } from 'node:fs/promises';
+import { access, readFile, readdir } from 'node:fs/promises';
+import { join } from 'node:path';
 
 const CLAUDE = 'plugins/shinaps-claude';
 const CODEX = 'plugins/shinaps-codex';
-const SHARED_REFERENCES = [
-  'references/dev/workflow.md',
-  'references/testing.md',
-  'references/work-records.md',
-];
+const MANAGED = 'managed-agents';
+// 起動手順は runtime ごとの機構で書くので、references の中でこれだけは複製しない。
+const RUNTIME_SPECIFIC_REFERENCE = 'dev/launch.md';
 const TESTING_POLICY_ROLES = [
   'shinaps-architect',
   'shinaps-implementer',
@@ -19,31 +18,120 @@ const TESTING_POLICY_ROLES = [
   'shinaps-review-verifier',
 ];
 
-// Codex のインストーラは plugins/shinaps-codex だけを配るので、dev の工程とテスト方針を両版に置いている。
-// 片方だけを更新すると、runtime によって工程や判断基準が変わる。
-test('shared workflow references are identical in the Claude and Codex plugins', async () => {
-  for (const path of SHARED_REFERENCES) {
-    assert.equal(
-      await readFile(`${CODEX}/${path}`, 'utf8'),
-      await readFile(`${CLAUDE}/${path}`, 'utf8'),
-      `${path} は Claude 版を編集元として Codex 版へ複製する`,
+async function readTree(root: string): Promise<Record<string, string>> {
+  const files = await readdir(root, { recursive: true, withFileTypes: true });
+  const entries = await Promise.all(
+    files
+      .filter((entry) => entry.isFile())
+      .map(async (entry) => {
+        const path = join(entry.parentPath, entry.name);
+        return [path.slice(root.length + 1), await readFile(path, 'utf8')] as const;
+      }),
+  );
+  return Object.fromEntries(entries);
+}
+
+async function sharedReferences(root: string): Promise<Record<string, string>> {
+  const { [RUNTIME_SPECIFIC_REFERENCE]: _launch, ...shared } = await readTree(root);
+  return shared;
+}
+
+async function managedSkillReferences(): Promise<string[]> {
+  const skills = await readdir(`${MANAGED}/skills`, { withFileTypes: true });
+  return skills
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => `${MANAGED}/skills/${entry.name}/references`);
+}
+
+// multiagent を持つ定義が lead。役割定義は委任先を持たない。
+async function managedLeads(): Promise<string[]> {
+  const leads: string[] = [];
+  for (const entry of await readdir(`${MANAGED}/agents`)) {
+    const path = `${MANAGED}/agents/${entry}`;
+    if (/^multiagent:/m.test(await readFile(path, 'utf8'))) leads.push(path);
+  }
+  return leads;
+}
+
+async function workflowRoles(): Promise<Set<string>> {
+  const workflow = await readFile(`${CLAUDE}/references/dev/workflow.md`, 'utf8');
+  return new Set([...workflow.matchAll(/`(shinaps-[a-z-]+)`/g)].map(([, role]) => role));
+}
+
+function splitDefinition(text: string) {
+  const [, frontmatter, body] = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/) ?? [];
+  assert.ok(frontmatter !== undefined && body !== undefined, 'frontmatter が無い');
+  const field = (key: string) => frontmatter.match(new RegExp(`^${key}: (.*)$`, 'm'))?.[1];
+  return { name: field('name'), description: field('description'), body };
+}
+
+// Codex 版と Managed Agents 版の配布先は自分の references しか読めないので、工程・テスト方針・
+// 作業記録・linear の手順を各版に複製している。Claude 版だけを直すと、runtime によって工程や
+// 判断基準が変わる。Managed 版の skill を readdir で列挙するのは、skill を足したときに検査から
+// 漏れないようにするため。
+test('every runtime ships the Claude references except the launch procedure', async () => {
+  const expected = await sharedReferences(`${CLAUDE}/references`);
+  const managed = await managedSkillReferences();
+  assert.ok(managed.length > 0, 'Managed 版の skill が見つからない');
+  for (const root of [`${CODEX}/references`, ...managed]) {
+    assert.deepEqual(
+      await sharedReferences(root),
+      expected,
+      `${root} は Claude 版を編集元として複製する`,
     );
   }
 });
 
-// 両 runtime が同じ工程を使うので、工程が名前を挙げる役割はどちらの plugin にも定義が要る。
-// 片方に無いと、その runtime の dev だけが担当を起動できずに止まる。
-test('every role named in the dev workflow is defined in both plugins', async () => {
-  const workflow = await readFile(`${CLAUDE}/references/dev/workflow.md`, 'utf8');
-  const roles = new Set([...workflow.matchAll(/`(shinaps-[a-z-]+)`/g)].map(([, role]) => role));
+// Managed 版の 1 体の入口と 2 体の入口は、担当数以外の起動手順を共有する。片方の skill の
+// launch.md だけを直すと、担当数によって委任・継続の方法や打ち切りの規則が変わる。
+test('Managed Agents skills share the same launch procedure', async () => {
+  const [first, ...rest] = await managedSkillReferences();
+  assert.ok(rest.length > 0, '比べる Managed 版の skill が 2 つ以上ない');
+  const expected = await readFile(`${first}/${RUNTIME_SPECIFIC_REFERENCE}`, 'utf8');
+  for (const root of rest) {
+    assert.equal(await readFile(`${root}/${RUNTIME_SPECIFIC_REFERENCE}`, 'utf8'), expected, root);
+  }
+});
+
+// 全 runtime が同じ工程を使うので、工程が名前を挙げる役割は各 runtime に定義が要る。
+// 定義が無い、または Managed 版のいずれかの lead に登録されていないと、その入口の dev だけが
+// 担当を起動できずに止まる。lead は multiagent を持つ定義として列挙し、入口を足しても漏れないようにする。
+test('every role named in the dev workflow is defined in every runtime', async () => {
+  const roles = await workflowRoles();
   assert.ok(roles.size > 0);
+  const leads = await managedLeads();
+  assert.ok(leads.length > 0, 'Managed 版の lead が見つからない');
   const missing: string[] = [];
   for (const role of roles) {
     for (const path of [`${CLAUDE}/agents/${role}.md`, `${CODEX}/agents/${role}.toml`]) {
       await access(path).catch(() => missing.push(path));
     }
   }
+  for (const lead of leads) {
+    const text = await readFile(lead, 'utf8');
+    const registered = new Set(
+      [...text.matchAll(/^\s*- \.\/(shinaps-[a-z-]+)\.md$/gm)].map(([, role]) => role),
+    );
+    for (const role of roles) {
+      if (!registered.has(role)) missing.push(`${lead} の predefined_agents に ${role}`);
+    }
+  }
   assert.deepEqual(missing, []);
+});
+
+// Managed 版の役割定義は Claude 版の name・description・本文を複製し、runtime 固有の部分は
+// frontmatter の他の項目だけに持つ。Claude 版だけを直すと、クラウドで動く担当の判断基準が
+// PC と変わる。対象は工程が名前を挙げる役割だけで、Managed 版だけにある lead は比べない。
+test('Managed Agents role definitions copy the Claude name, description and body', async () => {
+  const stale: string[] = [];
+  for (const role of await workflowRoles()) {
+    const claude = splitDefinition(await readFile(`${CLAUDE}/agents/${role}.md`, 'utf8'));
+    const managed = splitDefinition(await readFile(`${MANAGED}/agents/${role}.md`, 'utf8'));
+    for (const key of ['name', 'description', 'body'] as const) {
+      if (managed[key] !== claude[key]) stale.push(`${role} の ${key}`);
+    }
+  }
+  assert.deepEqual(stale, []);
 });
 
 // テスト方針は references/testing.md を正本とし、役割定義には同じ段落を写す（役割は plugin 内の

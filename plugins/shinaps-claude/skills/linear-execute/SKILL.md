@@ -1,11 +1,15 @@
 ---
 name: linear-execute
-description: Linearの実行でCodexから受けた実装・修正・コミット依頼を実行し結果を報告する。直接の開発進行依頼は設定と許可を確認してCodexへ引き渡す。相談・Issue整理はlinear-planを使う。
+description: Linearの開発で、Codexから受けた実装・修正・コミット依頼を実行する。作業先の設定の実装担当がManagedの入口なら、Claudeが進行役として実装からQA・許可された公開まで進める。それ以外の開発進行依頼はCodexへ引き渡す。相談・Issue整理はlinear-planを使う。
 ---
 
 # Linearの開発でClaudeが行うこと
 
-初版では、Codexが進行・Agent QA・人への窓口を担当する。作業先リポジトリの設定の `implementation_skill` がClaudeの入口のとき、ClaudeはAI Terminal Bridge（以下Bridge）経由の依頼で、技術調査と実装・修正を担当する。担当を入れ替えない。
+開発進行を依頼されたら、まず[設定の読み方](../../references/linear/configuration.md#設定の読み方)で作業先の設定を読み、`implementation_skill` で役割を決める。設定が真に未設定なら、下の「Codexの依頼なしで起動された場合」の初期設定へ進む。
+
+- Claudeの入口（`dev-claude`・`dev-claude-ultra`）では、Codexが進行・Agent QA・人への窓口を担当する。ClaudeはAI Terminal Bridge（以下Bridge）の受け手として、技術調査と実装・修正を担当し、「読む資料」「依頼を受けて実行する」「結果と人の対応を報告する」に従う。担当を入れ替えない。
+- Managedの入口（`dev-managed-cc`・`dev-managed-cc-ultra`）の開発進行では、Claudeが進行役になり、「Managedの入口で進行する」にだけ従う。
+- Codexの入口（`dev-codex`・`dev-codex-ultra`）では、開発進行をCodexへ引き渡す。
 
 ## 再確認せず進める条件
 
@@ -37,10 +41,29 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 - 完了の報告と、人のレビュー・コミット完了の報告に含める項目は、[references/workflow.md](../../references/linear/workflow.md) の「Bridgeでの依頼と報告」に従う。
 - 人へ着手の確認やコミットの依頼をしない。人がClaudeへ直接伝えた指示や結果は保持し、Codexへ報告する。Gitにコミットがあるだけで、人のレビュー済みと報告しない。設定で人のレビューを省略した場合は、省略と報告する。
 
+## Managedの入口で進行する
+
+実行範囲、開始時に固定するもの、継続とゴールは [execution.md](../../references/linear/execution.md) に従う。必要な許可は [configuration.md](../../references/linear/configuration.md) の「許可」に従う。実装・修正は [managed-session.md](../../references/linear/managed-session.md) の手順でセッションへ依頼し、結果を受け取る。
+
+- ゴール: 対象と終了条件を、会話から到達を確かめられる `/goal` の文で示す（例「SHINAPS-xxx が終了地点 <到達点> に達し、PRのURLとIssueとの相互リンクを報告した」）。ProposeGoalツールが使えればそれで提案し、その結果を確認とする。使えなければ `AskUserQuestion` で `/goal` の設定を依頼し、設定済みという回答を受けてから始める。Claude Codeではモデルからゴールの状態を読めないため、この回答を確認とする。設定されなければ、execution.mdの「ゴール機能」に従って開始前で止まる。
+- 人への確認（人の判断が要る質問への回答、未完了の扱い、作業ツリーに差がある場合など）は、すべて `AskUserQuestion` でターンの中で受ける。確認のためにターンを終えて待たない。Claude Code では /goal が有効な間、ターンを終えると Stop hook がゴール未達と判定して作業が続き、利用者の回答を待てないため。
+- セッションの完了待ち: backgroundのBashで、managed-session.mdの「観測と判定」の待ちを終える条件が現れるまで60秒ごとに確かめるuntilループを回し、終了の通知で再開する。`/goal` によって作業が続いても、動いているループがあれば二重に起動しない。
+
+| 作業 | 読む資料 |
+| --- | --- |
+| 設定の確認 | [references/configuration.md](../../references/linear/configuration.md) |
+| 着手前の紐づけ、Issueの作成・整理・本文の更新 | [references/issue.md](../../references/linear/issue.md) |
+| 担当、工程、待ち状態、人への依頼、継続の範囲 | [references/workflow.md](../../references/linear/workflow.md) |
+| Managedセッションの作成・観測・取り出し・適用とQAへの受け渡し | [references/managed-session.md](../../references/linear/managed-session.md) |
+| QAの実施・記録・素材 | [references/qa.md](../../references/linear/qa.md) |
+| Cycle完了QA・報告 | [references/cycle-report.md](../../references/linear/cycle-report.md) |
+
+コミットは `shinaps:commit`、pushとPRの作成は `shinaps:create-pr`、公開は `shinaps:release` に従い、Claudeが自分で行う。これらのスキルには[共通設定](../../references/linear/configuration.md)の許可と前工程の結果を渡す。必要な条件が揃えば再確認せずに進み、個別スキルの完了だけで進行を終えず、[終了条件](../../references/linear/execution.md)まで続ける。
+
 ## Codexの依頼なしで起動された場合
 
 相談・Issue整理・設定変更は `shinaps:linear-plan` を使う。実行範囲は [execution.md](../../references/linear/execution.md) に従って引き渡す。
 
 - 利用者から直接依頼された実作業（開発進行の依頼を除く）は、着手前に [references/issue.md](../../references/linear/issue.md) の「着手前に作業をIssueへ紐づける」に従う。Issueの作成は利用者がその場で依頼した場合だけ行い、設定の `issue_update` を根拠にしない。
 - 利用者から明示的にIssueの整理を依頼された場合は、[references/issue.md](../../references/linear/issue.md) に従って整理する。Issueの更新は、依頼で指定された範囲だけにする（設定の有無にかかわらない）。
-- 開発進行（実装からQAを経て終了地点までの進行）を依頼された場合、Claudeは進行役を兼ねない。[設定の読み方](../../references/linear/configuration.md#設定の読み方)で真に未設定と確認した場合だけ、同じセッションで `shinaps:linear-plan` の初期設定ヒアリングに進み、保存・確認後に元の依頼の引き渡しへ戻る。作業先リポジトリの設定で `bridge_request` が許可され、BridgeでCodexのセッションを特定できる場合は、[references/workflow.md](../../references/linear/workflow.md) の「開発進行の引き渡し」の項目を添えてCodexへ引き渡す。設定は [references/configuration.md](../../references/linear/configuration.md) の「設定の読み方」に従って読む。許可や相手のセッションがない場合は、必要な準備（設定、Codexセッションの起動、Bridgeの導入）を利用者へ案内する。
+- 開発進行（実装からQAを経て終了地点までの進行）を依頼された場合、設定の `implementation_skill` がManagedの入口なら「Managedの入口で進行する」に従う。それ以外の入口ではClaudeは進行役を兼ねない。[設定の読み方](../../references/linear/configuration.md#設定の読み方)で真に未設定と確認した場合だけ、同じセッションで `shinaps:linear-plan` の初期設定ヒアリングに進み、保存・確認後に元の依頼の引き渡しへ戻る。作業先リポジトリの設定で `bridge_request` が許可され、BridgeでCodexのセッションを特定できる場合は、[references/workflow.md](../../references/linear/workflow.md) の「開発進行の引き渡し」の項目を添えてCodexへ引き渡す。設定は [references/configuration.md](../../references/linear/configuration.md) の「設定の読み方」に従って読む。許可や相手のセッションがない場合は、必要な準備（設定、Codexセッションの起動、Bridgeの導入）を利用者へ案内する。

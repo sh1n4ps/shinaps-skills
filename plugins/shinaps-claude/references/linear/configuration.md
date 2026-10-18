@@ -61,7 +61,7 @@
 | `permissions` | 継続的に許可した操作の一覧（下の「許可」）。許可なしは `[]` |
 | `references` | `specifications`・`validation`・`environments`・`deployment`・`publication` の5分類をすべて記載し、既存資料のパスまたはURLの一覧を指定する。該当資料なしは `[]` |
 | `cycle_report` | Cycle報告の設定（下の「Cycle報告」）。報告を使わない場合は `null` |
-| `implementation_skill` | Issueの実装・修正に使うdevの入口。`dev-claude`・`dev-claude-ultra`（CodexがBridgeでClaudeへ依頼し、Claudeがその入口で実行する）、または `dev-codex`・`dev-codex-ultra`（Issueごとの別Codexタスクがその入口を実行し、会話側は進行・Agent QAを担当する） |
+| `implementation_skill` | Issueの実装・修正に使うdevの入口。`dev-claude`・`dev-claude-ultra`（CodexがBridgeでClaudeへ依頼し、Claudeがその入口で実行する）、`dev-codex`・`dev-codex-ultra`（Issueごとの別Codexタスクがその入口を実行し、会話側は進行・Agent QAを担当する）、または `dev-managed-cc`・`dev-managed-cc-ultra`（linear-executeを実行する会話が進行役になり、IssueごとのClaude Managed Agentsセッションのleadがその入口で実装する） |
 | `commit_mode` | `shinaps:commit` でコミットするときの進め方。`normal`（単位ごとに承認を得る）または `autonomous`（個別の承認なしで単位ごとに検証してコミットする） |
 | `human_code_review` | 人のコードレビューの要否。`required`（人がレビューする）または `skip`（人のレビューを行わない） |
 | `path_policy_overrides` | パス別に人レビュー・AIコミット許可・コミットの進め方を上書きするルールの一覧。例外なしは `[]`。既存設定で欠落していれば例外なし（下の「パス別の方針」） |
@@ -100,7 +100,7 @@ path_policy_overrides:
 
 ### 判定記録と変更時の扱い
 
-各予定単位について、設定の正本と内容、適用した全ルール（または適用なしの理由）、単位の比較元と全差分、継承後の実効3項目、今回の明示指示、`stage` の許可、検証・レビューの結果を記録する。差分の同一性はパスだけでなく内容・mode等も含めて確認する。Linear進行での担当間の引き渡しは [workflow.md](workflow.md)、コミット前後の単位照合と完了時の全体照合は [commit](../../skills/commit/SKILL.md) に従う。
+各予定単位について、設定の正本と内容、適用した全ルール（または適用なしの理由）、単位の比較元と全差分、継承後の実効3項目、今回の明示指示、`stage` の許可、検証・レビューの結果を記録する。差分の同一性はパスだけでなく内容・mode等も含めて確認する。Linear進行での担当間の引き渡しは [workflow.md](workflow.md)、コミット前後の単位照合と完了時の全体照合は `commit` に従う。
 
 予定単位の内容・分割・統合を変更したら、変更した単位を再判定して必要なレビュー・許可確認・検証へ戻す。設定変更時も影響する未実行単位を再判定する。以前の判定や別単位の方針は流用しない。実コミットが予定と異なれば停止し、履歴を無断で書き換えない。
 
@@ -129,6 +129,7 @@ path_policy_overrides:
 | `development_operations` | 任された対象の開発に必要な、既存アカウントへの通常のログイン、ローカル環境準備、プロジェクトの依存導入、開発サーバー・Simulatorの起動停止、ビルド・テスト・QA操作を継続的に許可する。下の範囲に従う |
 | `codex_task` | 対象IssueごとのCodex実装タスクの新規作成・状態確認・実装や修正や許可済みコミットの依頼。アーカイブ、worktree作成、操作許可の追加、タスク側でのゴールや実装タスクの再作成は含めない。ツールの明示依頼要件も満たす。アーカイブの合意と手順は [完了後の整理](codex-task.md#完了後の整理) に従う |
 | `bridge_request` | BridgeによるCodexからClaudeへの実装・修正の依頼と、ClaudeからCodexへの開発進行の引き渡し |
+| `managed_session:<USD>` | 対象IssueごとにClaude Managed Agentsのセッションを作り、同じIssueのコミット前のQA修正には続けて使う（コミット後の修正は新しいセッションで行う。扱いは[Managedセッション](managed-session.md)の「QAと修正」に従う）。`<USD>` は1セッションの予算の上限で、正の整数のUSD（作成時にセントへ換算する）。値がない、または正の整数でない場合は設定不備として止める。含める操作: 作業先のコミット済みの内容（git bundle）と、あれば `~/.claude/CLAUDE.md` のFiles APIへのアップロード、上限内での予算の設定、一覧から名前で一件に特定したvaultの受け渡し、状態・イベント・出力の取得、回答と修正依頼の送信、取得した差分の作業先への適用と作業記録の展開。含めない操作: 上限を超える予算の引き上げ（その場で確認する）、セッションとファイルのアーカイブ・削除、定義のapply、vaultの作成・変更 |
 | `stage` | レビュー・コミットの対象差分だけをステージする |
 | `commit` | 対象Issueの差分を、Local Agent QAの合格と `human_code_review` に従った工程の後に、`shinaps:commit` でローカルにコミットする。AIのコミットには `stage` の許可も併せて必要。push・PR・履歴の書き換え、人のレビューの省略を含めない。パス別の `ai_commit` を含む実効方針に従う（上の「パス別の方針」） |
 | `push` | 対象Issueの作業ブランチの通常のpush |
@@ -139,7 +140,7 @@ path_policy_overrides:
 | `dev_delegation` | `implementation_skill` で選んだdevの入口の中で、サブエージェントへ委託する。許可がない場合は、入口のメインが同じ観点を自分で確認し、独立確認とは報告しない。worktreeの作成は含まない |
 | `evidence:<保存先>` | Linear以外の指定した保存先へQA素材を保存する（LinearのIssueへの添付は `issue_update` に含む） |
 
-- 開発進行には `issue_update` が必要である。`implementation_skill` がClaudeの入口のときは `bridge_request` も必要で、Codexの入口のときは代わりに `codex_task` とCodexタスクの作成・読み取り・送信のツールが必要である。初期設定では、`issue_update`・`bridge_request`・`stage`・`dev_delegation` を開発進行の標準の組として提案する（Codexの入口を選ぶ場合は `bridge_request` を `codex_task` に置き換える）。設定があるだけでは、どの許可も得ない。必要な許可がない設定では開発進行を始めず、不足している許可を示す。
+- 開発進行には `issue_update` が必要である。`implementation_skill` がClaudeの入口のときは `bridge_request` も必要で、Codexの入口のときは代わりに `codex_task` とCodexタスクの作成・読み取り・送信のツールが必要である。Managedの入口のときは、代わりに `managed_session:<USD>` と `dev_delegation`、および会話側で認証済みの `ant` CLIが必要である（leadは担当を必ずサブエージェントへ委任するため、`dev_delegation` がなければ開始しない）。初期設定では、`issue_update`・`bridge_request`・`stage`・`dev_delegation` を開発進行の標準の組として提案する（Codexの入口を選ぶ場合は `bridge_request` を `codex_task` に、Managedの入口を選ぶ場合は `bridge_request` を `managed_session:<USD>` に置き換える）。設定があるだけでは、どの許可も得ない。必要な許可がない設定では開発進行を始めず、不足している許可を示す。
 - `development_operations` は、既存の認証手段と利用者が許可した既存アカウントを使い、対象の開発・検証環境と専用の検証データで行う操作に限る。本人の二要素認証・セキュリティキー・CAPTCHA等が必要なら具体的に依頼し、回避しない。ログイン成功を新しい権限への同意と扱わず、新規アカウント・OAuth権限の拡大・課金・新規クラウド資源・共有環境への破壊的変更・実利用者データの操作は含めない。秘密値をIssueや証拠へ記載しない。
 - この包括許可は `stage`・`commit`・`push`・`pr_create`・`merge`・`deploy:*`・`publish:*`・外部への送信・履歴やデータの破壊的操作を含まない。テストや環境準備がこれらを伴うときも、それぞれの許可が必要。人レビュー・Human QA・ツール側の承認条件を省略しない。`permissions` に明示された場合だけ適用し、既存設定に自動で追加しない。
 - 一つの操作が別の操作を伴う場合は、伴う操作の許可も必要とする（マージで本番へ自動配備される場合は `merge` と `deploy:production`）。
@@ -266,4 +267,4 @@ sharedでは `.shinaps/.gitignore` 自身、`linear.yaml`、採用した補足�
 
 `instructions.md` には、QA固有の注意（端末・ブラウザ・テストアカウントの取得方法への参照）、版の照合に使うコマンド、報告の文体・見せ方、関係者への依頼方法など、プロジェクト共通の条件・手順・相対パス・URLを書く。共通の手順は複製しない。端末固有の絶対パス、session/thread ID、一時的なログイン状態、進捗、QA結果は現在の `.shinaps/work/` へ記録する。秘密値はshared・localのどちらにも保存しない。
 
-委託時は保存方式、正本の所在、必要な補足・参照資料、合意済みの操作許可を渡す。CodexからClaudeへの依頼にも同じ情報を添える。
+委託時は保存方式、正本の所在、必要な補足・参照資料、合意済みの操作許可を渡す。CodexからClaudeへの依頼にも同じ情報を添える。Managedのセッションには[初回メッセージ](managed-session.md#初回メッセージと修正依頼)で渡す。

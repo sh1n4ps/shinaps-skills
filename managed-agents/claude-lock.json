@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "origin": {
+    "base_url": "https://api.anthropic.com",
+    "organization_id": "0a9d3e97-62a9-4151-a19d-1460a4480feb",
+    "workspace_id": "wrkspc_01L5tAYyp5zgwtVDN8TnpHWJ"
+  },
+  "resources": {
+    "./agents/shinaps-architect.md": {
+      "kind": "agent",
+      "id": "agent_014nS9C78iHUM49edBdJNmCW",
+      "version": "2",
+      "hash": "2f43f7ebc1ede33c3bc3cf41fe20789a",
+      "remote_hash": "32d6e68721aaaca81d0bc1cddb32ffcd"
+    },
+    "./agents/shinaps-dev-managed-cc-ultra.md": {
+      "kind": "agent",
+      "id": "agent_01RFvXKLv2byBopu7Sgmq8L2",
+      "version": "1",
+      "hash": "db4a8d4bd4db65878f751ae3a9bd8d97",
+      "remote_hash": "26348c8abf53d8647e58f3b439065eca"
+    },
+    "./agents/shinaps-dev-managed-cc.md": {
+      "kind": "agent",
+      "id": "agent_018RsB13dBRw5wpX7k9Bju9t",
+      "version": "1",
+      "hash": "d6dd2a805aaf66e7f85697b001858aaf",
+      "remote_hash": "d4a35daca58a208dffed18501295cc32"
+    },
+    "./agents/shinaps-explorer.md": {
+      "kind": "agent",
+      "id": "agent_017Eik5WoWFXgQAnqTpU3dxT",
+      "version": "2",
+      "hash": "659ceb60bae8a66f002cae9526ba38b4",
+      "remote_hash": "33838c5c9220712b118d47402b00bacc"
+    },
+    "./agents/shinaps-implementer.md": {
+      "kind": "agent",
+      "id": "agent_01X7Kzzntxjb1YtmBKj6x6fc",
+      "version": "2",
+      "hash": "72d388a5f6790f5e016c116618fa25f1",
+      "remote_hash": "88f887b7dc514a65a2dd203d45827cc0"
+    },
+    "./agents/shinaps-plan-reviewer.md": {
+      "kind": "agent",
+      "id": "agent_01CZJRn5Cj1UpEMqX8PJbEUV",
+      "version": "2",
+      "hash": "24e103f34bc593f8ee60e3933b2ecf7c",
+      "remote_hash": "cb675b8dd41db9b30edc8b3a4a63ad39"
+    },
+    "./agents/shinaps-refine-agent.md": {
+      "kind": "agent",
+      "id": "agent_01QKqHavZLV1M3o6TF8Z75rX",
+      "version": "2",
+      "hash": "72058a54129062a14bd732e9bf8ef7a8",
+      "remote_hash": "62eecc3c11d9ebe1bf7329cab09bdbe3"
+    },
+    "./agents/shinaps-review-verifier.md": {
+      "kind": "agent",
+      "id": "agent_01AcZU7nQg39gT98D1BzZaTJ",
+      "version": "2",
+      "hash": "f491ed3ec03833a28265fc81155fe80e",
+      "remote_hash": "0164ad31ac1dd66d276b68f5652c9712"
+    },
+    "./agents/shinaps-reviewer.md": {
+      "kind": "agent",
+      "id": "agent_01Pn62prPJ51yL2Cim6nPN3C",
+      "version": "2",
+      "hash": "ecf753d3352b9f18b09bdbfc0adde123",
+      "remote_hash": "3098be19b7d539a73afd3f25fd32e3b8"
+    },
+    "./agents/shinaps-simplifier.md": {
+      "kind": "agent",
+      "id": "agent_01XsDRQuMHch9xN6smNDPWwC",
+      "version": "2",
+      "hash": "869e32786f739fc5d3d9bb2a816f504f",
+      "remote_hash": "1f808bdbe5b46bf61e7701558e217033"
+    },
+    "./environments/shinaps-dev.yaml": {
+      "kind": "environment",
+      "id": "env_0111A8QCXB5Cz7oVEyomEtxN",
+      "hash": "7993a8c66a63eb2715df6b1f55264f6d",
+      "remote_hash": "0ba2ad2fbeaf5ed088f9d223115188da"
+    },
+    "./skills/dev-managed-cc": {
+      "kind": "skill",
+      "id": "skill_0145v1KoWTjvhrGvEndM5jxd",
+      "version": "skver_019MT1951rbWwcPgCQDVjz5d",
+      "hash": "1beda5844f26d8bd6d5f63a87af05c8c"
+    },
+    "./skills/dev-managed-cc-ultra": {
+      "kind": "skill",
+      "id": "skill_012kexgLEYewMCbs5HRfhhvK",
+      "version": "skver_018ibkEDgUgmzaMEQqxfxigP",
+      "hash": "92f9bf402d076a3c642c46365aac183a"
+    }
+  }
+}

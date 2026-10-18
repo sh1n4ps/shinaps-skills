@@ -1,4 +1,6 @@
 # 2026-10-15: 利用者と合意したshinaps-skills専用設定。
+# 2026-10-18: 利用者と合意し、実装担当をManagedの入口（dev-managed-cc）に変え、managed_session の予算の上限を40 USDにした。
+# 2026-10-19: 利用者と合意し、Managedの入口の名前を dev-managed-cc（cc は Claude Code。skill 名に claude を含められないため）に改めた。
 config_storage: shared
 target:
   workspace: shinaps
@@ -30,6 +32,7 @@ permissions:
   - bridge_request
   - stage
   - dev_delegation
+  - managed_session:40
   - commit
   - push
   - pr_create
@@ -49,6 +52,6 @@ references:
 
   environments: []
   deployment: []
-implementation_skill: dev-codex-ultra
+implementation_skill: dev-managed-cc
 path_policy_overrides: []
 cycle_report: null

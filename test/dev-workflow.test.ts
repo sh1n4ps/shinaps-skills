@@ -7,14 +7,18 @@ const CLAUDE = 'plugins/shinaps-claude';
 const CODEX = 'plugins/shinaps-codex';
 // 起動手順は runtime ごとの機構で書くので、references の中でこれだけは複製しない。
 const RUNTIME_SPECIFIC_REFERENCE = 'dev/launch.md';
-const TESTING_POLICY_ROLES = [
-  'shinaps-architect',
-  'shinaps-implementer',
-  'shinaps-plan-reviewer',
-  'shinaps-reviewer',
-  'shinaps-refine-agent',
-  'shinaps-simplifier',
-  'shinaps-review-verifier',
+// テスト方針の段落を写す役割定義。Codex には dev 専用の役割を配布しないので、対象は runtime ごとに違う。
+const TESTING_POLICY_DEFINITIONS = [
+  ...[
+    'shinaps-architect',
+    'shinaps-implementer',
+    'shinaps-plan-reviewer',
+    'shinaps-reviewer',
+    'shinaps-refine-agent',
+    'shinaps-simplifier',
+    'shinaps-review-verifier',
+  ].map((role) => `${CLAUDE}/agents/${role}.md`),
+  ...['shinaps-reviewer', 'shinaps-refine-agent'].map((role) => `${CODEX}/agents/${role}.toml`),
 ];
 
 async function readTree(root: string): Promise<Record<string, string>> {
@@ -61,18 +65,36 @@ test('only Claude Code exposes the development entrypoint', async () => {
   }
 });
 
-// review・debug・spec などは両 runtime で工程の役割を使うので、工程が名前を挙げる役割は
-// 各 runtime に定義が要る。定義が無いと、その runtime のスキルだけが担当を起動できずに止まる。
-test('every role named in the dev workflow is defined in every runtime', async () => {
+// dev-claude は工程が名前を挙げる役割を Claude の定義から起動する。定義が無いと dev がその担当を
+// 起動できずに止まる。
+test('every role named in the dev workflow is defined for Claude', async () => {
   const roles = await workflowRoles();
   assert.ok(roles.size > 0);
   const missing: string[] = [];
   for (const role of roles) {
-    for (const path of [`${CLAUDE}/agents/${role}.md`, `${CODEX}/agents/${role}.toml`]) {
-      await access(path).catch(() => missing.push(path));
-    }
+    const path = `${CLAUDE}/agents/${role}.md`;
+    await access(path).catch(() => missing.push(path));
   }
   assert.deepEqual(missing, []);
+});
+
+// Codex のスキルは名前を挙げた担当だけを起動する。定義が無いとそのスキルが担当を起動できずに止まり、
+// どのスキルも起動しない定義は、利用者の環境に使われないファイルを置くだけなので配布しない。
+test('Codex ships exactly the roles its skills name', async () => {
+  const defined = (await readdir(`${CODEX}/agents`))
+    .filter((name) => name.endsWith('.toml'))
+    .map((name) => name.slice(0, -'.toml'.length))
+    .sort();
+  const skills = await readTree(`${CODEX}/skills`);
+  const named = [
+    ...new Set(
+      Object.entries(skills)
+        .filter(([path]) => path.endsWith('SKILL.md'))
+        .flatMap(([, text]) => [...text.matchAll(/shinaps-[a-z-]+/g)].map(([role]) => role)),
+    ),
+  ].sort();
+  assert.ok(named.length > 0);
+  assert.deepEqual(defined, named);
 });
 
 // テスト方針は references/testing.md を正本とし、役割定義には同じ段落を写す（役割は plugin 内の
@@ -84,10 +106,8 @@ test('role definitions contain the testing policy paragraph verbatim', async () 
     .at(-1);
   assert.ok(policy);
   const stale: string[] = [];
-  for (const role of TESTING_POLICY_ROLES) {
-    for (const path of [`${CLAUDE}/agents/${role}.md`, `${CODEX}/agents/${role}.toml`]) {
-      if (!(await readFile(path, 'utf8')).includes(policy)) stale.push(path);
-    }
+  for (const path of TESTING_POLICY_DEFINITIONS) {
+    if (!(await readFile(path, 'utf8')).includes(policy)) stale.push(path);
   }
   assert.deepEqual(stale, []);
 });

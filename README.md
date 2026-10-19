@@ -16,10 +16,10 @@ sharedで採用する `instructions.md` は共有JSONの `references.specificati
 
 0.33.0から `.shinaps/linear.json`（`config_version: 2`）を使います。`config_version: 1`・`implementation_skill`・`review_flow.tool`・許可の `codex_task`/`managed_session:*`、旧YAML・scalar review_flowは受け付けず、[移行手順](plugins/shinaps-claude/references/linear/configuration.md#config_version-1-からの移行)に従います。
 
-CLIはpluginに含まれないため、利用中のskillと同じ `@shinaps/skills@0.33.1` を導入し、`shinaps-skills --version` で確認します。`shinaps-skills validate-linear-config <明示ファイル>` は同梱schemaだけで検証し、ネットワーク取得・正本探索・Git操作・入力変更は行いません。`$schema` は固定URLによるエディタ補助で、契約の正本は[同梱schema](plugins/shinaps-claude/references/linear/configuration.schema.json)です。
+CLIはpluginに含まれないため、利用中のskillと同じ `@shinaps/skills@0.33.2` を導入し、`shinaps-skills --version` で確認します。`shinaps-skills validate-linear-config <明示ファイル>` は同梱schemaだけで検証し、ネットワーク取得・正本探索・Git操作・入力変更は行いません。`$schema` は固定URLによるエディタ補助で、契約の正本は[同梱schema](plugins/shinaps-claude/references/linear/configuration.schema.json)です。
 
 ```sh
-npm install -g @shinaps/skills@0.33.1
+npm install -g @shinaps/skills@0.33.2
 shinaps-skills --version
 shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 ```
@@ -93,7 +93,7 @@ npx @shinaps/skills@latest recover codex
 
 ローカル開発では、このcheckoutから `node bin/skills.ts install codex` のように同じ操作を実行できる。Node.js 22.18以上なら型除去でTypeScriptをそのまま実行する (ビルド不要)。
 
-CLIはスキルをCodex pluginとして登録し、16個のカスタムエージェントを`${CODEX_HOME:-~/.codex}/agents/`へ配置する。新しいセッションで`shinaps:review`、`shinaps:linear-execute`等が読み込まれる。Codexに実装の入口はなく、review・debug・spec等のスキルが担当を使う。担当のモデルと推論設定は親セッションから継承する。実装担当以外の調査・レビュー担当は読み取り専用を既定にする。0.23.0 まで配置していた比較専用の役割は、更新時に管理済みエージェントとして削除される。親セッションの実行時設定が優先される場合もあるため、権限の強制境界とは扱わない。
+CLIはスキルをCodex pluginとして登録し、10個のカスタムエージェントを`${CODEX_HOME:-~/.codex}/agents/`へ配置する。新しいセッションで`shinaps:review`、`shinaps:linear-execute`等が読み込まれる。Codexに実装の入口はなく、review・debug・spec等のスキルが担当を使う。担当のモデルと推論設定は親セッションから継承する。調査・レビュー担当は読み取り専用を既定にする。0.33.1 まで配置していた dev 専用の役割（設計・実装・計画レビュー・指摘検証・簡素化・分割レビュー）は、更新時に管理済みエージェントとして削除される。親セッションの実行時設定が優先される場合もあるため、権限の強制境界とは扱わない。
 
 配布物は`~/.local/share/shinaps-ai/skills/codex/`へ保持し、一時的なnpxキャッシュに依存しない。同じ親ディレクトリの`state.json`に配置したエージェントと内容のハッシュを記録する。管理対象外の同名ファイルや、導入後に編集されたエージェントは上書き・削除せず停止する。必要な変更を退避・整理してから再実行する。`CODEX_HOME`を変更する場合は元の配置先で先にuninstallする。
 
@@ -187,26 +187,26 @@ codex mcp login shinaps-ai
 
 未登録の利用者は[Shinaps AI](https://app.shinaps.ai)でアカウントを作成する。未認証でもスキルの導入は完了できる。MCPが使えないときに照合済みと報告しない。`simplify`・`commit`・`create-pr`・`release`・`linear-plan`・`linear-execute` の基本手順はMCP接続を必須としない。
 
-## Subagents (Claude: 16 / Codex: 16)
+## Subagents (Claude: 16 / Codex: 10)
 
-| Subagent | 役割 |
-|---|---|
-| `shinaps-explorer` | コードベース探索、必読ファイル抽出 |
-| `shinaps-investigator` | `shinaps:explore` の現在の質問をコード・テスト・設定・履歴から調べ、確実性を分けて回答 |
-| `shinaps-architect` | 設計。dev では設計担当1 が設計・設計案統合・設計適合性・プランと全指摘の最終判断を行い、必要に応じて追加担当が独立設計を行う |
-| `shinaps-plan-reviewer` | 計画レビュー (confidence 閾値 70)。必要な人数で独立に指摘と修正案を返す |
-| `shinaps-implementer` | 確定した計画の実装・簡素化・検証、レビュー後の修正 |
-| `shinaps-reviewer` | logic / design / security / performance / maintainability / rule 統合レビュー (confidence 閾値 80) |
-| `shinaps-review-validator` | reviewer 指摘の実コード検証 (confirmed / false positive / partial / out-of-scope 分類) |
-| `shinaps-review-verifier` | dev の計画段階と実装後の全担当の指摘を検証・重複整理し、出典・反証・対立をarchitectへ渡す |
-| `shinaps-simplifier` | 計画・実装の簡素化の提案。仕様・構造・処理の削減を読み取り専用で提案 |
-| `shinaps-refine-agent` | rule 照合 (ファイル現状全文と照合、Violation / Improvement / Question 分類 + changed / pre-existing 切り分け) |
-| `shinaps-spec-writer` | ヒアリング + 調査結果を spec.md 構造化 |
-| `shinaps-tech-surveyor` | 外部技術調査 (WebSearch + WebFetch で 3-5 候補比較) |
-| `shinaps-survey-validator` | tech-surveyor の出典を WebFetch で再確認 |
-| `shinaps-debugger` | 症状から根本原因の仮説立案 (コードトレース + WebSearch + GitHub Issue) |
-| `shinaps-debug-validator` | 仮説の実コード検証 (root-cause / contributing-factor / red-herring / needs-reproduction 分類) |
-| `shinaps-split-reviewer` | `shinaps:commit` のmanualの分割案を「単位の diff だけで妥当性を判断できるか」で批判 + 修正版最終分割計画 (worktree は read-only) |
+| Subagent | 配布 | 役割 |
+|---|---|---|
+| `shinaps-explorer` | 両方 | コードベース探索、必読ファイル抽出 |
+| `shinaps-investigator` | 両方 | `shinaps:explore` の現在の質問をコード・テスト・設定・履歴から調べ、確実性を分けて回答 |
+| `shinaps-architect` | Claudeのみ | 設計。dev では設計担当1 が設計・設計案統合・設計適合性・プランと全指摘の最終判断を行い、必要に応じて追加担当が独立設計を行う |
+| `shinaps-plan-reviewer` | Claudeのみ | 計画レビュー (confidence 閾値 70)。必要な人数で独立に指摘と修正案を返す |
+| `shinaps-implementer` | Claudeのみ | 確定した計画の実装・簡素化・検証、レビュー後の修正 |
+| `shinaps-reviewer` | 両方 | logic / design / security / performance / maintainability / rule 統合レビュー (confidence 閾値 80) |
+| `shinaps-review-validator` | 両方 | reviewer 指摘の実コード検証 (confirmed / false positive / partial / out-of-scope 分類) |
+| `shinaps-review-verifier` | Claudeのみ | dev の計画段階と実装後の全担当の指摘を検証・重複整理し、出典・反証・対立をarchitectへ渡す |
+| `shinaps-simplifier` | Claudeのみ | 計画・実装の簡素化の提案。仕様・構造・処理の削減を読み取り専用で提案 |
+| `shinaps-refine-agent` | 両方 | rule 照合 (ファイル現状全文と照合、Violation / Improvement / Question 分類 + changed / pre-existing 切り分け) |
+| `shinaps-spec-writer` | 両方 | ヒアリング + 調査結果を spec.md 構造化 |
+| `shinaps-tech-surveyor` | 両方 | 外部技術調査 (WebSearch + WebFetch で 3-5 候補比較) |
+| `shinaps-survey-validator` | 両方 | tech-surveyor の出典を WebFetch で再確認 |
+| `shinaps-debugger` | 両方 | 症状から根本原因の仮説立案 (コードトレース + WebSearch + GitHub Issue) |
+| `shinaps-debug-validator` | 両方 | 仮説の実コード検証 (root-cause / contributing-factor / red-herring / needs-reproduction 分類) |
+| `shinaps-split-reviewer` | Claudeのみ | `shinaps:commit` のmanualの分割案を「単位の diff だけで妥当性を判断できるか」で批判 + 修正版最終分割計画 (worktree は read-only) |
 
 Claude版はMarkdown、Codex版はTOMLで役割を定義する。
 

@@ -14,7 +14,7 @@ description: 曖昧な要望を対話と既存実装・実現可能性の調査�
 
 既存構造との適合と技術的な実現可能性を調べる。外部仕様が判断に必要なら公式資料を確認する。候補の数を埋めず、目的に合う推奨案と意味のある代案を示す。プロトタイプは依頼された範囲で必要な場合に行い、仕様相談を本番への変更へ拡大しない。
 
-委託が許可されている場合、登録済みのshinaps-explorer、shinaps-tech-surveyor、shinaps-survey-validatorに調査を依頼し、shinaps-spec-writerで結果を構造化できる。提供されていない担当やツールは仮定せず、同じ観点を現在のセッションで確認する。
+委託が許可されている場合、登録済みのshinaps-explorer、shinaps-tech-surveyor、shinaps-survey-validatorに調査を依頼し、shinaps-spec-writerで結果を構造化できる。担当の起動・継続は[担当の起動](../../references/dev/launch.md)に従う。提供されていない担当やツールは仮定せず、同じ観点を現在のセッションで確認する。
 
 利用可能なShinapsルールを制約の根拠に含める。利用できないときはルール照合を未確認とし、実現可能性や仕様確定に残る影響を明記する。
 

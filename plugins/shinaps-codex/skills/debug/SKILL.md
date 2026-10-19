@@ -14,7 +14,7 @@ description: 再現手順、コード、ログと必要な外部情報から不�
 
 仮説ごとに支持する証拠と反証を調べ、根本原因・寄与要因・否定済み・再現待ちを区別する。外部ライブラリが関係する場合だけ公式資料や既知のIssueを確認する。対症療法だけで根本原因が確定したと報告しない。
 
-委託が許可され登録されている場合はshinaps-debuggerで仮説を立て、shinaps-debug-validatorで実コードを検証する。外部調査にはshinaps-tech-surveyorとshinaps-survey-validatorを必要に応じて使う。取得済みのShinapsルールは親が担当へ渡す。MCP不可ならルール照合未確認とする。
+委託が許可され登録されている場合はshinaps-debuggerで仮説を立て、shinaps-debug-validatorで実コードを検証する。外部調査にはshinaps-tech-surveyorとshinaps-survey-validatorを必要に応じて使う。担当の起動・継続は[担当の起動](../../references/dev/launch.md)に従う。取得済みのShinapsルールは親が担当へ渡す。MCP不可ならルール照合未確認とする。
 
 結論、証拠、再現状況、最小の修正方針と未確認を報告する。修正はClaude Codeが行い、Codexに実装の入口はない。Linear進行で修正まで依頼されている場合は `$shinaps:linear-execute` でClaudeへ依頼する。調査だけなら変更しない。
 

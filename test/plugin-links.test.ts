@@ -7,7 +7,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 const UNITS = [
   'plugins/shinaps-claude',
   'plugins/shinaps-codex',
-  'managed-agents/skills/dev-managed-cc',
+  'plugins/shinaps-claude/managed-agents/skills/dev-managed-cc',
 ];
 
 // 配布先は配布単位のディレクトリだけを持つので、その外を指すリンクは導入後に解決できない。

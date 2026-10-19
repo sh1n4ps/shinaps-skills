@@ -5,7 +5,7 @@ import { join } from 'node:path';
 
 const CLAUDE = 'plugins/shinaps-claude';
 const CODEX = 'plugins/shinaps-codex';
-const MANAGED = 'managed-agents';
+const MANAGED = `${CLAUDE}/managed-agents`;
 const MANAGED_LEAD = `${MANAGED}/agents/shinaps-dev-managed-cc.md`;
 const MANAGED_SKILL = `${MANAGED}/skills/dev-managed-cc`;
 // 起動手順は runtime ごとの機構で書くので、references の中でこれだけは複製しない。
@@ -74,6 +74,16 @@ test('every runtime ships the Claude references except the launch procedure', as
     await sharedReferences(`${CODEX}/references`),
     await sharedReferences(`${CLAUDE}/references`),
     `${CODEX}/references は Claude 版を編集元として複製する`,
+  );
+});
+
+// Managed の共通定義は、各 runtime の managed-setup が自分の plugin 内から読んで利用者の組織へ適用する。
+// Claude 版だけを直すと、Codex から導入した lead・役割の定義が古いまま適用される。
+test('every runtime ships the Claude Managed definitions', async () => {
+  assert.deepEqual(
+    await readTree(`${CODEX}/managed-agents`),
+    await readTree(MANAGED),
+    `${CODEX}/managed-agents は Claude 版を編集元として複製する`,
   );
 });
 

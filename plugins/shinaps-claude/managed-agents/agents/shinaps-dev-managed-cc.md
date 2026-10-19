@@ -8,7 +8,8 @@ model:
 mcp_servers:
   - type: url
     name: github
-    url: https://api.githubcopilot.com/mcp/
+    # vault の資格情報は MCP サーバーの URL の完全一致で照合されるため、末尾にスラッシュを付けない。
+    url: https://api.githubcopilot.com/mcp
 tools:
   - type: agent_toolset_20260401
   # 無人セッションで承認待ちに止まらないよう、必要な 3 ツールだけを承認なしで有効にする。

@@ -1,6 +1,6 @@
 # dev の工程
 
-Claude Codeのdev（`dev-claude`）の工程。役割・人数は[実装体制の判断](staffing.md)に従って作業ごとに決め、担当の起動・継続は[起動手順](launch.md)に従う。Codexのreview・debug・spec等も、ここで定める役割を使う。
+Claude Codeのdev（`dev-claude`）の工程。役割・人数は[実装体制の判断](staffing.md)に従って作業ごとに決め、担当の起動・継続は[起動手順](launch.md)に従う。
 
 ## 1. 前提と作業記録
 

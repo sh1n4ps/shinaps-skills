@@ -1,6 +1,6 @@
 # 担当の起動（Codex）
 
-review・debug・spec などのCodexスキルが、[工程](workflow.md)で定める役割の担当を Codex のサブエージェントで起動・継続する手順。
+review・debug・spec・refine・explore のCodexスキルが、名前を挙げる登録済みの担当を Codex のサブエージェントで起動・継続する手順。
 
 - 担当は `spawn_agent` で起動し、毎回 `agent_type`（役割定義名。例 `shinaps-reviewer`）と `fork_turns: "none"` を明示する。`fork_turns` を省略すると親の履歴を引き継ぎ、独立した担当にならない。役割定義には model を書かないので、`model`・`reasoning_effort` はスキルが指定する場合だけ明示し、指定がなければ親セッションから継承する。親セッションの設定は変更しない。
 - 同じ役割の複数担当 は、同じ `agent_type` で別々に起動する。担当番号は起動前に固定し、返された ID と対応づけて保持する。

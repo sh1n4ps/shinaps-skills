@@ -131,10 +131,10 @@ Claude Codeは標準のmarketplace自動更新機能を使う。`/plugin` のMar
 
 ## Claude Managed Agents
 
-`managed-agents/` は、Claude Managed Agentsでdev工程を進めるためのセットアップ専用の構成である。lead `shinaps-dev-managed-cc`、devの7役割、skill `dev-managed-cc`、環境 `shinaps-dev` の定義と、既存のクラウドリソースのIDを記録した `claude-lock.json` を置く。セッションの作成と予定実行はこの構成に含めない。
+`managed-agents/` は、Claude Managed Agentsでdev工程を進めるためのセットアップ専用の構成である。lead `shinaps-dev-managed-cc`、devの5役割、skill `dev-managed-cc`、環境 `shinaps-dev` の定義と、既存のクラウドリソースのIDを記録した `claude-lock.json` を置く。セッションの作成と予定実行はこの構成に含めない。
 
 - leadはFable 5.1（`claude-fable-5-1` / medium）、役割はOpus 5.5（`claude-opus-5-5` / medium）で動く。全agent定義に `speed: standard` を明示する（既存リソースに残るfastを戻すため）。
-- 体制は `dev-claude` と同じ基準でleadが作業ごとに決める。実装者と独立したコードレビューは最低1体で、規約照合もその担当が行う。refine担当とultraの入口は置かない。
+- 体制は `dev-claude` と同じ基準でleadが作業ごとに決める。実装者と独立したコードレビューは最低1体で、規約照合もその担当が行う。refine担当とultraの入口は置かない。explorerとreview-verifierも置かず、探索はlead・設計担当・実装担当が、指摘の検証は設計責任者が行う。
 - Shinaps AIのMCPとruleを使わない。規約はマウントしたリポジトリの `AGENTS.md`・`CLAUDE.md` と参照先、添付された利用者CLAUDE.mdだけで、最終報告ではShinaps AI ruleを未照合とする。
 - 初回メッセージにリポジトリ・base・head・範囲と受入条件・許可・予算が揃わなければ、leadは作業を始めず欠落を質問する。許可はそのメッセージで明示された操作だけで、構成の導入からは生じない。
 - 終了地点は範囲を限ったコミット・headブランチへのpush・draft PR。merge・deploy・release・Issueの更新はしない。CodexのQAはセッションの外で、PRの後に行う。
@@ -153,11 +153,11 @@ Claude Codeは標準のmarketplace自動更新機能を使う。`/plugin` のMar
 
 サブシェルで `managed-agents/` に移動してから実行する。lockfileは実行した場所から上へ探し、キーはlockfileのディレクトリからの相対パスになるので、別の場所から実行すると既存のリソースと対応づかずに重複して作られる。リポジトリ直下を対象にすると `plugins/` の定義も送信対象に含まれる。`--prune`・`--force` は使わず、リソースを削除しない。
 
-lockには現在のリソース10件（lead・7役割・skill `dev-managed-cc`・環境 `shinaps-dev`）と、過去のrefineの項目がある。定義を変えずに実行すると `Everything is up to date.`（10 unchanged）と、`./agents/shinaps-refine-agent.md` のソースが無い警告1件になる。これは想定どおりで、`--prune` を付けない。
+lockには現在のリソース8件（lead・5役割・skill `dev-managed-cc`・環境 `shinaps-dev`）と、過去のrefineの項目がある。定義を変えずに実行すると `Everything is up to date.`（8 unchanged）と、`./agents/shinaps-refine-agent.md` のソースが無い警告1件になる。これは想定どおりで、`--prune` を付けない。
 
 定義を変えた後の計画は、変えたリソースの更新だけになる。環境が更新になる、作成がある、`This plan cannot be applied` が出る場合は、適用せずに止めて報告する。適用後は `git diff managed-agents/claude-lock.json` で、更新したリソースの `version`・`hash`・`remote_hash` 以外が変わっていないことを確かめる。変わっていればcommitせずに報告する。
 
-旧refine（`./agents/shinaps-refine-agent.md`）の項目は過去のセッションの参照用にlockへ残しており、現在のleadからは使われない。旧CC Ultraのleadと専用skillはクラウドでアーカイブ・削除済みで、lockでも追跡しない。
+旧refine（`./agents/shinaps-refine-agent.md`）の項目は過去のセッションの参照用にlockへ残しており、現在のleadからは使われない。旧CC Ultraのleadと専用skillはクラウドでアーカイブ・削除済みで、lockでも追跡しない。旧explorerとreview-verifierもクラウドでアーカイブ済みで、lockでも追跡しない。
 
 ### セッションの依頼
 
@@ -294,7 +294,7 @@ codex mcp login shinaps-ai
 | `shinaps-debug-validator` | 両方 | 仮説の実コード検証 (root-cause / contributing-factor / red-herring / needs-reproduction 分類) |
 | `shinaps-split-reviewer` | Claudeのみ | `shinaps:commit` のmanualの分割案を「単位の diff だけで妥当性を判断できるか」で批判 + 修正版最終分割計画 (worktree は read-only) |
 
-Claude版はMarkdown、Codex版はTOMLで役割を定義する。Managed Agents版はdevの7役割だけを、Claude版の `name`・`description`・本文に `ant apply` 用の frontmatter を付けたMarkdownで定義する。
+Claude版はMarkdown、Codex版はTOMLで役割を定義する。Managed Agents版はdevの5役割だけを、Claude版の `name`・`description`・本文に `ant apply` 用の frontmatter を付けたMarkdownで定義する。
 
 Claude版は全16エージェントが `opus / medium`。Codex版の役割定義はモデルを書かず、モデルと推論は親セッションから継承する。dev での担当の割り当ては[dev の工程](plugins/shinaps-claude/references/dev/workflow.md)にある。
 

@@ -1,6 +1,6 @@
 # ローカルClaude CLIによる実装
 
-通常設定が `review_flow.mode: auto` のIssue（[経路](configuration.md#経路)）で、Codexが作業先でローカル `claude -p` を起動する。初回実装前に正確なcheckout・branch・HEAD・既存差分と `claude_cli` の許可（または今回の明示依頼）を確定する。
+通常設定が `review_flow.mode: auto` のIssue（[経路](configuration.md#経路)）で、Codexが作業先でローカル `claude -p` を起動する。初回実装前に、正確なcheckout・branch・HEAD・既存差分、`claude_cli` の許可（または今回の明示依頼）、必須検証とそのツールチェーンの状態、依頼で使うコマンドの許可を確定する。必須検証は対象リポジトリの規約・CI・スクリプトから読み、ツールチェーンは実際のコマンド（例: `node --version`、依存の導入状態の確認）の結果で確かめる。確かめるのは依頼で実際に使うコマンドに限る。
 
 パス例外はコミット単位のreview_flowを全体置換し、実装sessionを途中で切り替えない。manual単位が生じた場合は[経路](configuration.md#経路)に従う。
 
@@ -20,7 +20,7 @@ jsonの `session_id`、`result`、`is_error`、`permission_denials` を読み、
 
 ## 依頼・質問・修正・コミット
 
-promptにはIssue、`shinaps:dev-claude`、成果物と受入条件、体制判断の材料（関連範囲・既存検証・リスク）、exact cwd・branch・HEAD・既存差分、許可・禁止操作、規約と参照先、返却条件を含める。初期体制はClaudeのメインが材料と現物から決め、体制と理由をresultに含める。linear-executeを再起動せず、実装後は未コミット差分を返してLocal Agent QAを待つ。spec/explore/review/debugの結果も同じ依頼へ渡す。質問・障害は最終resultに返し、Codexが既存合意で回答できれば回答、目的・権限の判断が必要なら人へ一問ずつ取り次ぐ。CLIからBridge送信や人の対話入力を待たせない。
+promptにはIssue、`shinaps:dev-claude`、成果物と受入条件、体制判断の材料、exact cwd・branch・HEAD・既存差分、必須検証コマンドと確かめたツールチェーンの状態、許可・禁止操作と起動時に渡す `--allowedTools` の個別エントリ、規約と参照先、返却条件を含める。初期体制はClaudeのメインが材料と現物から決め、体制と理由をresultに含める。linear-executeを再起動せず、実装後は未コミット差分を返してLocal Agent QAを待つ。spec/explore/review/debugの結果も同じ依頼へ渡す。質問・障害は最終resultに返し、Codexが既存合意で回答できれば回答、目的・権限の判断が必要なら人へ一問ずつ取り次ぐ。CLIからBridge送信や人の対話入力を待たせない。
 
 回答・QA修正・QA後のautoコミット依頼は、元のprocess終了後、記録済みの正確なIDで同じセッションをresumeする。`--continue` で別セッションを推測しない。
 

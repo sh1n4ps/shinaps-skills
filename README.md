@@ -153,11 +153,11 @@ Claude Codeは標準のmarketplace自動更新機能を使う。`/plugin` のMar
 
 サブシェルで `managed-agents/` に移動してから実行する。lockfileは実行した場所から上へ探し、キーはlockfileのディレクトリからの相対パスになるので、別の場所から実行すると既存のリソースと対応づかずに重複して作られる。リポジトリ直下を対象にすると `plugins/` の定義も送信対象に含まれる。`--prune`・`--force` は使わず、リソースを削除しない。
 
-この構成を最初に適用したとき（2026-10-19、lead v7）の計画は、更新がlead・7役割・skill `dev-managed-cc` の9件、変更なしが環境 `shinaps-dev`、作成が0件、警告が `./agents/shinaps-refine-agent.md`・`./agents/shinaps-dev-managed-cc-ultra.md`・`./skills/dev-managed-cc-ultra` のソース欠落3件だった。これはクラウドに残っていた旧定義（Shinaps AI MCP・refine・`speed: fast`）を現在の構成へ戻す初回の復元で、lockにはその結果を記録済みである。以後、定義を変えずに実行すれば `Everything is up to date.`（10 unchanged）と同じ3件の警告になる。
+lockには現在のリソース10件（lead・7役割・skill `dev-managed-cc`・環境 `shinaps-dev`）と、過去のrefineの項目がある。定義を変えずに実行すると `Everything is up to date.`（10 unchanged）と、`./agents/shinaps-refine-agent.md` のソースが無い警告1件になる。これは想定どおりで、`--prune` を付けない。
 
 定義を変えた後の計画は、変えたリソースの更新だけになる。環境が更新になる、作成がある、`This plan cannot be applied` が出る場合は、適用せずに止めて報告する。適用後は `git diff managed-agents/claude-lock.json` で、更新したリソースの `version`・`hash`・`remote_hash` 以外が変わっていないことを確かめる。変わっていればcommitせずに報告する。
 
-refineとultraのリソースは過去のセッションの参照用にlockへ残している。新しいセッションには使わない。
+旧refine（`./agents/shinaps-refine-agent.md`）の項目は過去のセッションの参照用にlockへ残しており、現在のleadからは使われない。旧CC Ultraのleadと専用skillはクラウドでアーカイブ・削除済みで、lockでも追跡しない。
 
 ### セッションの依頼
 
@@ -212,7 +212,7 @@ unset GITHUB_TOKEN
 - commitをcheckoutしてマウントした作業先から、originのheadブランチを取得できるか（cloneの深さとfetchの資格情報）
 - GitHub MCPでdraft PRを作れるか。`draft: true` はleadへの指示でしか担保されない
 
-lockのrefine・ultra・環境の項目と各リソースのIDは、初回の適用（lead v7、2026-10-19）で変わらないことを確認済みで、未検証の境界ではない。
+lockのrefine・環境の項目と各リソースのIDは適用で変わらないことを確認済みで、未検証の境界ではない。
 
 ## 開発と配布
 

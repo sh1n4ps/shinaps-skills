@@ -5,15 +5,15 @@ description: 指定したIssue・Cycle・バックログの実装からQA・許�
 
 # Linearを起点に開発を進める
 
-Issueの責務・受入条件・ステータスを、実際の成果と一致させる。初版は利用者本人の環境向けで、Codexが進行・Agent QA・人への窓口を担当する。実装担当は作業先リポジトリの設定の `implementation_skill` で決まる。Claudeの入口では基本flowに応じてローカルCLIまたはAI Terminal Bridge（以下Bridge）経由で実装し、Codexの入口（`dev-codex`）ではIssueごとの別Codexタスクが `$shinaps:<入口>` で実装・QA指摘の修正を行う。Managedの入口（`dev-managed-cc`）では、会話側のCodexが進行役のまま、IssueごとのClaude Managed Agentsセッションが実装する（[managed-session.md](../../references/linear/managed-session.md)）。担当の対応は[references/workflow.md](../../references/linear/workflow.md) の「担当と窓口」にある。設定と異なる担当への入れ替えは扱わない。
+Issueの責務・受入条件・ステータスを、実際の成果と一致させる。初版は利用者本人の環境向けで、Codexが進行・Agent QA・人への窓口を担当する。実装担当は作業先リポジトリの設定の `implementation_skill` で決まる。Claudeの入口ではauto/manualともローカルClaude CLIで実装し、Codexの入口（`dev-codex`）ではIssueごとの別Codexタスクが `$shinaps:<入口>` で実装・QA指摘の修正を行う。Managedの入口（`dev-managed-cc`）では、会話側のCodexが進行役のまま、IssueごとのClaude Managed Agentsセッションが実装する（[managed-session.md](../../references/linear/managed-session.md)）。担当の対応は[references/workflow.md](../../references/linear/workflow.md) の「担当と窓口」にある。設定と異なる担当への入れ替えは扱わない。
 
 ## Claudeの実行経路を先に確定する
 
-基本 `review_flow: auto` はCodexが [Claude CLI](../../references/linear/claude-cli.md) を起動し、質問・修正・QA後のコミット依頼を同じsessionへresumeする。manualはWebStormのClaudeへBridgeで依頼し、人がレビュー・修正・commitする。初回実装前に経路と権限を確定する。パス例外はcommit担当にだけ反映し、実装経路を自動変更しない。manualのBridge不足でCLIへfallbackしない。以下のBridge固有の送受信手順はmanual経路に限り、autoの報告はCLI resultへ返す。
+auto/manualともCodexが [Claude CLI](../../references/linear/claude-cli.md) を起動し、質問・修正・QA後のコミット準備を同じsessionへresumeする。manualはprocess終了後に実効 `review_flow.tool` で提示し、人がレビュー・修正・commitする。初回実装前に経路と権限を確定する。パス例外はreview_flow全体だけを変更し、実装経路を変えない。報告はCLI resultへ返し、任意のBridge報告は照合入力として扱う。
 
 ## 再確認せず進める条件
 
-Codexから許可範囲と受入条件を伴う実装・修正の依頼をCLIまたはBridgeで受けたClaudeは、人へ着手を再確認せず、指定されたスキルで実行する。質問・相談・障害・完了はCodexへ返す。
+Codexから許可範囲と受入条件を伴う実装・修正の依頼をCLIで受けたClaudeは、人へ着手を再確認せず、指定されたスキルで実行する。質問・相談・障害・完了はCodexへ返す。
 
 人のレビュー・コミット完了の報告をBridgeで受けたCodexは、報告の対象とGitの状態を照合し、一致すれば既存の許可の範囲で人へ再確認せず次の工程へ進む。
 

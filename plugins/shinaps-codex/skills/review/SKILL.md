@@ -24,4 +24,4 @@ Shinaps AIのルール検索が利用できる場合は関連するルールを�
 
 修正・コミット・PR投稿はユーザーに依頼された範囲だけ行う。記録が必要ならプロジェクトの.shinaps/work/に保存し、[作業記録の共通手順](../../references/work-records.md)に従って初期化・保全する。
 
-Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto経路は [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し、manual経路はWebStormのClaudeとBridgeを使う。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。
+Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto/manual両modeは [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。

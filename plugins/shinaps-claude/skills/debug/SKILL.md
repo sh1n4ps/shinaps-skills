@@ -148,4 +148,4 @@ Skill(skill="shinaps:dev-claude", args="以下のデバッグ結果に基づき�
 - **生レポート保存厳守**: すべての subagent 応答を全文保存
 - **根本原因確定時に ローカル成果物（implementation.md / 調査・レビューレポート）**: 後の作業者と別 AI agent が辿れるように
 
-Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto経路は [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し、manual経路はWebStormのClaudeとBridgeを使う。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。
+Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto/manual両modeは [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。

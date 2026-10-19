@@ -51,7 +51,9 @@ AIが担当するGit準備・修正は現在のセッションで行い、manual
 
 ## 単位ごとの検証・レビュー・コミット
 
-manualでは[人レビューの差分提示](../../references/human-review.md)に従う。Claude経路ではWebStormで対象を提示し、Codex経路では既存の提示UIを使う。人がレビュー・修正・commitする工程をAIによる承認後commitへ置き換えない。
+manualでは[人レビューの差分提示](../../references/human-review.md)に従う。実装runtimeによらず、実効 `review_flow.tool`（`plasma` / `webstorm`）で対象を提示する。未指定や利用不能なら止め、無断で別UIに切り替えない。人がレビュー・修正・commitする工程をAIによる承認後commitへ置き換えない。
+
+Claude CLIの非対話実行でmanualを準備する場合は、stash・stage・検証と対象情報をresultへ返してprocessを終了する。人への提示と完了待ちは進行役が行い、CLI内で対話を待たない。完了後の同じsessionへのresumeでHEAD・人の修正・実コミット・stash情報を受け、以下の照合と復元を続ける。
 
 以下を、その単位のモードで行う。
 

@@ -17,7 +17,7 @@ description: アイデアの相談・調査・仕様整理を行い、LinearのI
 
 ## 設定の初期作成・変更
 
-依頼の実行に設定が必要で、[設定の読み方](../../references/linear/configuration.md#設定の読み方)で真に未設定と確認した場合だけ、その場で [configuration.md](../../references/linear/configuration.md) の初期設定手順に進む。未決事項を一問ずつ確認し、合意済みの内容を保存する。運用項目を暗黙に補完しない。設定変更は実装開始を意味せず、実行範囲の既定値をYAMLに追加しない。
+依頼の実行に設定が必要で、[設定の読み方](../../references/linear/configuration.md#設定の読み方)で真に未設定と確認した場合だけ、その場で [configuration.md](../../references/linear/configuration.md) の初期設定手順に進む。未決事項を一問ずつ確認し、合意済みの内容を保存する。運用項目を暗黙に補完しない。設定変更は実装開始を意味せず、実行範囲の既定値をJSONに追加しない。旧YAMLまたは無効JSONがある場合は初期設定へ迂回せず、[旧設定の移行](../../references/linear/configuration.md#旧設定の移行)または設定修正を行い、同梱CLIの検証後に依頼を再開する。
 
 ## 終了と引き渡し
 

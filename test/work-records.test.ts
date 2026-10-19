@@ -53,7 +53,7 @@ test('local configuration and new work records stay untracked and ignored', asyn
   const { repository, git, put } = await fixture(context);
   for (const ignore of [localIgnore, newRecordIgnore]) {
     await put('.shinaps/.gitignore', ignore);
-    await put('.shinaps/linear.yaml', 'config_storage: local\n');
+    await put('.shinaps/linear.json', '{ "config_storage": "local" }\n');
     await put('.shinaps/linear/instructions.md', 'Local operation conditions\n');
     await put('.shinaps/work/result.md', 'Work evidence\n');
     assert.equal(git(repository, 'status', '--short', '--untracked-files=all'), '');
@@ -70,12 +70,12 @@ test('shared configuration survives work exclusion repair and transfers only sel
   const { directory, repository, git, put } = await fixture(context);
   const selected = [
     '.shinaps/.gitignore',
-    '.shinaps/linear.yaml',
+    '.shinaps/linear.json',
     '.shinaps/linear/instructions.md',
     '.shinaps/linear/references/qa.md',
   ];
   await put('.shinaps/.gitignore', `${sharedIgnore}\n!/keep.md\n!/work/\n!/work/**\n`);
-  await put('.shinaps/linear.yaml', 'config_storage: shared\n');
+  await put('.shinaps/linear.json', '{ "config_storage": "shared" }\n');
   await put('.shinaps/linear/instructions.md', 'Shared operation conditions\n');
   await put('.shinaps/linear/references/qa.md', 'Shared validation conditions\n');
   await put('.shinaps/linear/references/private.md', 'Unselected notes\n');
@@ -113,18 +113,18 @@ test('root exception exposes selected configuration without changing global or u
   const { repository, git, put } = await fixture(context);
   await put('.gitignore', '.shinaps/\n*.cache\n');
   await put('.shinaps/.gitignore', sharedIgnore);
-  await put('.shinaps/linear.yaml', 'config_storage: shared\n');
+  await put('.shinaps/linear.json', '{ "config_storage": "shared" }\n');
   await put('.shinaps/work/result.md', 'Work evidence\n');
   await put('unrelated.cache', 'Cache\n');
   await put('unrelated.private', 'Private\n');
   assert.equal(
-    git(repository, 'check-ignore', '--no-index', '.shinaps/linear.yaml'),
-    '.shinaps/linear.yaml',
+    git(repository, 'check-ignore', '--no-index', '.shinaps/linear.json'),
+    '.shinaps/linear.json',
   );
   await appendFile(join(repository, '.gitignore'), '!/.shinaps/\n');
   assert.deepEqual(git(repository, 'ls-files', '--others', '--exclude-standard').split('\n'), [
     '.gitignore',
     '.shinaps/.gitignore',
-    '.shinaps/linear.yaml',
+    '.shinaps/linear.json',
   ]);
 });

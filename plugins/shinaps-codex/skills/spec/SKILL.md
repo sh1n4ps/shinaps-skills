@@ -20,4 +20,4 @@ description: 曖昧な要望を対話と既存実装・実現可能性の調査�
 
 合意した仕様を.shinaps/work/specs/のspec.mdへ保存する。[作業記録の共通手順](../../references/work-records.md)に従って初期化・保全する。仕様には目的・範囲・挙動・受入条件・設計判断・根拠・未決事項を含める。実装依頼があれば$shinaps:dev-codexへこの記録を渡す。担当と人数はdevのメインが作業に応じて判断する。仕様作成だけの依頼で自動実装しない。
 
-Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto経路は [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し、manual経路はWebStormのClaudeとBridgeを使う。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。
+Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto/manual両modeは [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。

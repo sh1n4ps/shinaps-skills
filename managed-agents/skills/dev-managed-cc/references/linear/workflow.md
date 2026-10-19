@@ -4,11 +4,11 @@
 
 | 担当 | 責務 |
 | --- | --- |
-| Codex | Issueの作成・整理、仕様相談、Ready判定、依存・Cycle管理、進行判断、Claudeの入口のときのCLIまたはBridgeでの依頼、Local・Staging・ProductionのAgent QA、許可されたPR・配備等の運用、結果の記録、人への依頼 |
+| Codex | Issueの作成・整理、仕様相談、Ready判定、依存・Cycle管理、進行判断、Claudeの入口のときのCLIでの依頼、Local・Staging・ProductionのAgent QA、許可されたPR・配備等の運用、結果の記録、人への依頼 |
 | 実装担当 | 技術調査、`implementation_skill` で選んだdevの入口による実装・自動テスト・簡素化・セルフレビュー、QA指摘の修正、成果と人の対応結果の報告。実装を伴わない文書整理は、作業先リポジトリの規約に従いdevの入口の対象外にできる。スキル・コードの変更は文書の形でも実装としてdevの入口を使う |
 | 人 | 未合意の仕様・権限の判断、manualのコードレビュー・必要な修正・コミット、本人の操作が必要な認証等、必要なHuman QA |
 
-実装担当は、作業先リポジトリの設定の `implementation_skill` で決まる。Claudeの入口（`dev-claude`）では、基本 `review_flow: auto` ならCodexが[ローカルClaude CLI](claude-cli.md)を起動し、manualならWebStormのClaudeがBridge経由で実装する。初回実装前に経路を固定し、パス例外はcommit担当だけに反映する。Codexの入口（`dev-codex`）では、この文書でClaudeが行うとした実装・修正・コミット・完了報告を会話側とは別のCodex実装タスクが行い、[Codex実装タスク](codex-task.md)の手順で依頼・結果を扱う。Bridgeは使わない。どちらでも実装担当はdev内レビューと検証を終えて進行役へ結果を返し、進行役がLocal Agent QAを行う。実装担当の報告をQA合格の根拠にせず、この引き渡しを進行全体の終了と扱わない。
+実装担当は、作業先リポジトリの設定の `implementation_skill` で決まる。Claudeの入口（`dev-claude`）では、auto/manualともCodexが[ローカルClaude CLI](claude-cli.md)を起動し、同じsessionをresumeする。パス例外はreview_flow全体に反映し、実装経路は変えない。manualのUIは実効 `review_flow.tool` で決める。Codexの入口（`dev-codex`）では、この文書でClaudeが行うとした実装・修正・コミット・完了報告を会話側とは別のCodex実装タスクが行い、[Codex実装タスク](codex-task.md)の手順で依頼・結果を扱う。Bridgeは使わない。どちらでも実装担当はdev内レビューと検証を終えて進行役へ結果を返し、進行役がLocal Agent QAを行う。実装担当の報告をQA合格の根拠にせず、この引き渡しを進行全体の終了と扱わない。
 
 Managedの入口（`dev-managed-cc`）では、linear-executeを実行している会話（ClaudeまたはCodex）が進行役になり、`linear/` の各文書でCodexが行うとした進行・Agent QA・記録・人への窓口を行う。実装・修正はIssueごとのClaude Managed Agentsセッションのleadがその入口のskillで行い、[Managedセッション](managed-session.md)の手順で依頼・結果を扱う。この文書でClaudeまたは実装担当が行うとした実装・修正・完了報告はleadが行う。leadはローカルの作業先へ書けないため、差分の適用と、人の対応結果の受け取りは進行役が行う。コミット工程は進行役が `commit` に従い、autoなら自身がcommit、manualなら安全なstash・stage・提示まで行い人のcommitを待つ。BridgeとCodex実装タスクは使わない。
 
@@ -44,7 +44,7 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 | `ready` | Ready | 自分たちの作業を依存順に進めれば着手できる。開始時に、必要な前工程の成果を再確認する |
 | `coding` | Coding | 実装担当が実装・自動検証・簡素化・セルフレビューを完了し、差分と結果を渡す |
 | `local_agent_qa` | Local Agent QA | Codexが受入条件を検証する。不合格なら `coding` へ戻す |
-| `code_review` | Code Review・コミット | Local Agent QA合格後、実効 `review_flow: auto` は独立レビュー・検証後にAIが単位ごとにstage・commitする。manualはAIが単位外を安全にstashしてstage・提示し、人がレビュー・修正・commitする。単位照合、人の完了通知（manual）、stash/index復元を確認して次へ進む |
+| `code_review` | Code Review・コミット | Local Agent QA合格後、実効 `review_flow.mode: auto` は独立レビュー・検証後にAIが単位ごとにstage・commitする。manualはAIが単位外を安全にstashしてstage・提示し、人がレビュー・修正・commitする。単位照合、人の完了通知（manual）、stash/index復元を確認して次へ進む |
 | `post_commit` | コミット後の検証・PR準備 | 設定に従って、push前の最終Agent QA、必須検証、許可されたpush・PR作成を行う |
 | `staging_agent_qa` | Staging Agent QA | 配備されたPR候補版をCodexが検証する |
 | `staging_human_qa` | Staging Human QA | そのPRで必要な人の確認。不要なら理由を記録して省略する |
@@ -61,7 +61,7 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 - 人がレビュー中に修正した場合は `code_review` を続ける。AIへ追加実装を依頼する場合は、範囲と受入条件をIssueで更新してから `coding` へ戻す。
 - Human QAが新たに必要になった場合は、理由と具体的な残項目をIssueに記録して利用者に相談する。
 - プロジェクトの規約や補足の記述だけでは、AIコミットの許可として扱わない。[共通設定のパス別の方針](configuration.md#パス別の方針)に従って、通常設定・適用ルール・今回の明示指示から実効方針を決める。
-- 実効方針が `review_flow: auto` なら、Codexは `code_review` で対象単位を明示し、省略と実施した確認への参照をIssueへ記録する。人のレビュー済みとは記録しない。
+- 実効方針が `review_flow.mode: auto` なら、Codexは `code_review` で対象単位を明示し、省略と実施した確認への参照をIssueへ記録する。人のレビュー済みとは記録しない。
 
   ```text
   人のコードレビュー: <対象単位>は省略（根拠: <通常設定または適用したパス別ルール>、判定: <Local Agent QAの記録へのリンク>）
@@ -74,7 +74,7 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 以下はすべての実装方式に共通する（Managedの入口での手順2・3の読み方は、[Managedセッション](managed-session.md)の「Managed固有の読み替えと記録」にある）。単位計画の作成・確認にはコミット許可を要求しない。
 
 1. 実装担当は成果引き渡しに、モードによらず自然な責務で決めたコミット単位案と予定差分を含める。進行役のCodexはLocal Agent QAで対象を検証し、単位案が依頼全体を漏れなく覆い対象外変更を含まないことと、各単位の[判定記録](configuration.md#判定記録と変更時の扱い)を確認する。依頼の比較元と全体差分も最終照合用に記録する。
-2. QA合格後、Codexは実効flow・単位の判定記録・QA結果を実装担当へ渡す。auto Claudeは同じCLIセッションをresumeし、manual ClaudeはBridgeで準備を依頼する。担当は設定・予定差分・合意根拠を照合する。manualの依頼は人への提示準備でありAIコミットの依頼ではない。
+2. QA合格後、Codexは実効flow・単位の判定記録・QA結果を実装担当へ渡す。Claudeは両modeとも同じCLI sessionをresumeする。manualは準備したprocessの終了後に進行役が指定toolで提示する。担当は設定・予定差分・合意根拠を照合する。manualの依頼は人への提示準備でありAIコミットの依頼ではない。
 3. 担当は `commit` に従い、autoでは独立レビュー後にAIがstage・commitし、manualでは単位外を安全にstashしてstage・提示、人がレビュー・修正・commitする。各コミット直前・作成後の実差分と確定した予定単位を照合し、予定単位・SHA・検証・レビュー・復元結果を進行役へ返す。
 4. 全単位完了後、Codexは各コミットの単位照合結果を実差分で独立確認したうえで、依頼の比較元からの全体差分が、`commit` の手順で正当な人の修正を反映した確定済みの全体期待差分と一致し、対象の未コミット変更が残っていないことを照合する。最終差分だけでは途中で混入し後で相殺された対象外変更を検出できないため、単位照合を省かない。人レビューを省略した単位は、上の省略記録を完成させる。
 5. 単位の組み替え・内容・設定の変更は[変更時の扱い](configuration.md#判定記録と変更時の扱い)に従って再判定し、必要なレビュー・許可確認・検証へ戻す。人の完了通知後は `commit` に従って正当な修正と元の予定差分の対応を記録し、確定単位に更新する。確定単位と実コミットに不一致があれば次工程を止め、SHA・予定差分・実差分の違いを記録して人に確認する。履歴を無断で書き換えない。
@@ -87,36 +87,13 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 
 Linearの工程のステータスと、Codexのゴールの状態は別に扱う。会話側のゴールの維持・終了・状態変更は [execution.md](execution.md) の「継続と待機」「ゴール機能」に従う。通知を受けたら対象と結果を照合し、次工程の許可と前提が揃っていれば再確認せずに続ける。
 
-## Bridgeでの依頼と報告
+## Bridgeでの任意の引き渡し・報告
 
-AI Terminal Bridge（以下Bridge）の本体は同梱しない。導入済みのMCPとWebStormプラグインを使う。Claudeの入口の基本flowがmanualのときは必須で、Codexの入口やIssue整理だけなら不要。
+Claudeの実装依頼は両modeともCLIを使い、Bridgeを必須にしない。既存の `bridge_request` または今回の明示許可で別会話から進行の引き渡し・人の完了報告を受ける場合だけ、この節を使う。報告は照合材料であり、CLIの実装経路やレビューUI、操作許可を変更しない。
 
-送信前に `list_sessions` で、相手の `project_path`、完全な `session_id`、受信の可否を確認する。`session_id` は保存せず、依頼のたびに一覧から取得する。`project_path` はIDEのプロジェクトのルートで、作業ディレクトリと一致するとは限らない。依頼と報告には、Gitの作業ディレクトリを別に書く。次の表のCodexとClaudeの間の依頼・報告は、Claudeのmanual経路のときに使う。autoの起動・報告・resumeは [Claude CLI](claude-cli.md) に従う。
+### 開発進行の引き渡し
 
-| 依頼・報告 | 含めるもの |
-| --- | --- |
-| 実装・修正の依頼（CodexからClaude） | Issueリンク、使う入口（`implementation_skill` の値、またはその場の明示的な指定）、範囲・受入条件、初期体制（役割別人数・根拠・専任なしの責任者・必須検証）、Gitの作業ディレクトリ・ブランチ・既存差分、許可範囲（`dev_delegation` の有無を含む）、返信先のCodexの `session_id`、関係する補足と参照先、下の定型文。修正依頼では、再現手順・期待と実際・対象差分・証拠の場所を加える |
-| コミットの依頼（CodexからClaude） | Issueリンク、Gitの作業ディレクトリ・ブランチ、返信先のCodexの `session_id` と、上の「単位案からコミット完了まで」で定める依頼情報 |
-| 完了の報告（ClaudeからCodex） | 対象差分、自動検証の結果、起動方法、確認観点、既知の制限、未解決の事項、初期体制からの変更と理由、実際の担当と確認範囲、devの入口内のレビュー結果の要約と未解決の指摘。コミットした場合の返却情報は上の「単位案からコミット完了まで」に従う |
-| 人のレビュー・コミット完了の報告（ClaudeからCodex） | 下の「人のレビュー・コミット完了の報告」の項目 |
-| 開発進行の引き渡し（ClaudeからCodex） | 利用者からの依頼の内容、対象Issue・Cycle・バックログの範囲と順序、作業先リポジトリ、利用者が示した範囲と条件。Codexは作業先リポジトリの設定と照合して進行を始め、不足する判断はCodexから利用者へ確認する |
-
-manualの提示準備では、flowが未解決の質問と人へのレビュー・修正・コミット依頼をCodexが取り次ぐ。人の操作をAIの承認後コミットへ置き換えない。
-
-実装・修正の依頼には次の文を含める。
-
-```text
-ユーザー承認済みの範囲でCodexが進行する。shinaps:linear-executeを読み込み、この依頼の範囲と受入条件の中では人へ着手を再確認せず、指定した入口で実行する。計画の相談・質問・障害・完了はBridgeで依頼元のCodexへ返す。人のレビュー・コミット完了を受けた場合も同じ返信先へ報告する。
-入口: shinaps:dev-claude
-初期体制: <役割別人数・根拠・専任なしの責任者・必須検証。途中の増員はdevのメインが判断して進行役へ報告する>
-許可範囲: <設定と会話で許可された操作。dev_delegationの有無を含む>
-```
-
-受信は `read_messages` で全文を読み、受け取ったIDを `ack_messages` で確認する。ackは受領の確認であり、作業の完了ではない。完了は、相手の報告と実際の差分・検証結果で確認する。
-
-再接続後は、宛先を一覧から取得し直す。結果が不明な依頼を重複して送らない。重要な判断と結果はIssueへ記録し、Bridgeを唯一の記録先にしない。Bridgeの依頼は、利用者の明示的な停止や操作の許可範囲を上書きしない。
-
-Bridgeが必要な工程で使えない場合は、未実施の引き渡しを完了扱いにしない。担当を入れ替えず、状態と必要な準備を利用者へ伝える。
+利用可能なBridgeツールでプロジェクト名・絶対パス・正確なsession IDを確認し、Issue・受入条件・現在の状態・正本と補足・許可範囲・返信先を渡す。宛先を推測しない。受信は全文を読み、ackは受領だけを表す。結果不明の依頼を重複送信せず、重要な判断と結果はIssueへ残す。Bridgeがなければ進行役のCodex側へ開始を案内する。
 
 ### 人のレビュー・コミット完了の報告
 

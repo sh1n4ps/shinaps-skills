@@ -18,4 +18,4 @@ description: 既存挙動の理由、実装方針、変更の影響を対話し�
 
 継続用の記録が必要なら.shinaps/work/explorations/へ保存する。[作業記録の共通手順](../../references/work-records.md)に従い、秘密情報や無関係な記録を持ち込まない。MCPが使えないときはルール照合未確認と明記する。
 
-Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto経路は [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し、manual経路はWebStormのClaudeとBridgeを使う。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。
+Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto/manual両modeは [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。

@@ -131,7 +131,7 @@ YAML
 Linear進行の実装依頼として、skill dev-managed-cc の工程と起動手順に従ってください。
 作業先: /mnt/session/uploads/<repo>.bundle をブランチ <branch> で /workspace/<repo> に用意する。比較元 <SHA>。
 タスク: <Issueの識別子とリンク>。<範囲・受入条件・範囲外・仕様や調査成果物の本文。leadはLinearを読めない>。必要な検証: <references.validation に従うコマンド>。
-設定: 保存方式 <shared|local>。正本 <作業先の .shinaps/linear.yaml。bundleに含まれるか>。読む補足 <references のうち工程に必要なもの>。正本や補足がbundleに含まれない場合（`local` など）は、その本文をこの欄に写す。
+設定: 保存方式 <shared|local>。正本 <作業先の .shinaps/linear.json。bundleに含まれるか>。読む補足 <references のうち工程に必要なもの>。正本や補足がbundleに含まれない場合（`local` など）は、その本文をこの欄に写す。
 前提: <CLAUDE.mdを添付した場合だけ: 利用者共通方針は /mnt/session/uploads/CLAUDE.md>。規約照合: <vaultあり | vaultなし。取得できなければ未確認として進める>。許可範囲: devの入口の中の委託（dev_delegation）。コミット・push・PR作成・Issueの更新・ant apply はしない。仕様・権限の不明点は一問ずつ質問してターンを終える。通常の実装判断は任せる。
 報告: 最終報告に、変更範囲、検証結果、dev内レビューの結果と未解決の指摘、起動方法、未解決事項、コミット単位案と単位ごとの予定差分（references/linear/workflow.md「単位案からコミット完了まで」の1）を含める。
 ```

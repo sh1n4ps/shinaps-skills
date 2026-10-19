@@ -39,11 +39,9 @@ multiagent:
     inline_agents:
       type: disabled
     predefined_agents:
-      - ./shinaps-explorer.md
       - ./shinaps-architect.md
       - ./shinaps-plan-reviewer.md
       - ./shinaps-simplifier.md
-      - ./shinaps-review-verifier.md
       - ./shinaps-implementer.md
       - ./shinaps-reviewer.md
   workflows:

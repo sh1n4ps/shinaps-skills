@@ -146,9 +146,13 @@ test('Claude dev entries can be invoked through the Skill tool', async () => {
 });
 
 // Managed の lead は predefined_agents に列挙した役割にしか委任できない。skill が名前を挙げる役割が
-// 未登録だと lead がその担当を起動できずに止まる。
+// 未登録だと lead がその担当を起動できずに止まる。体制は作業ごとに変わるが、実装者と独立した
+// コードレビュー（最低1体）は人数によらず必須なので、実装担当とレビュー担当は常に登録されている必要がある。
 test('Managed lead registers every role its skill names', async () => {
   const registered = await managedLeadRoles();
+  for (const role of ['shinaps-implementer', 'shinaps-reviewer']) {
+    assert.ok(registered.includes(role), role);
+  }
   const skill = await readTree(MANAGED_SKILL);
   const named = new Set(
     Object.values(skill).flatMap((text) =>

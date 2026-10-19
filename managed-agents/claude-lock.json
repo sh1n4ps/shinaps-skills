@@ -23,9 +23,9 @@
     "./agents/shinaps-dev-managed-cc.md": {
       "kind": "agent",
       "id": "agent_018RsB13dBRw5wpX7k9Bju9t",
-      "version": "3",
-      "hash": "2680b45457b15b751c995a28a902a6b6",
-      "remote_hash": "6f657d9fcf54afea9e5b032b3ad2c12b"
+      "version": "4",
+      "hash": "2ae2ac7f251efb2a921da070b06bb2bc",
+      "remote_hash": "87184b24ea85649ba7cb4ba6045c95b4"
     },
     "./agents/shinaps-explorer.md": {
       "kind": "agent",
@@ -85,8 +85,8 @@
     "./skills/dev-managed-cc": {
       "kind": "skill",
       "id": "skill_0145v1KoWTjvhrGvEndM5jxd",
-      "version": "skver_0126mUeAAJv3cG1PzBzf8NLF",
-      "hash": "239c5256a13d78c98f2053f2228e235b"
+      "version": "skver_01UcLu1Tv471GEa3uMYJkdXY",
+      "hash": "179476fc7fffd3d72568853ced5a9ef8"
     },
     "./skills/dev-managed-cc-ultra": {
       "kind": "skill",

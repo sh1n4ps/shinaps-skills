@@ -5,11 +5,15 @@ description: 指定したIssue・Cycle・バックログの実装からQA・許�
 
 # Linearを起点に開発を進める
 
-Issueの責務・受入条件・ステータスを、実際の成果と一致させる。初版は利用者本人の環境向けで、Codexが進行・Agent QA・人への窓口を担当する。実装担当は作業先リポジトリの設定の `implementation_skill` で決まる。Claudeの入口ではClaudeがAI Terminal Bridge（以下Bridge）経由の依頼で実装し、Codexの入口（`dev-codex`）ではIssueごとの別Codexタスクが `$shinaps:<入口>` で実装・QA指摘の修正を行う。Managedの入口（`dev-managed-cc`）では、会話側のCodexが進行役のまま、IssueごとのClaude Managed Agentsセッションが実装する（[managed-session.md](../../references/linear/managed-session.md)）。担当の対応は[references/workflow.md](../../references/linear/workflow.md) の「担当と窓口」にある。設定と異なる担当への入れ替えは扱わない。
+Issueの責務・受入条件・ステータスを、実際の成果と一致させる。初版は利用者本人の環境向けで、Codexが進行・Agent QA・人への窓口を担当する。実装担当は作業先リポジトリの設定の `implementation_skill` で決まる。Claudeの入口では基本flowに応じてローカルCLIまたはAI Terminal Bridge（以下Bridge）経由で実装し、Codexの入口（`dev-codex`）ではIssueごとの別Codexタスクが `$shinaps:<入口>` で実装・QA指摘の修正を行う。Managedの入口（`dev-managed-cc`）では、会話側のCodexが進行役のまま、IssueごとのClaude Managed Agentsセッションが実装する（[managed-session.md](../../references/linear/managed-session.md)）。担当の対応は[references/workflow.md](../../references/linear/workflow.md) の「担当と窓口」にある。設定と異なる担当への入れ替えは扱わない。
+
+## Claudeの実行経路を先に確定する
+
+基本 `review_flow: auto` はCodexが [Claude CLI](../../references/linear/claude-cli.md) を起動し、質問・修正・QA後のコミット依頼を同じsessionへresumeする。manualはWebStormのClaudeへBridgeで依頼し、人がレビュー・修正・commitする。初回実装前に経路と権限を確定する。パス例外はcommit担当にだけ反映し、実装経路を自動変更しない。manualのBridge不足でCLIへfallbackしない。以下のBridge固有の送受信手順はmanual経路に限り、autoの報告はCLI resultへ返す。
 
 ## 再確認せず進める条件
 
-Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridgeで受けたClaudeは、人へ着手を再確認せず、指定されたスキルで実行する。質問・相談・障害・完了はCodexへ返す。
+Codexから許可範囲と受入条件を伴う実装・修正の依頼をCLIまたはBridgeで受けたClaudeは、人へ着手を再確認せず、指定されたスキルで実行する。質問・相談・障害・完了はCodexへ返す。
 
 人のレビュー・コミット完了の報告をBridgeで受けたCodexは、報告の対象とGitの状態を照合し、一致すれば既存の許可の範囲で人へ再確認せず次の工程へ進む。
 
@@ -41,7 +45,7 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 | QAの実施・記録・素材 | [references/qa.md](../../references/linear/qa.md) |
 | Cycle完了QA・報告 | [references/cycle-report.md](../../references/linear/cycle-report.md) |
 
-コミットは `shinaps:commit`（Claudeの入口ではClaudeへ依頼し、Codexの入口では会話側がQA後に実装タスクへ依頼し、Managedの入口では会話側がQA後に自分で行う）、pushとPRの作成は `shinaps:create-pr`、公開は `shinaps:release` に従い、このスキルで手順を持たない。これらのスキルには[共通設定](../../references/linear/configuration.md)の許可と前工程の結果を渡す。必要な条件が揃えば再確認せずに進み、個別スキルの完了だけで進行を終えず、[終了条件](../../references/linear/execution.md)まで継続する。
+コミットは `shinaps:commit`（Claudeの入口ではClaudeへ依頼し、Codexの入口では会話側がQA後に実装タスクへ依頼し、Managedの入口では会話側がQA後にautoのcommitまたはmanualの提示を行う）、pushとPRの作成は `shinaps:create-pr`、公開は `shinaps:release` に従い、このスキルで手順を持たない。これらのスキルには[共通設定](../../references/linear/configuration.md)の許可と前工程の結果を渡す。必要な条件が揃えば再確認せずに進み、個別スキルの完了だけで進行を終えず、[終了条件](../../references/linear/execution.md)まで継続する。
 
 ## 初期体制と途中の増員
 

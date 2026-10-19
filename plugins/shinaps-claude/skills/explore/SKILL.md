@@ -4,6 +4,11 @@ description: バグか確定していない違和感、既存挙動の「なぜ�
 argument-hint: <調べたいバグ・挙動・実装上の疑問（省略可）>
 ---
 
+## 質問の実行経路（全工程に優先）
+
+対話セッションでは利用可能な質問UIで一問ずつ回答を受ける。CodexからローカルClaude CLIで呼び出された場合、以下の `AskUserQuestion`・確認・回答待ちの指示はすべて、質問一問・判断に必要な情報・再開する工程を最終resultへ返してターンを終了する手順に読み替える。CLI内で `AskUserQuestion` を呼んだり人の入力を待ち続けたりしない。Codexが回答を取り次ぎ、同じsessionをresumeして指定の工程から再開する。回答が必要な作業を先に進めず、終了を完了と報告しない。単独commitのflow選択にも同じ規則を適用する。
+
+
 ## 作業記録の保存先
 
 作業記録は現在の作業先の `.shinaps/work/` 以下へ保存する。初期化と保全は [作業記録の共通手順](../../references/work-records.md) に従う。
@@ -213,3 +218,5 @@ dev の入口は「実装 handoff」の `status: ready` と `evidenceSnapshot` �
 - **理解完了を代行しない**: 終了判定は人間が行う。回数制限を設けない
 - **生レポートを保存する**: subagent 応答は全文保存し、会話ログは要約だけ残す
 - **shinaps MCP はメインだけが呼ぶ**: subagent は `search_rules` / `list_search_facets` を直接呼ばない
+
+Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto経路は [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し、manual経路はWebStormのClaudeとBridgeを使う。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。

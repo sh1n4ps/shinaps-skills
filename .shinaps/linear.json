@@ -1,0 +1,63 @@
+{
+  "$schema": "https://raw.githubusercontent.com/sh1n4ps/shinaps-skills/v0.32.0/plugins/shinaps-claude/references/linear/configuration.schema.json",
+  "config_version": 1,
+  "config_storage": "shared",
+  "target": {
+    "workspace": "shinaps",
+    "team": "SHINAPS",
+    "project": "https://linear.app/shinaps/project/shinaps-ai-76ed13db8314"
+  },
+  "team_settings": "manage_on_setup",
+  "statuses": {
+    "todo": "Todo",
+    "refinement": "In Progress",
+    "ready": "Ready",
+    "coding": "Coding",
+    "local_agent_qa": "Local Agent QA",
+    "code_review": "Agent QA",
+    "post_commit": "Agent QA",
+    "staging_agent_qa": "Staging Agent QA",
+    "staging_human_qa": "Staging Human QA",
+    "release": "In Progress",
+    "production_agent_qa": "Production Agent QA",
+    "production_human_qa": "Production Human QA",
+    "human_input": "Human Input",
+    "done": "Done"
+  },
+  "stop_after": "issue_done",
+  "review_flow": {
+    "mode": "auto"
+  },
+  "permissions": [
+    "development_operations",
+    "codex_task",
+    "issue_update",
+    "bridge_request",
+    "dev_delegation",
+    "managed_session:40",
+    "push",
+    "pr_create",
+    "merge",
+    "publish:github_release",
+    "publish:npm"
+  ],
+  "references": {
+    "specifications": [
+      "README.md",
+      ".shinaps/linear/instructions.md"
+    ],
+    "validation": [
+      "package.json",
+      ".github/workflows/publish.yml"
+    ],
+    "publication": [
+      "README.md",
+      ".github/workflows/publish.yml"
+    ],
+    "environments": [],
+    "deployment": []
+  },
+  "implementation_skill": "dev-managed-cc",
+  "path_policy_overrides": [],
+  "cycle_report": null
+}

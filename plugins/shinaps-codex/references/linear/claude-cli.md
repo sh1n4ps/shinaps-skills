@@ -1,8 +1,8 @@
 # ローカルClaude CLIによる実装
 
-`dev-claude` の基本 `review_flow: auto` は、Codexが作業先でローカル `claude -p` を起動する。manualはWebStormのClaudeとBridgeを使う。初回実装前に基本flow、正確なcheckout・branch・HEAD・既存差分、経路許可（autoは `claude_cli`、manualは `bridge_request` または今回の明示依頼）を確定する。manualのBridge不足でCLIへfallbackしない。CodexとManagedの既存経路は変更しない。
+`dev-claude` はauto/manualとも、Codexが作業先でローカル `claude -p` を起動する。初回実装前に正確なcheckout・branch・HEAD・既存差分と `claude_cli` の許可（または今回の明示依頼）を確定する。CodexとManagedの既存経路は変更しない。
 
-パス例外はコミット単位のreview_flowだけを変え、実装経路を途中で切り替えない。CLI経路でmanual単位になった場合は、CLIの実行終了を確認して同じcheckoutをWebStormで人へ提示する。Codexが人のレビュー・修正・commit完了を受け取り、単位差分・SHAと照合する。その後の実装依頼は変更後のHEADと差分を添えて同じCLIセッションをresumeする。Bridge経路のauto単位も同じBridgeセッションでQA後にcommitを依頼する。
+パス例外はコミット単位のreview_flowを全体置換し、実装sessionを途中で切り替えない。manual単位ではstash・stageまで準備したCLIのprocess終了を確認し、進行役が同じcheckoutを実効 `review_flow.tool`（plasma / webstorm）で提示する。[人レビュー](../human-review.md)に従って人のレビュー・修正・commit完了を受け取り、単位差分・SHAと照合する。その後は変更後のHEADと差分を添えて同じCLI sessionをresumeする。人の操作中にCLIを並行実行しない。UI不足時は止め、別UIやBridgeへ無断で切り替えない。
 
 ## 起動と観測
 
@@ -32,6 +32,6 @@ resumeにも同じcwdと許可境界を指定し、外部で変化したHEAD・�
 
 ## 操作権限
 
-`review_flow: auto` はClaudeの `--permission-mode auto` を意味しない。非対話起動では `--permission-mode dontAsk` を明示し、既存設定がbypassでも継承しない。model・effort・pluginsは保持し、操作許可は既存の個別allow設定と今回の範囲に限定する。`--permission-prompts none` は対話できないpromptを拒否として返すためであり、許可を付与しない。permission_denialsがあれば操作と必要な権限を報告し、既存の明示許可が対象を満たすか確認する。満たす場合だけ必要なSkill/Agentや対象を限定した `--allowedTools` を明示し、同じsessionへ明示的に再依頼する。新しい権限が必要ならCodexが人へ確認する。`--allowedTools` を使う場合も対象・操作に限定し、無条件の `Bash(*)`、bypassPermissions、dangerously-skip-permissionsを使わない。拒否を隠すsilent retryをしない。会話上の許可はCLIの権限チェックを消さない。
+`review_flow.mode: auto` はClaudeの `--permission-mode auto` を意味しない。非対話起動では `--permission-mode dontAsk` を明示し、既存設定がbypassでも継承しない。model・effort・pluginsは保持し、操作許可は既存の個別allow設定と今回の範囲に限定する。`--permission-prompts none` は対話できないpromptを拒否として返すためであり、許可を付与しない。permission_denialsがあれば操作と必要な権限を報告し、既存の明示許可が対象を満たすか確認する。満たす場合だけ必要なSkill/Agentや対象を限定した `--allowedTools` を明示し、同じsessionへ明示的に再依頼する。新しい権限が必要ならCodexが人へ確認する。`--allowedTools` を使う場合も対象・操作に限定し、無条件の `Bash(*)`、bypassPermissions、dangerously-skip-permissionsを使わない。拒否を隠すsilent retryをしない。会話上の許可はCLIの権限チェックを消さない。
 
 CLI仕様の参照: [headless](https://code.claude.com/docs/en/headless)、[CLI reference](https://code.claude.com/docs/en/cli-reference)。利用版で必要なflagが非対応なら状態を報告して停止し、権限回避へ切り替えない。

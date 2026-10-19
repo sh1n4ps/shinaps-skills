@@ -6,3 +6,9 @@
 
 - 2026-10-16の利用者合意により、IssueごとのCodex実装タスク作成・実装依頼・修正依頼を許可する。同じIssueでは同じタスクを再利用し、ゴールとAgent QAは会話側が担当する。worktree作成は含めない。
 - 2026-10-17の利用者合意により、このリポジトリのIssueごとの専用Codex実装タスクは、合意した終了条件への到達と成果記録を会話側が確認し、続きの作業がない場合にアーカイブすることを継続的に許可する。対象・保持条件・結果確認は [完了後の整理](../../plugins/shinaps-claude/references/linear/codex-task.md#完了後の整理) に従う。他リポジトリには適用しない。
+
+## 設定に付記していた合意・条件
+
+- 2026-10-15: 利用者と合意したshinaps-skills専用設定。
+- 2026-10-18: 利用者と合意し、実装担当をManagedの入口（dev-managed-cc）に変え、managed_session の予算の上限を40 USDにした。
+- 2026-10-19: 利用者と合意し、Managedの入口の名前を dev-managed-cc（cc は Claude Code。skill 名に claude を含められないため）に改めた。

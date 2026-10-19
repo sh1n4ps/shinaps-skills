@@ -59,5 +59,36 @@ const help = execFileSync(join(consumer, 'node_modules/.bin/shinaps-skills'), ['
   encoding: 'utf8',
 });
 assert.match(help, /^Usage: shinaps-skills /);
+// 配布後もschemaとAjvが揃い、外部schemaを取得せず検証できることを確認する。
+const configuration = JSON.parse(
+  (await readFile('plugins/shinaps-claude/references/linear/configuration.md', 'utf8'))
+    .split('## 設定例')[1]
+    .match(/```json\n([\s\S]*?)\n```/)![1],
+);
+configuration.$schema = 'https://invalid.example/not-fetched.json';
+const configurationPath = join(consumer, 'linear.json');
+const configurationText = JSON.stringify(configuration);
+await writeFile(configurationPath, configurationText);
+const networkGuard = join(consumer, 'no-network.cjs');
+await writeFile(
+  networkGuard,
+  "require('node:net').Socket.prototype.connect = () => { throw new Error('Network forbidden'); }; globalThis.fetch = () => { throw new Error('Network forbidden'); };\n",
+);
+const executable = join(consumer, 'node_modules/.bin/shinaps-skills');
+execFileSync(
+  process.execPath,
+  ['--require', networkGuard, executable, 'validate-linear-config', configurationPath],
+  { cwd: consumer, stdio: 'pipe' },
+);
+assert.equal(await readFile(configurationPath, 'utf8'), configurationText);
+configuration.review_flow = { mode: 'manual' };
+await writeFile(configurationPath, JSON.stringify(configuration));
+assert.throws(() =>
+  execFileSync(executable, ['validate-linear-config', configurationPath], {
+    cwd: consumer,
+    stdio: 'pipe',
+  }),
+);
+assert.equal(execFileSync(executable, ['--version'], { encoding: 'utf8' }).trim(), pkg.version);
 console.log(`${pkg.name}@${pkg.version}: ${actual.length} files verified\n${tarball}`);
 if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `tarball=${tarball}\n`);

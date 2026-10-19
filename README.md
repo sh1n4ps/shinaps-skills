@@ -6,11 +6,23 @@ Shinaps AIの利用者向け開発ワークフロー。Claude CodeとCodexには
 
 共通スキルが持つのは判断手順。対象環境・必須検証・公開条件は、対象プロジェクトの `AGENTS.md` / `CLAUDE.md` と参照先、README、CI、既存スクリプトから読み取る。専用設定ファイルは必須にしない。
 
-例外として `linear-execute` の開発進行とチーム設定の変更には、対象リポジトリの `.shinaps/linear.yaml` を必須にする。操作の継続的な許可と終了地点を会話から推測せず、合意した範囲だけを続けて進めるためである。設定は `config_storage: shared` でGit共有、`local` でメインの作業ツリーだけに保存する。既存設定でキーがない場合だけ従来のlocal扱いを維持し、自動追記・許可の再合意は求めない。sharedは現在のcheckout、localはメインの設定と補足を正本とする。共有設定が欠けていても端末別のlocal設定では補わない。[共通設定](plugins/shinaps-claude/references/linear/configuration.md)の読取・保存手順に従う。設定がなくてもIssueの読み取り・整理はできる。設定が必要な実行で共通の読取手順により真に未設定と確認できた場合だけ、同じセッションで `linear-plan` の初期設定ヒアリングへ進み、合意した設定の保存・確認後に元の依頼を再開する。
+例外として `linear-execute` の開発進行とチーム設定の変更には、対象リポジトリの `.shinaps/linear.json` を必須にする。操作の継続的な許可と終了地点を会話から推測せず、合意した範囲だけを続けて進めるためである。設定は `config_storage: shared` でGit共有、`local` でメインの作業ツリーだけに保存する。必須キーの欠落は設定不備として止め、旧設定は明示移行する。sharedは現在のcheckout、localはメインの設定と補足を正本とする。共有設定が欠けていても端末別のlocal設定では補わない。[共通設定](plugins/shinaps-claude/references/linear/configuration.md)の読取・保存手順に従う。設定がなくてもIssueの読み取り・整理はできる。設定が必要な実行で共通の読取手順により真に未設定と確認できた場合だけ、同じセッションで `linear-plan` の初期設定ヒアリングへ進み、合意した設定の保存・確認後に元の依頼を再開する。
 
-sharedで採用する `instructions.md` は共有YAMLの `references.specifications` に明記して開始・再開時に読み、他の必要補足は内容に対応する `references` に記載する。必要補足の欠落・読取不能は依存工程を止め、未採用とは扱わない。設定・採用補足・ignoreの個別例外を一緒に共有するか、共有済み資料への参照に置き換える。端末の絶対パスやsession/thread ID、進捗・QA結果は `.shinaps/work/` に分け、秘密値はどちらにも保存しない。保存方式の合意だけでstage・commit・push・追跡解除を許可しない。
+sharedで採用する `instructions.md` は共有JSONの `references.specifications` に明記して開始・再開時に読み、他の必要補足は内容に対応する `references` に記載する。必要補足の欠落・読取不能は依存工程を止め、未採用とは扱わない。設定・採用補足・ignoreの個別例外を一緒に共有するか、共有済み資料への参照に置き換える。端末の絶対パスやsession/thread ID、進捗・QA結果は `.shinaps/work/` に分け、秘密値はどちらにも保存しない。保存方式の合意だけでstage・commit・push・追跡解除を許可しない。
 
 例えばPCブラウザのみのプロジェクトには対応ブラウザと確認コマンドを書く。iOSプロジェクトにはSimulatorと実機の使い分けを記す。スキルは一律の端末数やOS数を追加しない。既存の情報で決まらず結果を左右する条件だけ確認し、保存を了承された方針をプロジェクト側に残す。
+
+## JSON設定の検証
+
+0.32.0から `.shinaps/linear.json`（`config_version: 1`）を使います。旧YAML・scalar review_flow・旧キーの共存は移行未完了として止め、[移行手順](plugins/shinaps-claude/references/linear/configuration.md#旧設定の移行)に従います。コメントの運用条件も補足へ移します。
+
+CLIはpluginに含まれないため、利用中のskillと同じ `@shinaps/skills@0.32.0` を導入し、`shinaps-skills --version` で確認します。`shinaps-skills validate-linear-config <明示ファイル>` は同梱schemaだけで検証し、ネットワーク取得・正本探索・Git操作・入力変更は行いません。`$schema` は固定URLによるエディタ補助で、契約の正本は[同梱schema](plugins/shinaps-claude/references/linear/configuration.schema.json)です。
+
+```sh
+npm install -g @shinaps/skills@0.32.0
+shinaps-skills --version
+shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
+```
 
 ## スキル
 
@@ -32,15 +44,15 @@ sharedで採用する `instructions.md` は共有YAMLの `references.specificati
 
 コミット・PR・リリースは、利用者の依頼またはLinear進行で合意済みの継続許可に従う。[共通設定](plugins/shinaps-claude/references/linear/configuration.md)・[担当と工程](plugins/shinaps-claude/references/linear/workflow.md)・[終了と待機](plugins/shinaps-claude/references/linear/execution.md)を参照し、必要な前工程が揃えば再確認せずに進む。単独スキル利用にはLinear進行や新しいゴールを必須にしない。`autonomous-commit-review` の役割は `commit` に統合した。個人用の別AI呼び出し・ブラウザ管理・ゴール管理・動画制作はこのpluginに含めない。
 
-`linear-execute` は初版では利用者本人の環境向けで、進行とAgent QAは会話側が担当する（Claude・Codexの入口ではCodex、Managedの入口では linear-execute を実行する Claude Code または Codex）。運用項目は明示必須で、既存設定の `config_storage`・`path_policy_overrides` 欠落は共通設定の説明に従い、それ以外は未記載を既定値で補わない。実装の担当は作業先の `.shinaps/linear.yaml` の `implementation_skill` で選ぶ。`dev-claude` は基本 `review_flow: auto` ならCodexがローカル `claude -p` を起動し、同じsessionをresumeする。manualならWebStormのClaudeへAI Terminal Bridgeで依頼する。[CLI手順](plugins/shinaps-claude/references/linear/claude-cli.md)に従い、CLIの既存権限・model・effort・pluginsを保持する。`dev-codex` を選ぶと、会話側はゴール・進行・Agent QAを担当し、Issueごとの別Codexタスクが実装・QA指摘の修正・許可されたコミットを行う。タスク作成・連絡には `codex_task` とツールが要求する明示依頼が必要。`dev-managed-cc` を選ぶと、Issueごとの Managed Agents セッションが実装し、進行役が差分を適用してQAとreview_flowに従ったコミット工程を行う。`managed_session:<USD>` と `dev_delegation` が必要で、Bridge は不要。どの入口でも `implementation_skill` は許可を増やさない。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/linear/` に置く。`references/linear/` はClaude版を編集元としてCodex版とManaged Agents版へ同じ内容を複製し、テストで一致を確認する。
+`linear-execute` は初版では利用者本人の環境向けで、進行とAgent QAは会話側が担当する（Claude・Codexの入口ではCodex、Managedの入口では linear-execute を実行する Claude Code または Codex）。運用項目は明示必須で、未記載を既定値で補わない。実装の担当は作業先の `.shinaps/linear.json` の `implementation_skill` で選ぶ。`dev-claude` はauto/manualともCodexがローカル `claude -p` を起動し、同じsessionをresumeする。manualのレビューUIは `review_flow.tool` で選ぶ。[CLI手順](plugins/shinaps-claude/references/linear/claude-cli.md)に従い、CLIの既存権限・model・effort・pluginsを保持する。`dev-codex` を選ぶと、会話側はゴール・進行・Agent QAを担当し、Issueごとの別Codexタスクが実装・QA指摘の修正・許可されたコミットを行う。タスク作成・連絡には `codex_task` とツールが要求する明示依頼が必要。`dev-managed-cc` を選ぶと、Issueごとの Managed Agents セッションが実装し、進行役が差分を適用してQAとreview_flowに従ったコミット工程を行う。`managed_session:<USD>` と `dev_delegation` が必要で、Bridge は不要。どの入口でも `implementation_skill` は許可を増やさない。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/linear/` に置く。`references/linear/` はClaude版を編集元としてCodex版とManaged Agents版へ同じ内容を複製し、テストで一致を確認する。
 
-`review_flow: auto` はAIが自然な単位を決め、独立レビュー・QA後にstage・commitする。`manual` はAIが単位を計画し、単位外を安全にstashしてstage・提示し、人がレビュー・修正・commitする。両方のstage権限とautoのAI commit権限は利用者との明示合意に含まれ、未合意ファイルからは得ない。`path_policy_overrides` は `paths` と `review_flow` だけを持つ。全変更が一つのルールで覆われる単位だけ適用し、改名は旧新両パスを判定する。競合時は止める。旧 `human_code_review`・`commit_mode`・permissionsのstage/commit・パス別ai_commitは明示移行が必要。[共通設定](plugins/shinaps-claude/references/linear/configuration.md#パス別の方針)を参照する。
+`review_flow: { "mode": "auto" }` はAIが自然な単位を決め、独立レビュー・QA後にstage・commitする。`review_flow: { "mode": "manual", "tool": "plasma" }`（toolは `webstorm` も可） はAIが単位を計画し、単位外を安全にstashしてstage・提示し、人がレビュー・修正・commitする。両方のstage権限とautoのAI commit権限は利用者との明示合意に含まれ、未合意ファイルからは得ない。`path_policy_overrides` は `paths` と `review_flow` だけを持つ。全変更が一つのルールで覆われる単位だけ適用し、改名は旧新両パスを判定する。競合時は止める。旧 `human_code_review`・`commit_mode`・permissionsのstage/commit・パス別ai_commitは明示移行が必要。[共通設定](plugins/shinaps-claude/references/linear/configuration.md#パス別の方針)を参照する。
 
-0.29.0では旧 `document_only_changes: ai_commit` を廃止した。利用先では依存工程を止め、具体的なパス例外への移行または例外廃止を合意する。説明だけの変更の許可とは同値でないため自動変換しない。旧 `none` は例外なしとして維持でき、新規設定は `path_policy_overrides: []` にする。
+0.29.0では旧 `document_only_changes: ai_commit` を廃止した。利用先では依存工程を止め、具体的なパス例外への移行または例外廃止を合意する。説明だけの変更の許可とは同値でないため自動変換しない。旧 `none` もJSONへ明示移行し、新規設定は `path_policy_overrides: []` にする。
 
 `permissions` の `development_operations` を明示すると、既存アカウントのログイン・環境準備・依存導入・起動・テスト・QAを継続的に許可できる。コミット・公開・破壊的操作の許可や人レビューは別に扱う。
 
-旧 `linear` の入口は廃止した。相談・Issue整理・設定変更は `linear-plan`、実行は `linear-execute` を使う。YAMLの名前・運用項目は変わらない。実行範囲は毎回の依頼で確定し、バックログではブロッカー到達と報告を終了条件にできる。人レビュー・Human QA待ちは予定工程として待機する。
+旧 `linear` の入口は廃止した。相談・Issue整理・設定変更は `linear-plan`、実行は `linear-execute` を使う。設定は0.32.0からJSONへ移行する。実行範囲は毎回の依頼で確定し、バックログではブロッカー到達と報告を終了条件にできる。人レビュー・Human QA待ちは予定工程として待機する。
 
 ### dev の入口と体制
 
@@ -72,7 +84,7 @@ sharedで採用する `instructions.md` は共有YAMLの `references.specificati
 
 ## Codex
 
-Node.js 22以上と、`plugin marketplace add` / `plugin add` に対応したCodex CLIを使う。Claude Codeのインストールは不要。ただし `linear-execute` の開発進行をClaudeの入口で行う場合は、autoではローカルClaude Code、manualではWebStormのClaude CodeとAI Terminal Bridgeが必要になる。Managedの入口で進める場合は `ant` CLI が必要になる。
+Node.js 22以上と、`plugin marketplace add` / `plugin add` に対応したCodex CLIを使う。Claude Codeのインストールは不要。ただし `linear-execute` の開発進行をClaudeの入口で行う場合は、両modeともローカルClaude Codeが必要になる。Managedの入口で進める場合は `ant` CLI が必要になる。
 
 導入・更新・削除:
 
@@ -249,7 +261,7 @@ npm pack --dry-run
 
 ### Codexでの人レビュー
 
-manualでは対象checkoutと単位の差分を提示し、人のレビュー・修正・コミット完了を待ちます。Claude経路はWebStorm、Codex経路はPlasmaを使います。Plasmaは別途導入するツールで、未導入時も人レビューを省略しません。変更の目的と確認点は会話に示し、人の完了通知後の実コミット照合と修正の検証は[共通手順](plugins/shinaps-codex/references/human-review.md)に従います。autoには人レビュー待ちを追加しません。
+manualでは対象checkoutと単位の差分を提示し、人のレビュー・修正・コミット完了を待ちます。実装runtimeによらず、実効 `review_flow.tool` でPlasmaまたはWebStormを選びます。Plasmaは別途導入するツールで、未導入時も人レビューを省略しません。変更の目的と確認点は会話に示し、人の完了通知後の実コミット照合と修正の検証は[共通手順](plugins/shinaps-codex/references/human-review.md)に従います。autoには人レビュー待ちを追加しません。
 
 ### CIとnpm自動公開
 
@@ -323,7 +335,7 @@ Claude版は全16エージェントが `opus / medium`。Codex版の役割定義
 ```text
 .shinaps/
 ├── .gitignore             # 保存方式に応じた除外・共有対象の例外
-├── linear.yaml            # linear のプロジェクト設定（任意）
+├── linear.json            # linear のプロジェクト設定（任意）
 ├── linear/                # linear の補足（任意）
 └── work/
     ├── {日時}-{作業名}/

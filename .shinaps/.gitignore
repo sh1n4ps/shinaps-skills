@@ -1,6 +1,6 @@
 *
 !/.gitignore
-!/linear.yaml
+!/linear.json
 !/linear/
 !/linear/instructions.md
 /work/

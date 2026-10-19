@@ -60,6 +60,7 @@ const isAction = (value: string): value is Action => (actions as readonly string
 
 const usage = [
   'Usage: shinaps-skills <install|update|uninstall|recover> codex',
+  '       shinaps-skills validate-linear-config <file>',
   '       shinaps-skills auto-update <enable|disable|status|check> codex',
   'Claude Code: /plugin marketplace add sh1n4ps/shinaps-skills',
   '             /plugin install shinaps@shinaps-skills',

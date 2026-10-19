@@ -20,4 +20,4 @@ description: 再現手順、コード、ログと必要な外部情報から不�
 
 必要な記録は.shinaps/work/debug/へ保存し、[作業記録の共通手順](../../references/work-records.md)に従って初期化・保全する。秘密情報・既存記録の削除・外部投稿は含めない。
 
-Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto経路は [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し、manual経路はWebStormのClaudeとBridgeを使う。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。
+Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto/manual両modeは [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。

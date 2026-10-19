@@ -31,7 +31,7 @@
     |---|---|
     | `AskUserQuestion` | 項目9 |
     | `TaskCreate`・`TaskUpdate` | 応答本文と作業記録で示す |
-    | `Skill` による `commit`・`create-pr`・`release` への引き継ぎ | 未対応。未コミットの差分を項目8の出力で返す。Linear 進行では、コミット以降はセッションの外の進行役が行う |
+    | `Skill` による `commit`・`create-pr`・`release` への引き継ぎ | 未対応。未コミットの差分を項目8の出力で返す。Linear 進行では、コミット工程以降はセッションの外の進行役が扱う。autoは進行役がcommitし、manualは進行役がstash・stage・提示まで準備して人がレビュー・修正・commitする |
     | hooks | 未対応 |
     | permission mode | 定義の `permission_policy` で固定 |
     | セッション予算 | セッション作成時に付ける。後から変更・削除はできるが、作成後に追加はできない |

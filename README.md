@@ -24,7 +24,7 @@ sharedで採用する `instructions.md` は共有YAMLの `references.specificati
 | `refine` | Shinaps AIのruleと実ファイルを照合する |
 | `extract-rules` | PRレビューからruleを抽出する |
 | `simplify` | 目的から見直して不要な構造や手順を削る |
-| `commit` | 進め方（通常・自律）を各単位の実効方針か確認で決め、検証できる単位でコミットする |
+| `commit` | 各単位のreview_flowに従い、autoはAIがレビュー・コミット、manualはAIがstash・stage・提示し、人がレビュー・修正・コミットする |
 | `create-pr` | リポジトリの規約に合わせてPRを作成する |
 | `release` | 公開条件を確定し、対象バージョンの利用可能性を確認する |
 | `linear-plan` | 相談・必要なspec/explore・Issue作成と整理・プロジェクト設定を行い、実装前で止める |
@@ -32,9 +32,9 @@ sharedで採用する `instructions.md` は共有YAMLの `references.specificati
 
 コミット・PR・リリースは、利用者の依頼またはLinear進行で合意済みの継続許可に従う。[共通設定](plugins/shinaps-claude/references/linear/configuration.md)・[担当と工程](plugins/shinaps-claude/references/linear/workflow.md)・[終了と待機](plugins/shinaps-claude/references/linear/execution.md)を参照し、必要な前工程が揃えば再確認せずに進む。単独スキル利用にはLinear進行や新しいゴールを必須にしない。`autonomous-commit-review` の役割は `commit` に統合した。個人用の別AI呼び出し・ブラウザ管理・ゴール管理・動画制作はこのpluginに含めない。
 
-`linear-execute` は初版では利用者本人の環境向けで、進行とAgent QAは会話側が担当する（Claude・Codexの入口ではCodex、Managedの入口では linear-execute を実行する Claude Code または Codex）。運用項目は明示必須で、既存設定の `config_storage`・`path_policy_overrides` 欠落は共通設定の説明に従い、それ以外は未記載を既定値で補わない。実装の担当は作業先の `.shinaps/linear.yaml` の `implementation_skill` で選ぶ。`dev-claude` を選ぶと、ClaudeがAI Terminal Bridge経由の依頼で実装する。`dev-codex` を選ぶと、会話側はゴール・進行・Agent QAを担当し、Issueごとの別Codexタスクが実装・QA指摘の修正・許可されたコミットを行う。タスク作成・連絡には `codex_task` とツールが要求する明示依頼が必要。`dev-managed-cc` を選ぶと、Issueごとの Managed Agents セッションが実装し、進行役が差分を適用してQA・コミットを行う。`managed_session:<USD>` と `dev_delegation` が必要で、Bridge は不要。どの入口でも `implementation_skill` は許可を増やさない。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/linear/` に置く。`references/linear/` はClaude版を編集元としてCodex版とManaged Agents版へ同じ内容を複製し、テストで一致を確認する。
+`linear-execute` は初版では利用者本人の環境向けで、進行とAgent QAは会話側が担当する（Claude・Codexの入口ではCodex、Managedの入口では linear-execute を実行する Claude Code または Codex）。運用項目は明示必須で、既存設定の `config_storage`・`path_policy_overrides` 欠落は共通設定の説明に従い、それ以外は未記載を既定値で補わない。実装の担当は作業先の `.shinaps/linear.yaml` の `implementation_skill` で選ぶ。`dev-claude` は基本 `review_flow: auto` ならCodexがローカル `claude -p` を起動し、同じsessionをresumeする。manualならWebStormのClaudeへAI Terminal Bridgeで依頼する。[CLI手順](plugins/shinaps-claude/references/linear/claude-cli.md)に従い、CLIの既存権限・model・effort・pluginsを保持する。`dev-codex` を選ぶと、会話側はゴール・進行・Agent QAを担当し、Issueごとの別Codexタスクが実装・QA指摘の修正・許可されたコミットを行う。タスク作成・連絡には `codex_task` とツールが要求する明示依頼が必要。`dev-managed-cc` を選ぶと、Issueごとの Managed Agents セッションが実装し、進行役が差分を適用してQAとreview_flowに従ったコミット工程を行う。`managed_session:<USD>` と `dev_delegation` が必要で、Bridge は不要。どの入口でも `implementation_skill` は許可を増やさない。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/linear/` に置く。`references/linear/` はClaude版を編集元としてCodex版とManaged Agents版へ同じ内容を複製し、テストで一致を確認する。
 
-`path_policy_overrides` で、合意したパスの範囲に限り人レビュー・AIコミット許可・コミットモードを個別に上書きできる。たとえば `paths: ["docs/**", "README.md"]` と `human_code_review: skip` を指定すると、予定コミットの全変更がその範囲に収まる場合だけ人レビューを省く。同じコミットに対象外が混ざれば、そのコミット全体を通常方針とし、改名・移動は旧新両パスを判定する。同じ依頼でも自然な責務分割で独立した範囲内コミットには例外を適用できる。stage・push・公開の許可や必要なQAは変わらない。設定例と競合・照合の手順は[パス別の方針](plugins/shinaps-claude/references/linear/configuration.md#パス別の方針)を参照する。
+`review_flow: auto` はAIが自然な単位を決め、独立レビュー・QA後にstage・commitする。`manual` はAIが単位を計画し、単位外を安全にstashしてstage・提示し、人がレビュー・修正・commitする。両方のstage権限とautoのAI commit権限は利用者との明示合意に含まれ、未合意ファイルからは得ない。`path_policy_overrides` は `paths` と `review_flow` だけを持つ。全変更が一つのルールで覆われる単位だけ適用し、改名は旧新両パスを判定する。競合時は止める。旧 `human_code_review`・`commit_mode`・permissionsのstage/commit・パス別ai_commitは明示移行が必要。[共通設定](plugins/shinaps-claude/references/linear/configuration.md#パス別の方針)を参照する。
 
 0.29.0では旧 `document_only_changes: ai_commit` を廃止した。利用先では依存工程を止め、具体的なパス例外への移行または例外廃止を合意する。説明だけの変更の許可とは同値でないため自動変換しない。旧 `none` は例外なしとして維持でき、新規設定は `path_policy_overrides: []` にする。
 
@@ -72,7 +72,7 @@ sharedで採用する `instructions.md` は共有YAMLの `references.specificati
 
 ## Codex
 
-Node.js 22以上と、`plugin marketplace add` / `plugin add` に対応したCodex CLIを使う。Claude Codeのインストールは不要。ただし `linear-execute` の開発進行をClaudeの入口で行う場合は、Claude CodeとAI Terminal Bridgeが必要になる。Managedの入口で進める場合は `ant` CLI が必要になる。
+Node.js 22以上と、`plugin marketplace add` / `plugin add` に対応したCodex CLIを使う。Claude Codeのインストールは不要。ただし `linear-execute` の開発進行をClaudeの入口で行う場合は、autoではローカルClaude Code、manualではWebStormのClaude CodeとAI Terminal Bridgeが必要になる。Managedの入口で進める場合は `ant` CLI が必要になる。
 
 導入・更新・削除:
 
@@ -249,7 +249,7 @@ npm pack --dry-run
 
 ### Codexでの人レビュー
 
-人レビューやコミット単位の承認を依頼する際、CodexはPlasmaで対象checkoutと差分を提示します。変更の目的と確認点は会話に示し、利用者の明示的なレビュー完了を待ちます。Plasmaは別途導入するツールで、未導入時も人レビューを省略しません。表示差分とコミット対象の照合、修正後の再確認は[共通手順](plugins/shinaps-codex/references/human-review.md)に従います。人レビューを省略するプロジェクトへ新たなレビュー待ちは追加しません。
+manualでは対象checkoutと単位の差分を提示し、人のレビュー・修正・コミット完了を待ちます。Claude経路はWebStorm、Codex経路はPlasmaを使います。Plasmaは別途導入するツールで、未導入時も人レビューを省略しません。変更の目的と確認点は会話に示し、人の完了通知後の実コミット照合と修正の検証は[共通手順](plugins/shinaps-codex/references/human-review.md)に従います。autoには人レビュー待ちを追加しません。
 
 ### CIとnpm自動公開
 
@@ -307,7 +307,7 @@ codex mcp login shinaps-ai
 | `shinaps-survey-validator` | tech-surveyor の出典を WebFetch で再確認 |
 | `shinaps-debugger` | 症状から根本原因の仮説立案 (コードトレース + WebSearch + GitHub Issue) |
 | `shinaps-debug-validator` | 仮説の実コード検証 (root-cause / contributing-factor / red-herring / needs-reproduction 分類) |
-| `shinaps-split-reviewer` | `shinaps:commit` の通常モードの分割案を「単位の diff だけで妥当性を判断できるか」で批判 + 修正版最終分割計画 (worktree は read-only) |
+| `shinaps-split-reviewer` | `shinaps:commit` のmanualの分割案を「単位の diff だけで妥当性を判断できるか」で批判 + 修正版最終分割計画 (worktree は read-only) |
 
 Claude版はMarkdown、Codex版はTOMLで役割を定義する。Managed Agents版は dev で使う8役割だけを、Claude版の本文に `ant apply` 用の frontmatter を付けたMarkdownで定義する。
 

@@ -23,17 +23,14 @@ statuses:
   human_input: Human Input
   done: Done
 stop_after: issue_done
-human_code_review: skip
-commit_mode: autonomous
+review_flow: auto
 permissions:
   - development_operations
   - codex_task
   - issue_update
   - bridge_request
-  - stage
   - dev_delegation
   - managed_session:40
-  - commit
   - push
   - pr_create
   - merge

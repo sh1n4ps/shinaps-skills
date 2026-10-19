@@ -9,9 +9,9 @@
     "./agents/shinaps-architect.md": {
       "kind": "agent",
       "id": "agent_014nS9C78iHUM49edBdJNmCW",
-      "version": "3",
-      "hash": "d6642bec8f11769b65283238b359daf3",
-      "remote_hash": "bace43ae1d52e6166fa6c04653f66cb2"
+      "version": "4",
+      "hash": "8c9b5f52bd26b966183f02fa4709dc98",
+      "remote_hash": "49c984190555b27e10fb9dc9efd3c838"
     },
     "./agents/shinaps-dev-managed-cc-ultra.md": {
       "kind": "agent",
@@ -23,9 +23,9 @@
     "./agents/shinaps-dev-managed-cc.md": {
       "kind": "agent",
       "id": "agent_018RsB13dBRw5wpX7k9Bju9t",
-      "version": "2",
-      "hash": "353ca0d45eae63a87a757c973ec973f2",
-      "remote_hash": "3c4168c8bddaca29798e4cfe0a59a135"
+      "version": "3",
+      "hash": "2680b45457b15b751c995a28a902a6b6",
+      "remote_hash": "6f657d9fcf54afea9e5b032b3ad2c12b"
     },
     "./agents/shinaps-explorer.md": {
       "kind": "agent",
@@ -44,9 +44,9 @@
     "./agents/shinaps-plan-reviewer.md": {
       "kind": "agent",
       "id": "agent_01CZJRn5Cj1UpEMqX8PJbEUV",
-      "version": "3",
-      "hash": "a27f18eab28205dcb59bdb019b9ada24",
-      "remote_hash": "db5d9e915770c36b63f4fa7e5892f091"
+      "version": "4",
+      "hash": "a622707d0fbe48dc75f971f8e1f5df75",
+      "remote_hash": "dd05d9261ee3e31e8a232ecf617febf4"
     },
     "./agents/shinaps-refine-agent.md": {
       "kind": "agent",
@@ -58,16 +58,16 @@
     "./agents/shinaps-review-verifier.md": {
       "kind": "agent",
       "id": "agent_01AcZU7nQg39gT98D1BzZaTJ",
-      "version": "3",
-      "hash": "ab83b94c2cd2abd48ca4603677025912",
-      "remote_hash": "8fd54b88cb8eb5be06d876a06ff8c9c3"
+      "version": "4",
+      "hash": "ff87a5231a508654f9cd874744f56bd7",
+      "remote_hash": "005e892607656de9de09166c3a479907"
     },
     "./agents/shinaps-reviewer.md": {
       "kind": "agent",
       "id": "agent_01Pn62prPJ51yL2Cim6nPN3C",
-      "version": "3",
-      "hash": "52e0b6b5c95eec3355dd4efd82818eda",
-      "remote_hash": "4da3d6f344b26086aae0a3b9c2c113e8"
+      "version": "4",
+      "hash": "1a73b7d73f5d65c83a2b5a5d8cc09acc",
+      "remote_hash": "854606acc8b2d8f672cbdd3ab47ad1aa"
     },
     "./agents/shinaps-simplifier.md": {
       "kind": "agent",
@@ -85,8 +85,8 @@
     "./skills/dev-managed-cc": {
       "kind": "skill",
       "id": "skill_0145v1KoWTjvhrGvEndM5jxd",
-      "version": "skver_019MT1951rbWwcPgCQDVjz5d",
-      "hash": "1beda5844f26d8bd6d5f63a87af05c8c"
+      "version": "skver_0126mUeAAJv3cG1PzBzf8NLF",
+      "hash": "239c5256a13d78c98f2053f2228e235b"
     },
     "./skills/dev-managed-cc-ultra": {
       "kind": "skill",

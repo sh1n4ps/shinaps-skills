@@ -61,7 +61,7 @@
 | `permissions` | 継続的に許可した操作の一覧（下の「許可」）。許可なしは `[]` |
 | `references` | `specifications`・`validation`・`environments`・`deployment`・`publication` の5分類をすべて記載し、既存資料のパスまたはURLの一覧を指定する。該当資料なしは `[]` |
 | `cycle_report` | Cycle報告の設定（下の「Cycle報告」）。報告を使わない場合は `null` |
-| `implementation_skill` | Issueの実装・修正に使うdevの入口。`dev-claude`・`dev-claude-ultra`（CodexがBridgeでClaudeへ依頼し、Claudeがその入口で実行する）、`dev-codex`・`dev-codex-ultra`（Issueごとの別Codexタスクがその入口を実行し、会話側は進行・Agent QAを担当する）、または `dev-managed-cc`・`dev-managed-cc-ultra`（linear-executeを実行する会話が進行役になり、IssueごとのClaude Managed Agentsセッションのleadがその入口で実装する） |
+| `implementation_skill` | Issueの実装・修正に使うruntimeの入口。担当数は固定せずメインが作業ごとに決める。`dev-claude`（CodexがBridgeでClaudeへ依頼し、Claudeがその入口で実行する）、`dev-codex`（Issueごとの別Codexタスクがその入口を実行し、会話側は進行・Agent QAを担当する）、または `dev-managed-cc`（linear-executeを実行する会話が進行役になり、IssueごとのClaude Managed Agentsセッションのleadがその入口で実装する） |
 | `commit_mode` | `shinaps:commit` でコミットするときの進め方。`normal`（単位ごとに承認を得る）または `autonomous`（個別の承認なしで単位ごとに検証してコミットする） |
 | `human_code_review` | 人のコードレビューの要否。`required`（人がレビューする）または `skip`（人のレビューを行わない） |
 | `path_policy_overrides` | パス別に人レビュー・AIコミット許可・コミットの進め方を上書きするルールの一覧。例外なしは `[]`。既存設定で欠落していれば例外なし（下の「パス別の方針」） |
@@ -185,7 +185,7 @@ statuses:
   human_input: In Progress
   done: Done
 stop_after: pre_push_qa
-implementation_skill: dev-claude-ultra # CodexがBridgeでClaudeへ依頼する。Codexが実装する場合は dev-codex-ultra など
+implementation_skill: dev-claude # CodexがBridgeでClaudeへ依頼する。Codexが実装する場合は dev-codex など
 human_code_review: required
 commit_mode: autonomous
 path_policy_overrides: []
@@ -268,3 +268,7 @@ sharedでは `.shinaps/.gitignore` 自身、`linear.yaml`、採用した補足�
 `instructions.md` には、QA固有の注意（端末・ブラウザ・テストアカウントの取得方法への参照）、版の照合に使うコマンド、報告の文体・見せ方、関係者への依頼方法など、プロジェクト共通の条件・手順・相対パス・URLを書く。共通の手順は複製しない。端末固有の絶対パス、session/thread ID、一時的なログイン状態、進捗、QA結果は現在の `.shinaps/work/` へ記録する。秘密値はshared・localのどちらにも保存しない。
 
 委託時は保存方式、正本の所在、必要な補足・参照資料、合意済みの操作許可を渡す。CodexからClaudeへの依頼にも同じ情報を添える。Managedのセッションには[初回メッセージ](managed-session.md#初回メッセージと修正依頼)で渡す。
+
+## 旧dev入口からの移行
+
+通常／ultraの人数指定は廃止した。旧 `dev-claude-ultra`・`dev-codex-ultra`・`dev-managed-cc-ultra` は、それぞれ `dev-claude`・`dev-codex`・`dev-managed-cc` へ設定と呼び出しを移行する。旧名を受け付ける別名は残さない。移行が依頼・許可されている場合はruntime・操作許可・QA・終了地点を保って該当名だけを更新する。未許可の設定変更は依存する実行前に確認する。人数は恒久設定へ保存せず、各作業の体制記録に残す。

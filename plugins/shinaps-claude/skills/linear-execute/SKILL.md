@@ -7,9 +7,9 @@ description: Linearの開発で、Codexから受けた実装・修正・コミ�
 
 開発進行を依頼されたら、まず[設定の読み方](../../references/linear/configuration.md#設定の読み方)で作業先の設定を読み、`implementation_skill` で役割を決める。設定が真に未設定なら、下の「Codexの依頼なしで起動された場合」の初期設定へ進む。
 
-- Claudeの入口（`dev-claude`・`dev-claude-ultra`）では、Codexが進行・Agent QA・人への窓口を担当する。ClaudeはAI Terminal Bridge（以下Bridge）の受け手として、技術調査と実装・修正を担当し、「読む資料」「依頼を受けて実行する」「結果と人の対応を報告する」に従う。担当を入れ替えない。
-- Managedの入口（`dev-managed-cc`・`dev-managed-cc-ultra`）の開発進行では、Claudeが進行役になり、「Managedの入口で進行する」にだけ従う。
-- Codexの入口（`dev-codex`・`dev-codex-ultra`）では、開発進行をCodexへ引き渡す。
+- Claudeの入口（`dev-claude`）では、Codexが進行・Agent QA・人への窓口を担当する。ClaudeはAI Terminal Bridge（以下Bridge）の受け手として、技術調査と実装・修正を担当し、「読む資料」「依頼を受けて実行する」「結果と人の対応を報告する」に従う。担当を入れ替えない。
+- Managedの入口（`dev-managed-cc`）の開発進行では、Claudeが進行役になり、「Managedの入口で進行する」にだけ従う。
+- Codexの入口（`dev-codex`）では、開発進行をCodexへ引き渡す。
 
 ## 再確認せず進める条件
 
@@ -29,7 +29,7 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 
 - 依頼の範囲・受入条件・Gitの作業ディレクトリ・ブランチ・既存差分・許可範囲を確認する。
 - Codexから依頼された実装・修正は、依頼の対象Issueに紐づく。Claudeは別のIssueを作らない。
-- 実装・修正には、依頼で指定された入口（`shinaps:dev-claude` または `shinaps:dev-claude-ultra`）を使う。指定と設定を照合し、欠落・不一致ならCodexへ確認してから進め、受信側で入口を変えない。devの入口は内部で簡素化・規約照合・レビューを行うので、これらを別に起動しない。入口を使えない場合は、独自の手順で代わりに実装せずCodexへ報告する。
+- 実装・修正には、依頼で指定された入口（`shinaps:dev-claude`）を使う。指定と設定を照合し、欠落・不一致ならCodexへ確認してから進め、受信側で入口を変えない。devの入口は内部で簡素化・規約照合・レビューを行うので、これらを別に起動しない。入口を使えない場合は、独自の手順で代わりに実装せずCodexへ報告する。
 - devの入口の委託（サブエージェント）は、依頼の許可範囲に `dev_delegation` が書かれている場合だけ使う。許可範囲に `dev_delegation` がない依頼では委託しない。worktreeの作成は含まない。
 - devの入口が利用者に確認する場面（計画の判断、不明点、承認）では、人ではなくCodexへ相談する。Codexが既存の合意で答えた内容を人へ再確認しない。仕様・受入条件・許可範囲の変更が必要な場合は、Codexが人に確認する。
 - QAで見つかった不具合の修正依頼も同じ扱いにし、人の着手許可を改めて取らない。
@@ -67,3 +67,7 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 - 利用者から直接依頼された実作業（開発進行の依頼を除く）は、着手前に [references/issue.md](../../references/linear/issue.md) の「着手前に作業をIssueへ紐づける」に従う。Issueの作成は利用者がその場で依頼した場合だけ行い、設定の `issue_update` を根拠にしない。
 - 利用者から明示的にIssueの整理を依頼された場合は、[references/issue.md](../../references/linear/issue.md) に従って整理する。Issueの更新は、依頼で指定された範囲だけにする（設定の有無にかかわらない）。
 - 開発進行（実装からQAを経て終了地点までの進行）を依頼された場合、設定の `implementation_skill` がManagedの入口なら「Managedの入口で進行する」に従う。それ以外の入口ではClaudeは進行役を兼ねない。[設定の読み方](../../references/linear/configuration.md#設定の読み方)で真に未設定と確認した場合だけ、同じセッションで `shinaps:linear-plan` の初期設定ヒアリングに進み、保存・確認後に元の依頼の引き渡しへ戻る。作業先リポジトリの設定で `bridge_request` が許可され、BridgeでCodexのセッションを特定できる場合は、[references/workflow.md](../../references/linear/workflow.md) の「開発進行の引き渡し」の項目を添えてCodexへ引き渡す。設定は [references/configuration.md](../../references/linear/configuration.md) の「設定の読み方」に従って読む。許可や相手のセッションがない場合は、必要な準備（設定、Codexセッションの起動、Bridgeの導入）を利用者へ案内する。
+
+## 初期体制と途中の増員
+
+[Issue開始時の実装体制](../../references/linear/execution.md#issue開始時の実装体制)と[体制の判断](../../references/dev/staffing.md)に従う。進行役は各Issueの初期体制を設計前に決めて渡し、実装側のメインは現物と照合して必要な担当を追加できる。Claudeが実装の受け手の場合も同じ基準を使い、変更理由と体制を進行役へ返す。Managedの進行役も初期体制をleadへ渡す。人数の固定された入口へ戻さず、必須検証と独立性を保つ。

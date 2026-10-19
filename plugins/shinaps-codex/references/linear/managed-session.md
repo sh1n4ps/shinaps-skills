@@ -1,6 +1,6 @@
 # Managedセッション
 
-作業先の設定の `implementation_skill` が `dev-managed-cc` または `dev-managed-cc-ultra` のときに、IssueごとのClaude Managed Agentsセッションへ実装・修正を依頼し、結果を受け取る手順。進行役は、linear-executeを実行している会話（ClaudeまたはCodex）である（[担当と工程](workflow.md)の「担当と窓口」）。
+作業先の設定の `implementation_skill` が `dev-managed-cc` のときに、IssueごとのClaude Managed Agentsセッションへ実装・修正を依頼し、結果を受け取る手順。進行役は、linear-executeを実行している会話（ClaudeまたはCodex）である（[担当と工程](workflow.md)の「担当と窓口」）。
 
 ## 適用と前提
 
@@ -127,7 +127,8 @@ YAML
 初回メッセージ:
 
 ```text
-Linear進行の実装依頼として、skill <dev-managed-cc|dev-managed-cc-ultra> の工程と起動手順に従ってください。
+初期体制: <役割別人数・根拠・専任なしの責任者・必須検証。leadは現物と照合し、必要な増員を予算と許可内で行い報告する>
+Linear進行の実装依頼として、skill dev-managed-cc の工程と起動手順に従ってください。
 作業先: /mnt/session/uploads/<repo>.bundle をブランチ <branch> で /workspace/<repo> に用意する。比較元 <SHA>。
 タスク: <Issueの識別子とリンク>。<範囲・受入条件・範囲外・仕様や調査成果物の本文。leadはLinearを読めない>。必要な検証: <references.validation に従うコマンド>。
 設定: 保存方式 <shared|local>。正本 <作業先の .shinaps/linear.yaml。bundleに含まれるか>。読む補足 <references のうち工程に必要なもの>。正本や補足がbundleに含まれない場合（`local` など）は、その本文をこの欄に写す。

@@ -82,15 +82,17 @@ test('every runtime ships the Claude references except the launch procedure', as
   }
 });
 
-// Managed 版の 1 体の入口と 2 体の入口は、担当数以外の起動手順を共有する。片方の skill の
-// launch.md だけを直すと、担当数によって委任・継続の方法や打ち切りの規則が変わる。
-test('Managed Agents skills share the same launch procedure', async () => {
-  const [first, ...rest] = await managedSkillReferences();
-  assert.ok(rest.length > 0, '比べる Managed 版の skill が 2 つ以上ない');
-  const expected = await readFile(`${first}/${RUNTIME_SPECIFIC_REFERENCE}`, 'utf8');
-  for (const root of rest) {
-    assert.equal(await readFile(`${root}/${RUNTIME_SPECIFIC_REFERENCE}`, 'utf8'), expected, root);
+// runtimeごとの入口は一つに統一し、削除済みの固定人数入口が再配布されないことを確認する。
+test('each runtime exposes one development entrypoint', async () => {
+  for (const [root, expected] of [
+    [`${CLAUDE}/skills`, 'dev-claude'],
+    [`${CODEX}/skills`, 'dev-codex'],
+    [`${MANAGED}/skills`, 'dev-managed-cc'],
+  ]) {
+    const entries = (await readdir(root)).filter((name) => name.startsWith('dev-'));
+    assert.deepEqual(entries, [expected], root);
   }
+  assert.deepEqual(await managedLeads(), [`${MANAGED}/agents/shinaps-dev-managed-cc.md`]);
 });
 
 // 全 runtime が同じ工程を使うので、工程が名前を挙げる役割は各 runtime に定義が要る。
@@ -154,7 +156,7 @@ test('role definitions contain the testing policy paragraph verbatim', async () 
 // Claude の dev 入口は、Codex が AI Terminal Bridge で依頼して Skill ツールから起動する。
 // disable-model-invocation: true を付けると、Skill ツールからの起動が拒否される（63102d2 で直した不具合）。
 test('Claude dev entries can be invoked through the Skill tool', async () => {
-  for (const skill of ['dev-claude', 'dev-claude-ultra']) {
+  for (const skill of ['dev-claude']) {
     const text = await readFile(`${CLAUDE}/skills/${skill}/SKILL.md`, 'utf8');
     const frontmatter = text.split('---')[1];
     assert.doesNotMatch(frontmatter, /^disable-model-invocation:\s*true\s*$/m, skill);

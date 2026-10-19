@@ -115,18 +115,18 @@ tech-surveyor が「特筆事項なし」以外を返した場合のみ起動。
 ### Phase 5: 次アクション選択
 
 確定指摘が 1 件以上あれば `AskUserQuestion` で:
-- **修正実装に進む** (`/shinaps:dev-claude-ultra` へ引き継ぐ) (推奨)
+- **修正実装に進む** (`/shinaps:dev-claude` へ引き継ぐ) (推奨)
 - **PR にコメント投稿する** (PR モードのみ)
 - **ローカル保存のみで終了**
 
 **修正実装選択時 (Phase 6 前) に ローカル成果物（implementation.md / 調査・レビューレポート）** で修正方針決定の記録を残す。
 
-### Phase 6: /shinaps:dev-claude-ultra への引き継ぎ (修正実装選択時)
+### Phase 6: /shinaps:dev-claude への引き継ぎ (修正実装選択時)
 
-`review-validated.md` の確定指摘を修正タスクとして渡す。dev の入口は Phase 1 でこのファイルを読み、確定指摘を修正対象として扱う。利用者が1体での実行を指定した場合は `shinaps:dev-claude` を使う。
+`review-validated.md` の確定指摘を修正タスクとして渡す。dev の入口は Phase 1 でこのファイルを読み、確定指摘を修正対象として扱う。担当と人数はdevのメインが作業に応じて判断する。
 
 ```
-Skill(skill="shinaps:dev-claude-ultra", args="以下のレビュー指摘を修正する。詳細は .shinaps/work/reviews/{ts}-{mode}/review-validated.md を参照: {修正タスクの 1 行サマリ}")
+Skill(skill="shinaps:dev-claude", args="以下のレビュー指摘を修正する。詳細は .shinaps/work/reviews/{ts}-{mode}/review-validated.md を参照: {修正タスクの 1 行サマリ}")
 ```
 
 ### Phase 7: PR コメント投稿 (PR モードかつ選択時)

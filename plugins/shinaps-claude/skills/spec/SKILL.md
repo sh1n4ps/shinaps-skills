@@ -1,6 +1,6 @@
 ---
 name: spec
-description: 大まかな要望を入力に、対話的なヒアリング + 既存実装調査 (shinaps-explorer) + フィジビリティ調査 (shinaps-tech-surveyor で外部情報 + shinaps-survey-validator で出典検証 + 採用候補決定 + 必要ならプロトタイプ実装) + 技術選定を行い、「ほぼ実現できる」と確信できるレベルまで仕様を詰めて仕様書 (spec.md) を作成するスキル。spec 段階で実現可能性を十分に検証することで dev の入口での差し戻しを最小限にする。shinaps-spec-writer で構造化し、そのまま /shinaps:dev-claude-ultra へ渡せる
+description: 大まかな要望を入力に、対話的なヒアリング + 既存実装調査 (shinaps-explorer) + フィジビリティ調査 (shinaps-tech-surveyor で外部情報 + shinaps-survey-validator で出典検証 + 採用候補決定 + 必要ならプロトタイプ実装) + 技術選定を行い、「ほぼ実現できる」と確信できるレベルまで仕様を詰めて仕様書 (spec.md) を作成するスキル。spec 段階で実現可能性を十分に検証することで dev の入口での差し戻しを最小限にする。shinaps-spec-writer で構造化し、そのまま /shinaps:dev-claude へ渡せる
 argument-hint: <大まかな要望（省略可）>
 ---
 
@@ -179,19 +179,19 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 `AskUserQuestion` で次のアクションを確認:
 
-- **`/shinaps:dev-claude-ultra` に進む (引き継ぎ)**: 仕様書を入力に、計画策定・実装・セルフレビューまでを続けて実行する
+- **`/shinaps:dev-claude` に進む (引き継ぎ)**: 仕様書を入力に、計画策定・実装・セルフレビューまでを続けて実行する
 - **ローカル保存のみで終了**
 
-### Phase 9: /shinaps:dev-claude-ultra への引き継ぎ (選択時)
+### Phase 9: /shinaps:dev-claude への引き継ぎ (選択時)
 
-中間ファイル (旧 `plan-handoff.md`) は生成しない。`Skill` ツールで `shinaps:dev-claude-ultra` を起動し、引数に **`spec.md` のパスを直接渡す**。利用者が1体での実行を指定した場合は `shinaps:dev-claude` を使う。
+中間ファイル (旧 `plan-handoff.md`) は生成しない。`Skill` ツールで `shinaps:dev-claude` を起動し、引数に **`spec.md` のパスを直接渡す**。担当と人数はdevのメインが作業に応じて判断する。
 
 dev の入口の Phase 1 で spec.md を Read してタスク詳細・採用技術・既存実装との関係を取り込み、Phase 2 で同ディレクトリ配下の `raw/explorer.md` をそのまま再利用する (= dev は explorer を改めて起動しない)。これにより spec ↔ dev の二重 explorer を削減する。
 
 引数例:
 
 ```
-Skill(skill="shinaps:dev-claude-ultra", args="以下の仕様書を実装する。詳細は .shinaps/work/specs/{ts}-{slug}/spec.md を参照: {1 行サマリ}")
+Skill(skill="shinaps:dev-claude", args="以下の仕様書を実装する。詳細は .shinaps/work/specs/{ts}-{slug}/spec.md を参照: {1 行サマリ}")
 ```
 
 ## 動作原則

@@ -1,6 +1,6 @@
 ---
 name: explore
-description: バグか確定していない違和感、既存挙動の「なぜ」、実装方針や変更影響について、人間が理解・納得できるまで質問を重ねる対話型 read-only 調査スキル。質問ごとにコード、テスト、設定、git history、必要な公式情報を調べ、confirmed / inference / unknown を分けて根拠付きで回答する。debug のように根本原因確定を急がず、spec のように仕様策定を目的にせず、実装は行わない。理解が揃い実装内容に合意したら exploration.md を /shinaps:dev-claude-ultra に直接渡す。「今の実装はどうなっている？」「なぜこうなる？」「この変更はどこに効く？」「実装前に一緒に調べたい」「質問しながら理解したい」で使う
+description: バグか確定していない違和感、既存挙動の「なぜ」、実装方針や変更影響について、人間が理解・納得できるまで質問を重ねる対話型 read-only 調査スキル。質問ごとにコード、テスト、設定、git history、必要な公式情報を調べ、confirmed / inference / unknown を分けて根拠付きで回答する。debug のように根本原因確定を急がず、spec のように仕様策定を目的にせず、実装は行わない。理解が揃い実装内容に合意したら exploration.md を /shinaps:dev-claude に直接渡す。「今の実装はどうなっている？」「なぜこうなる？」「この変更はどこに効く？」「実装前に一緒に調べたい」「質問しながら理解したい」で使う
 argument-hint: <調べたいバグ・挙動・実装上の疑問（省略可）>
 ---
 
@@ -25,7 +25,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 | `shinaps:explore` | 現状・因果・選択肢を対話で理解する | `exploration.md` |
 | `shinaps:debug` | 具体的な不具合の根本原因を仮説検証で確定する | `debug-validated.md` |
 | `shinaps:spec` | 要望と受け入れ条件を確定する | `spec.md` |
-| `shinaps:dev-claude-ultra`（1体は `shinaps:dev-claude`） | 計画し、実装・検証・セルフレビューする | コード + `implementation.md` |
+| `shinaps:dev-claude` | 計画し、実装・検証・セルフレビューする | コード + `implementation.md` |
 
 `explore` では最初から「バグ」「採用案」「修正対象」を決めつけない。調査中に不具合らしさが高まっても、自動で `debug` や dev の入口へ移らず、人間の質問に答え続ける。
 
@@ -180,7 +180,7 @@ investigator の回答をそのまま転送しない。結論を支える主要�
 
 実装内容がまだ曖昧な状態で「実装へ進む」が選ばれたら、望む変更を 1 問ずつ確認する。未解決点が残る場合は、残したまま実装するか調査を続けるかを選んでもらう。
 
-### Phase 6: `/shinaps:dev-claude-ultra` への引き継ぎ
+### Phase 6: `/shinaps:dev-claude` への引き継ぎ
 
 実装へ進む前に `exploration.md` の「実装 handoff」セクションを確定する。
 
@@ -195,10 +195,10 @@ handoff 直前に confirmed 根拠の content hash を再計算し、`evidenceSn
 
 安定した設計判断や再利用価値のある発見だけをローカル成果物（implementation.md / 調査・レビューレポート）へ短く記録する。質問ログや長いコード引用は記録しない。
 
-中間 handoff ファイルは作らず、`exploration.md` のパスを直接渡す。利用者が1体での実行を指定した場合は `shinaps:dev-claude` を使う。
+中間 handoff ファイルは作らず、`exploration.md` のパスを直接渡す。担当と人数はdevのメインが作業に応じて判断する。
 
 ```
-Skill(skill="shinaps:dev-claude-ultra", args="以下の対話調査で合意した変更を実装する。詳細は .shinaps/work/explorations/{ts}-{slug}/exploration.md を参照: {実装目的の 1 行サマリ}")
+Skill(skill="shinaps:dev-claude", args="以下の対話調査で合意した変更を実装する。詳細は .shinaps/work/explorations/{ts}-{slug}/exploration.md を参照: {実装目的の 1 行サマリ}")
 ```
 
 dev の入口は「実装 handoff」の `status: ready` と `evidenceSnapshot` の内容ハッシュを確認してから合意済み変更・confirmed findings・未解決点を取り込む。`exploration.md` と同ディレクトリの `raw/investigation-*.md` を既存実装調査として再利用し、情報が不足・陳腐化している場合だけ `shinaps-explorer` で補完する。

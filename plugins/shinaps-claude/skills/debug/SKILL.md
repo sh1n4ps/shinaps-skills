@@ -1,6 +1,6 @@
 ---
 name: debug
-description: バグ報告・不具合の根本原因を多角的に調査し、対症療法ではなく根本解決を導くスキル。コードトレース + WebSearch + GitHub Issue 検索で仮説を立て、実コード検証で確定させ、必要に応じて shinaps-tech-surveyor + shinaps-survey-validator で外部情報を深掘りし、/shinaps:dev-claude-ultra に引き継ぐ。既存の調査・実装成果物と rule カタログを仮説候補の優先順位付けに使う
+description: バグ報告・不具合の根本原因を多角的に調査し、対症療法ではなく根本解決を導くスキル。コードトレース + WebSearch + GitHub Issue 検索で仮説を立て、実コード検証で確定させ、必要に応じて shinaps-tech-surveyor + shinaps-survey-validator で外部情報を深掘りし、/shinaps:dev-claude に引き継ぐ。既存の調査・実装成果物と rule カタログを仮説候補の優先順位付けに使う
 argument-hint: <なし | エラーメッセージ / 症状の説明 | ファイルパス>
 ---
 
@@ -115,18 +115,18 @@ Phase 4.5 実施後、`debug-validated.md` を更新して「## 関連する外�
 ### Phase 5: 次アクション選択
 
 root-cause または contributing-factor が 1 件以上あれば `AskUserQuestion` で:
-- **修正実装に進む** (`/shinaps:dev-claude-ultra` へ引き継ぐ) (推奨)
+- **修正実装に進む** (`/shinaps:dev-claude` へ引き継ぐ) (推奨)
 - **追加調査を依頼する** (Phase 7 へ)
 - **保存のみで終了**
 
 **根本原因確定時に ローカル成果物（implementation.md / 調査・レビューレポート）** で「症状 → 根本原因 → 修正方針」を記録。
 
-### Phase 6: /shinaps:dev-claude-ultra への引き継ぎ (修正実装選択時)
+### Phase 6: /shinaps:dev-claude への引き継ぎ (修正実装選択時)
 
-`debug-validated.md` のパスを渡す。dev の入口は Phase 1 でこのファイルを読み、root-cause / contributing-factor を修正タスクとして扱う。利用者が1体での実行を指定した場合は `shinaps:dev-claude` を使う。
+`debug-validated.md` のパスを渡す。dev の入口は Phase 1 でこのファイルを読み、root-cause / contributing-factor を修正タスクとして扱う。担当と人数はdevのメインが作業に応じて判断する。
 
 ```
-Skill(skill="shinaps:dev-claude-ultra", args="以下のデバッグ結果に基づき根本原因を修正する。詳細は .shinaps/work/debug/{ts}-{slug}/debug-validated.md を参照: {根本原因の 1 行サマリ}")
+Skill(skill="shinaps:dev-claude", args="以下のデバッグ結果に基づき根本原因を修正する。詳細は .shinaps/work/debug/{ts}-{slug}/debug-validated.md を参照: {根本原因の 1 行サマリ}")
 ```
 
 ### Phase 7: 追加調査 (選択時)

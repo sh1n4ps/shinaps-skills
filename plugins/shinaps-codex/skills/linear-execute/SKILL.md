@@ -5,7 +5,7 @@ description: 指定したIssue・Cycle・バックログの実装からQA・許�
 
 # Linearを起点に開発を進める
 
-Issueの責務・受入条件・ステータスを、実際の成果と一致させる。初版は利用者本人の環境向けで、Codexが進行・Agent QA・人への窓口を担当する。実装担当は作業先リポジトリの設定の `implementation_skill` で決まる。Claudeの入口ではClaudeがAI Terminal Bridge（以下Bridge）経由の依頼で実装し、Codexの入口（`dev-codex`・`dev-codex-ultra`）ではIssueごとの別Codexタスクが `$shinaps:<入口>` で実装・QA指摘の修正を行う。Managedの入口（`dev-managed-cc`・`dev-managed-cc-ultra`）では、会話側のCodexが進行役のまま、IssueごとのClaude Managed Agentsセッションが実装する（[managed-session.md](../../references/linear/managed-session.md)）。担当の対応は[references/workflow.md](../../references/linear/workflow.md) の「担当と窓口」にある。設定と異なる担当への入れ替えは扱わない。
+Issueの責務・受入条件・ステータスを、実際の成果と一致させる。初版は利用者本人の環境向けで、Codexが進行・Agent QA・人への窓口を担当する。実装担当は作業先リポジトリの設定の `implementation_skill` で決まる。Claudeの入口ではClaudeがAI Terminal Bridge（以下Bridge）経由の依頼で実装し、Codexの入口（`dev-codex`）ではIssueごとの別Codexタスクが `$shinaps:<入口>` で実装・QA指摘の修正を行う。Managedの入口（`dev-managed-cc`）では、会話側のCodexが進行役のまま、IssueごとのClaude Managed Agentsセッションが実装する（[managed-session.md](../../references/linear/managed-session.md)）。担当の対応は[references/workflow.md](../../references/linear/workflow.md) の「担当と窓口」にある。設定と異なる担当への入れ替えは扱わない。
 
 ## 再確認せず進める条件
 
@@ -42,3 +42,7 @@ Codexから許可範囲と受入条件を伴う実装・修正の依頼をBridge
 | Cycle完了QA・報告 | [references/cycle-report.md](../../references/linear/cycle-report.md) |
 
 コミットは `shinaps:commit`（Claudeの入口ではClaudeへ依頼し、Codexの入口では会話側がQA後に実装タスクへ依頼し、Managedの入口では会話側がQA後に自分で行う）、pushとPRの作成は `shinaps:create-pr`、公開は `shinaps:release` に従い、このスキルで手順を持たない。これらのスキルには[共通設定](../../references/linear/configuration.md)の許可と前工程の結果を渡す。必要な条件が揃えば再確認せずに進み、個別スキルの完了だけで進行を終えず、[終了条件](../../references/linear/execution.md)まで継続する。
+
+## 初期体制と途中の増員
+
+[Issue開始時の実装体制](../../references/linear/execution.md#issue開始時の実装体制)と[体制の判断](../../references/dev/staffing.md)に従う。進行役は各Issueの初期体制を設計前に決めて渡し、実装側のメインは現物と照合して必要な担当を追加できる。Claudeが実装の受け手の場合も同じ基準を使い、変更理由と体制を進行役へ返す。Managedの進行役も初期体制をleadへ渡す。人数の固定された入口へ戻さず、必須検証と独立性を保つ。

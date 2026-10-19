@@ -18,6 +18,6 @@ description: 曖昧な要望を対話と既存実装・実現可能性の調査�
 
 利用可能なShinapsルールを制約の根拠に含める。利用できないときはルール照合を未確認とし、実現可能性や仕様確定に残る影響を明記する。
 
-合意した仕様を.shinaps/work/specs/のspec.mdへ保存する。[作業記録の共通手順](../../references/work-records.md)に従って初期化・保全する。仕様には目的・範囲・挙動・受入条件・設計判断・根拠・未決事項を含める。実装依頼があれば$shinaps:dev-codexへこの記録を渡す。担当と人数はdevのメインが作業に応じて判断する。仕様作成だけの依頼で自動実装しない。
+合意した仕様を.shinaps/work/specs/のspec.mdへ保存する。[作業記録の共通手順](../../references/work-records.md)に従って初期化・保全する。仕様には目的・範囲・挙動・受入条件・設計判断・根拠・未決事項を含める。実装はClaude Codeが行い、Codexに実装の入口はない。Linear進行での実装依頼は `$shinaps:linear-execute` でClaudeへこの記録を渡す。仕様作成だけの依頼で自動実装しない。
 
-Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto/manual両modeは [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。
+Linear進行への成果引き渡しでは、確定済みの経路を維持する。autoは同じ[Claude CLI](../../references/linear/claude-cli.md)のsessionのresultへ返す。manualは同じ対話セッションで続け、[Bridge](../../references/linear/bridge.md)で依頼元のCodexへ報告する。調査スキルから経路を切り替えない。

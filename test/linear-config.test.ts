@@ -6,26 +6,25 @@ import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { validateLinearConfig } from '../lib/linear-config.ts';
 
-// 人が設定を保存しても、未知キーや不完全なmanualが許可として解釈されないことを保証する。
-test('configuration accepts complete review policies and rejects incomplete or unknown contracts without changing input', async (context) => {
+// 人が設定を保存しても、未知キーや廃止した実装経路の指定が許可として解釈されないことを保証する。
+test('configuration accepts complete review policies and rejects incomplete, retired or unknown contracts without changing input', async (context) => {
   const directory = await mkdtemp(join(tmpdir(), 'linear-config-'));
   context.after(() => rm(directory, { recursive: true, force: true }));
   const path = join(directory, 'config.json');
   const config = {
-    config_version: 1,
+    config_version: 2,
     config_storage: 'shared',
     target: { workspace: 'shinaps', team: 'SHINAPS', project: null },
     team_settings: 'existing_only',
     statuses: { todo: 'Todo', human_input: 'In Progress' },
     stop_after: 'pre_push_qa',
-    implementation_skill: 'dev-claude',
     review_flow: { mode: 'auto' },
     path_policy_overrides: [],
     permissions: [
       'issue_update',
       'claude_cli',
       'bridge_request',
-      'managed_session:20',
+      'dev_delegation',
       'deploy:staging',
       'publish:npm',
       'evidence:drive',
@@ -39,11 +38,7 @@ test('configuration accepts complete review policies and rejects incomplete or u
     },
     cycle_report: null,
   };
-  for (const review_flow of [
-    { mode: 'auto' },
-    { mode: 'manual', tool: 'plasma' },
-    { mode: 'manual', tool: 'webstorm' },
-  ]) {
+  for (const review_flow of [{ mode: 'auto' }, { mode: 'manual' }]) {
     const input = {
       ...config,
       review_flow,
@@ -56,16 +51,23 @@ test('configuration accepts complete review policies and rejects incomplete or u
   }
   const invalid = [
     { ...config, review_flow: 'auto' },
-    { ...config, review_flow: { mode: 'manual' } },
-    { ...config, review_flow: { mode: 'manual', tool: 'other' } },
+    { ...config, review_flow: { mode: 'manual', tool: 'webstorm' } },
     { ...config, review_flow: { mode: 'auto', tool: 'plasma' } },
-    { ...config, path_policy_overrides: [{ paths: ['docs/**'], review_flow: { mode: 'manual' } }] },
+    { ...config, review_flow: { mode: 'other' } },
+    {
+      ...config,
+      path_policy_overrides: [
+        { paths: ['docs/**'], review_flow: { mode: 'manual', tool: 'plasma' } },
+      ],
+    },
     { ...config, config_storage: undefined },
     { ...config, path_policy_overrides: undefined },
     { ...config, document_only_changes: 'none' },
+    { ...config, implementation_skill: 'dev-claude' },
     { ...config, target: { ...config.target, unexpected: true } },
     { ...config, statuses: { invented: 'Todo' } },
-    { ...config, permissions: ['managed_session:0'] },
+    { ...config, permissions: ['codex_task'] },
+    { ...config, permissions: ['managed_session:20'] },
     { ...config, permissions: ['commit'] },
   ];
   for (const input of invalid) {
@@ -83,9 +85,10 @@ test('version errors distinguish migration, skill update and malformed values', 
   for (const [config_version, message] of [
     [undefined, /Migrate/],
     [0, /Migrate/],
-    [2, /Update the skill/],
-    ['1', /Invalid Linear configuration/],
-    [1.5, /Invalid Linear configuration/],
+    [1, /Migrate/],
+    [3, /Update the skill/],
+    ['2', /Invalid Linear configuration/],
+    [2.5, /Invalid Linear configuration/],
   ] as const) {
     await writeFile(path, JSON.stringify({ config_version }));
     await assert.rejects(validateLinearConfig(path), message);

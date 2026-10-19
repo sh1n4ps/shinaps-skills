@@ -14,7 +14,7 @@ try {
   } else if (command === 'validate-linear-config') {
     if (rest.length !== 1) throw new Error('Usage: shinaps-skills validate-linear-config <file>');
     await validateLinearConfig(rest[0]);
-    console.log('Linear configuration is valid (config_version: 1).');
+    console.log('Linear configuration is valid (config_version: 2).');
   } else if (command === 'auto-update') await autoUpdate(rest);
   else await run(process.argv.slice(2));
 } catch (error) {

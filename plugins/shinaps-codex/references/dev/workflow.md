@@ -1,6 +1,6 @@
 # dev の工程
 
-Claude・Codex・Managed Agentsのdevはこの工程を共有する。役割・人数は[実装体制の判断](staffing.md)に従って作業ごとに決め、担当の起動・継続は各runtimeの[起動手順](launch.md)に従う。
+Claude Codeのdev（`dev-claude`）の工程。役割・人数は[実装体制の判断](staffing.md)に従って作業ごとに決め、担当の起動・継続は[起動手順](launch.md)に従う。Codexのreview・debug・spec等も、ここで定める役割を使う。
 
 ## 1. 前提と作業記録
 
@@ -34,7 +34,7 @@ Claude・Codex・Managed Agentsのdevはこの工程を共有する。役割・�
 
 依頼・引数・指定された成果物から目的・受入条件・範囲を確定する。確定済みの内容を聞き直さず、依頼されていない過去の作業を始めない。成果物に実装可否の状態があればreadyを確認し、欠落・不明なら変更内容を推測せずタスクを確定する。内容ハッシュがある根拠は現在値と照合し、古い根拠は読み直す。
 
-Issue・既存spec・調査記録・関連コード・検証方法を必要な範囲だけ確認する。linear-executeからの初期体制を引き継ぎ、なければメインが `staffing.md` に従って判断する。設計担当を起動する前に、根拠・役割別人数・専任なしの責任者・統合責任者・必須検証を `staffing.md` として作業記録へ保存し、短く報告する。不足する調査があればPhase 2で補い、体制を更新する。
+Issue・既存spec・調査記録・関連コード・検証方法を必要な範囲だけ確認する。linear-executeからは体制判断の材料を受け取り、メインが `staffing.md` に従って初期体制を決める。設計担当を起動する前に、根拠・役割別人数・専任なしの責任者・統合責任者・必須検証を `staffing.md` として作業記録へ保存し、短く報告する。不足する調査があればPhase 2で補い、体制を更新する。
 
 ## 4. Phase 2: 規約と必要な探索
 
@@ -105,7 +105,7 @@ Issue・既存spec・調査記録・関連コード・検証方法を必要な�
 
 初期体制と変更理由、実際の担当・確認範囲、計画と実装後のレビュー回数、採否・修正、検証結果、未実施・未照合・未解決事項を報告する。
 
-linear-executeから受けた作業は未コミットの差分と結果を進行役へ返す。devの完了はLocal Agent QAへの引き渡しであり、進行全体の終了ではない。[Linear共通設定](../linear/configuration.md)と[担当と工程](../linear/workflow.md)に従い、QA後のcommit工程の依頼を受け、autoはAIコミット、manualは人への提示準備を行う。Claudeのauto/manual両modeは [Claude CLI](../linear/claude-cli.md) のresultへ報告し、同じsessionのresumeで質問・修正を受ける。manualの提示はprocess終了後に実効 `review_flow.tool` で行う。Codex・Managedはそれぞれの既存返却経路を使う。
+linear-executeから受けた作業は未コミットの差分と結果を進行役へ返す。devの完了はLocal Agent QAへの引き渡しであり、進行全体の終了ではない。[Linear共通設定](../linear/configuration.md)と[担当と工程](../linear/workflow.md)に従い、QA後の差分確定の依頼を受けて `commit` を行う。auto経路は [Claude CLI](../linear/claude-cli.md) のresultへ報告し、同じsessionのresumeで質問・修正を受ける。manual経路は同じ対話セッションで人と作業し、[Bridge](../linear/bridge.md)で依頼元Codexへ報告する。
 
 単独のdevではコミットが許可されている場合だけ範囲とモードを `commit` へ渡す。許可がなければ未コミットで返し、形式的な許可確認を追加しない。PR・リリースも許可された範囲で各スキルへ渡す。単独devにLinear進行・新しいゴールを必須にしない。
 

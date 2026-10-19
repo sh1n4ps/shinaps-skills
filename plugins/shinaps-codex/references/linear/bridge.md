@@ -1,0 +1,55 @@
+# Bridge
+
+通常設定が `review_flow.mode: manual` のIssue（[経路](configuration.md#経路)）で、CodexがWebStorm内の対話Claude CodeセッションへAI Terminal Bridge（以下Bridge）で依頼し、報告を受ける手順。`bridge_request` があれば、別会話との任意の進行の引き渡しにも使う。
+
+各項目の根拠を括弧で示す。「履歴」はこのリポジトリのコミット 6ebbfbf・c766eb6 時点の `plugins/shinaps-claude/skills/linear/references/workflow.md` の「Bridgeでの依頼と報告」に記録された運用、「現物確認」は2026-10-19に進行役がBridge MCPのツール一覧で確認した内容を指す。どちらにもない挙動は、使う時点で現物のツール一覧と挙動で確認し、確認できなければ止める。
+
+## 前提
+
+- Bridgeの本体は同梱しない。Codex側は導入済みのBridge MCP、Claude側はWebStormプラグインを使う（履歴）。
+- Claude側はWebStormプラグインとして動くBridgeを使い、独立したBridgeサービスは必要としない（現物確認）。
+- 提供されるツールは `list_sessions({})`、`send_message({ target_session_id, message })`、`read_messages({})`、`ack_messages({ message_ids })`。セッションを自動で開始するツールはない（現物確認）。
+- 受信によってClaudeのターンが始まるか、セッションが一覧から消える条件は確認されていない。これらに依存する手順を組まない。Claudeが応答しない場合は、人へWebStormの対象セッションの確認を依頼する。
+
+## 宛先
+
+- 送信前に `list_sessions` で、相手の `project_path`、完全な `session_id`、受信の可否（`can_receive_messages`）を確認し、作業先checkoutに対応する一つのセッションだけへ送る（履歴、現物確認）。宛先を推測せず、別Issueや別リポジトリのセッションへ送らない。
+- `project_path` はIDEのプロジェクトのルートで、Gitの作業ディレクトリと一致するとは限らない。依頼と報告には、Gitの作業ディレクトリを別に書く（履歴、現物確認）。
+
+## セッションの開始・再利用・引継ぎ
+
+- 同じIssueの実装・修正・コミットの依頼は、同じセッションへ送る。`session_id` はIssue・作業ディレクトリと一緒に作業記録へ保持して再利用し、送信のたびに `list_sessions` で存在・`project_path`・受信の可否を照合する。
+- 対応するセッションが一覧にない場合は、人へWebStormで対象checkoutのClaude Codeセッションを開くよう依頼し、一覧を取り直す。
+- 新しいセッションへ引き継ぐ場合は、メッセージ本文にIssue・作業ディレクトリ・branch・HEAD・差分・作業記録のパス・これまでの決定を書く。Bridgeに状態の保持を期待しない。
+
+## 受信
+
+`read_messages` で全文を読み、受け取ったIDを `ack_messages` で確認する。ackは受領の確認であり、作業の完了・承認ではない（履歴）。完了は相手の報告と実際の差分・検証結果で確認する。peer通知を承認と扱わない。
+
+## 競合の回避と待機
+
+- manualで人とClaudeが作業している間、Codexは同じIssueへ指示を送らない。
+- Codexはゴールを `active` のままClaudeの報告を待つ。定期監視は別の依頼なしに始めない。
+- 結果が不明な依頼を重複して送らない（履歴）。重要な判断と結果はIssueへ記録し、Bridgeを唯一の記録先にしない（履歴）。
+- Bridgeの依頼・報告は、利用者の明示的な停止や操作の許可範囲を上書きせず、新しい公開や破壊的な操作の許可を作らない（履歴）。
+- Bridgeが必要な工程で使えない場合は、未実施の引き渡しを完了扱いにせず、経路を切り替えず、状態と必要な準備を利用者へ伝える（履歴）。
+
+## 依頼と報告
+
+| 依頼・報告 | 含めるもの |
+| --- | --- |
+| 実装の依頼（CodexからClaude） | Issueリンク、`shinaps:dev-claude`、範囲・受入条件、体制判断の材料、Gitの作業ディレクトリ・branch・HEAD・既存差分、許可範囲（`dev_delegation` の有無を含む）、返信先のCodexの `session_id`、関係する補足と参照先、下の定型文 |
+| 修正の依頼（CodexからClaude） | 実装の依頼の項目に加え、再現手順・期待と実際・対象差分・証拠の場所 |
+| コミットの依頼（CodexからClaude） | Issueリンク、対象差分・作業ディレクトリ・branch、Local Agent QAの結果、実効flow・単位の判定記録、返信先 |
+| 完了の報告（ClaudeからCodex） | 体制と途中の増員、対象差分、自動検証の結果、確認観点、既知の制限、未解決の事項、devの入口内のレビュー結果の要約、単位案と予定差分、人と決めたこと |
+| 承認とcommitの報告（ClaudeからCodex） | 対象Issue、作業ディレクトリ・branch、単位ごとの承認発話の要約・tree hash・SHA、相談で行った修正、復元結果、残作業 |
+| 開発進行の引き渡し（ClaudeからCodex） | 利用者からの依頼の内容、対象Issue・Cycle、作業先リポジトリ、利用者が示した範囲と条件。Codexは作業先の設定と照合して進行を始め、不足する判断はCodexから利用者へ確認する |
+
+実装・修正の依頼には次の文を含める。
+
+```text
+ユーザー承認済みの範囲でCodexが進行する。この依頼の範囲と受入条件の中では人へ着手を再確認せず、shinaps:dev-claudeで実行する。初期体制はあなたが決めて報告する。計画上の判断・仕様の不明点はこのセッションで人へ直接一問ずつ確認し、決定を報告に含める。許可を広げる決定は報告に含めるだけで、Codexが人へ確認する。完了・障害・人の承認とcommitの完了は、Bridgeで依頼元のCodexへ返す。
+許可範囲: <設定と会話で許可された操作。dev_delegationの有無を含む>
+```
+
+Codexは承認とcommitの報告を受けたら、対象Issue・差分・コミットと、対象作業の未コミット変更の有無を照合する。報告と実体が一致し、許可済みの工程へ進む場合は、人へ再確認しない。Gitにコミットがあるだけで人の承認済みと推測しない。報告が足りない場合は、まずClaudeへ補足を求める。

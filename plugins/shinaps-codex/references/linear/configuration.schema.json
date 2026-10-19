@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://cdn.jsdelivr.net/npm/@shinaps/skills@0.32.1/plugins/shinaps-claude/references/linear/configuration.schema.json",
-  "title": "Shinaps Linear configuration v1",
+  "$id": "https://cdn.jsdelivr.net/npm/@shinaps/skills@0.33.0/plugins/shinaps-claude/references/linear/configuration.schema.json",
+  "title": "Shinaps Linear configuration v2",
   "type": "object",
   "properties": {
     "$schema": {
@@ -9,7 +9,7 @@
     },
     "config_version": {
       "type": "integer",
-      "const": 1
+      "const": 2
     },
     "config_storage": {
       "enum": ["shared", "local"]
@@ -109,9 +109,6 @@
     "stop_after": {
       "enum": ["pre_push_qa", "pr_created", "issue_done"]
     },
-    "implementation_skill": {
-      "enum": ["dev-claude", "dev-codex", "dev-managed-cc"]
-    },
     "review_flow": {
       "$ref": "#/definitions/reviewFlow"
     },
@@ -144,18 +141,13 @@
             "enum": [
               "issue_update",
               "development_operations",
-              "codex_task",
               "claude_cli",
               "bridge_request",
+              "dev_delegation",
               "push",
               "pr_create",
-              "merge",
-              "dev_delegation"
+              "merge"
             ]
-          },
-          {
-            "type": "string",
-            "pattern": "^managed_session:[1-9][0-9]*$"
           },
           {
             "type": "string",
@@ -265,7 +257,6 @@
     "team_settings",
     "statuses",
     "stop_after",
-    "implementation_skill",
     "review_flow",
     "path_policy_overrides",
     "permissions",
@@ -275,31 +266,14 @@
   "additionalProperties": false,
   "definitions": {
     "reviewFlow": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "mode": {
-              "const": "auto"
-            }
-          },
-          "required": ["mode"],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "mode": {
-              "const": "manual"
-            },
-            "tool": {
-              "enum": ["plasma", "webstorm"]
-            }
-          },
-          "required": ["mode", "tool"],
-          "additionalProperties": false
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": ["auto", "manual"]
         }
-      ]
+      },
+      "required": ["mode"],
+      "additionalProperties": false
     }
   }
 }

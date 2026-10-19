@@ -209,4 +209,4 @@ Skill(skill="shinaps:dev-claude", args="以下の仕様書を実装する。詳�
 - **フィジビリティ調査は spec で済ませる**: dev での差し戻しを減らすため、Phase 3/4 の調査を惜しまない
 - **rule カタログを制約に反映**: `search_rules` 結果を spec.md の制約セクションに集約
 
-Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto/manual両modeは [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。
+Linear進行への成果引き渡しでは、確定済みの経路を維持する。autoは同じ[Claude CLI](../../references/linear/claude-cli.md)のsessionのresultへ返す。manualは同じ対話セッションで続け、[Bridge](../../references/linear/bridge.md)で依頼元のCodexへ報告する。調査スキルから経路を切り替えない。

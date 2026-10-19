@@ -1,8 +1,8 @@
 # ローカルClaude CLIによる実装
 
-`dev-claude` はauto/manualとも、Codexが作業先でローカル `claude -p` を起動する。初回実装前に正確なcheckout・branch・HEAD・既存差分と `claude_cli` の許可（または今回の明示依頼）を確定する。CodexとManagedの既存経路は変更しない。
+通常設定が `review_flow.mode: auto` のIssue（[経路](configuration.md#経路)）で、Codexが作業先でローカル `claude -p` を起動する。初回実装前に正確なcheckout・branch・HEAD・既存差分と `claude_cli` の許可（または今回の明示依頼）を確定する。
 
-パス例外はコミット単位のreview_flowを全体置換し、実装sessionを途中で切り替えない。manual単位ではstash・stageまで準備したCLIのprocess終了を確認し、進行役が同じcheckoutを実効 `review_flow.tool`（plasma / webstorm）で提示する。[人レビュー](../human-review.md)に従って人のレビュー・修正・commit完了を受け取り、単位差分・SHAと照合する。その後は変更後のHEADと差分を添えて同じCLI sessionをresumeする。人の操作中にCLIを並行実行しない。UI不足時は止め、別UIやBridgeへ無断で切り替えない。
+パス例外はコミット単位のreview_flowを全体置換し、実装sessionを途中で切り替えない。manual単位が生じた場合は[経路](configuration.md#経路)に従う。
 
 ## 起動と観測
 
@@ -20,7 +20,7 @@ jsonの `session_id`、`result`、`is_error`、`permission_denials` を読み、
 
 ## 依頼・質問・修正・コミット
 
-promptにはIssue、`shinaps:dev-claude`、成果物と受入条件、初期体制、exact cwd・branch・HEAD・既存差分、許可・禁止操作、規約と参照先、返却条件を含める。linear-executeを再起動せず、実装後は未コミット差分を返してLocal Agent QAを待つ。spec/explore/review/debugの結果も同じ依頼へ渡す。質問・障害は最終resultに返し、Codexが既存合意で回答できれば回答、目的・権限の判断が必要なら人へ一問ずつ取り次ぐ。CLIからBridge送信や人の対話入力を待たせない。
+promptにはIssue、`shinaps:dev-claude`、成果物と受入条件、体制判断の材料（関連範囲・既存検証・リスク）、exact cwd・branch・HEAD・既存差分、許可・禁止操作、規約と参照先、返却条件を含める。初期体制はClaudeのメインが材料と現物から決め、体制と理由をresultに含める。linear-executeを再起動せず、実装後は未コミット差分を返してLocal Agent QAを待つ。spec/explore/review/debugの結果も同じ依頼へ渡す。質問・障害は最終resultに返し、Codexが既存合意で回答できれば回答、目的・権限の判断が必要なら人へ一問ずつ取り次ぐ。CLIからBridge送信や人の対話入力を待たせない。
 
 回答・QA修正・QA後のautoコミット依頼は、元のprocess終了後、記録済みの正確なIDで同じセッションをresumeする。`--continue` で別セッションを推測しない。
 
@@ -28,7 +28,7 @@ promptにはIssue、`shinaps:dev-claude`、成果物と受入条件、初期体�
 claude -p --resume '<recorded-session-id>' --output-format json --permission-mode dontAsk --permission-prompts none < /absolute/work/follow-up.txt > /absolute/work/follow-up-result.json 2> /absolute/work/follow-up-stderr.log
 ```
 
-resumeにも同じcwdと許可境界を指定し、外部で変化したHEAD・差分を渡す。commit依頼にはLocal Agent QA結果、独立レビュー、単位案と全差分、実効review_flowと合意根拠を含める。完了報告は変更範囲、検証、未解決事項、単位案、commitした場合はSHA・単位照合・残差分・stash復元結果を含める。復帰不能時は理由を報告し、黙って別sessionに作り直さない。
+resumeにも同じcwdと許可境界を指定し、外部で変化したHEAD・差分を渡す。commit依頼にはLocal Agent QA結果、独立レビュー、単位案と全差分、実効review_flowと合意根拠を含める。完了報告は体制と途中の増員、変更範囲、検証、未解決事項、単位案、commitした場合はSHA・単位照合・残差分・stash復元結果を含める。復帰不能時は理由を報告し、黙って別sessionに作り直さない。
 
 ## 操作権限
 

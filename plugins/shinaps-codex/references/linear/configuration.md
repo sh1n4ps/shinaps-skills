@@ -1,10 +1,10 @@
 # プロジェクト設定
 
-設定は、運用上の決定と既存資料への参照を持つ。手順の全文は書かない。秘密値を保存しない。設定は `config_version: 1` のJSONで、[JSON Schema](configuration.schema.json)を契約の正本とする。利用前に同梱CLIで構造を検証し、合意・参照先・工程の実在確認は各手順で行う。
+設定は、運用上の決定と既存資料への参照を持つ。手順の全文は書かない。秘密値を保存しない。設定は `config_version: 2` のJSONで、[JSON Schema](configuration.schema.json)を契約の正本とする。利用前に同梱CLIで構造を検証し、合意・参照先・工程の実在確認は各手順で行う。
 
 ## 検証CLIと契約版
 
-利用中のskillとCLIの版を確認し、0.32.1のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.32.1`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
+利用中のskillとCLIの版を確認し、0.33.0のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.33.0`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
 
 ```sh
 shinaps-skills --version
@@ -64,27 +64,38 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 
 | キー | 内容 |
 | --- | --- |
-| `config_version` | 整数 `1`。パッケージ版とは独立した契約版 |
+| `config_version` | 整数 `2`。パッケージ版とは独立した契約版 |
 | `$schema` | 任意のエディタ補助。固定URLは下記。CLIはこのURLを取得しない |
 | `config_storage` | `shared`（Git共有）または `local`（メインの作業ツリーだけに保存）。保存・読取規則は上記に従う |
 | `target.workspace` | Linearのworkspace |
 | `target.team` | チームのキー（例 `SHINAPS`） |
 | `target.project` | 使うprojectのURL。projectを使わない運用では `null` |
 | `team_settings` | `existing_only`（既存の定義に合わせ、変更しない）または `manage_on_setup`（初期設定・設定変更のときだけ変更案を示し、合意後に整備できる） |
-| `statuses` | 工程キーと待ち状態の `human_input` から、実在するステータス名への対応。複数のキーに同じステータスを指定できる |
+| `statuses` | 状態キーと待ち状態の `human_input` から、実在するステータス名への対応。複数のキーに同じステータスを指定できる |
 | `stop_after` | 終了地点（下の「終了地点」） |
-| `permissions` | 継続的に許可した操作の一覧（下の「許可」）。許可なしは `[]` |
+| `permissions` | 継続的に許可した操作の一覧（下の「許可」）。経路の許可（auto: `claude_cli`、manual: `bridge_request`）も含む。許可なしは `[]` |
 | `references` | `specifications`・`validation`・`environments`・`deployment`・`publication` の5分類をすべて記載し、既存資料のパスまたはURLの一覧を指定する。該当資料なしは `[]` |
 | `cycle_report` | Cycle報告の設定（下の「Cycle報告」）。報告を使わない場合は `null` |
-| `implementation_skill` | Issueの実装・修正に使うruntimeの入口。担当数は固定せずメインが作業ごとに決める。`dev-claude`（auto/manualともCodexがローカルClaude CLIの同じsessionへ依頼する）、`dev-codex`（Issueごとの別Codexタスクがその入口を実行し、会話側は進行・Agent QAを担当する）、または `dev-managed-cc`（linear-executeを実行する会話が進行役になり、IssueごとのClaude Managed Agentsセッションのleadがその入口で実装する） |
-| `review_flow` | `{ "mode": "auto" }`（AIが自然な単位を決め、独立レビュー・QA後にstage・commit）、`{ "mode": "manual", "tool": "plasma" }` または `{ "mode": "manual", "tool": "webstorm" }`（AIが単位を計画し、単位外を安全にstashしてstage・提示、人がレビュー・修正・commit） |
+| `review_flow` | `{ "mode": "auto" }`（AIが自然な単位を決め、独立レビュー・QA後にstage・commit）または `{ "mode": "manual" }`（AIが単位外を安全に退避して単位をstage・提示し、人と修正を相談し、人の単位承認後にAIがcommit）。開始時の値で経路も決まる（下の「経路」） |
 | `path_policy_overrides` | パス別に `review_flow` を上書きするルールの一覧。例外なしは `[]`（下の「パス別の方針」） |
 
-- 利用者と合意した `review_flow` は両方とも対象のstageを許可し、`auto` だけAIのcommitも許可する。`manual` のcommitは人が行う。未合意の設定ファイルから許可を得ない。その場の明示指示が優先し、push・公開・履歴変更は別の許可に従う。
-- `implementation_skill` が決めるのは、実装・修正の担当と実行方式だけである。`permissions`・`stop_after`・人レビュー・コミットの方針と、`dev_delegation`・worktreeの作成・別セッションの作成の許可を変えない。その場の明示的な指定は設定に優先する。既存の設定にキーがなくても、自動で書き加えない。担当と工程の対応は [workflow.md](workflow.md) の「担当と窓口」にある。
+- 利用者と合意した `review_flow` は両方とも対象のstageとAIのcommitを許可する。`auto` は独立レビュー後、`manual` は人の単位承認後にcommitする。未合意の設定ファイルから許可を得ない。その場の明示指示が優先し、push・公開・履歴変更は別の許可に従う。
 - どちらのflowもdev内の確認、必須検証、Agent QA、必要なHuman QAを維持する。`auto` は独立レビューを必須とし、利用できなければ自己確認で代用せず止める。人レビュー省略を人のレビュー済みと記録しない。
-- 工程キーは [workflow.md](workflow.md) の工程表と同じ。`statuses` の値はチームに実在する正確な名前にする。操作時はLinearから取得した状態のIDを使う。対応が曖昧・欠落・実物と不一致なら、その対応に依存する更新を止める。ステータスを自動で新設しない。
+- 状態キーは [workflow.md](workflow.md) の「工程とステータス」の表と同じ。`statuses` の値はチームに実在する正確な名前にする。操作時はLinearから取得した状態のIDを使う。対応が曖昧・欠落・実物と不一致なら、その対応に依存する更新を止める。ステータスを自動で新設しない。
 - `team_settings: manage_on_setup` の場合も、通常実行ではチーム設定を変更しない。
+
+## 経路
+
+実装・修正・コミットはClaude Codeが `shinaps:dev-claude` と `shinaps:commit` で行う。Codexとの間の経路は、着手時に通常設定の `review_flow.mode` で一つに決める。
+
+| 通常設定 | 経路 | 必要な許可 |
+| --- | --- | --- |
+| `auto` | Codexが起動するローカルClaude CLIの同じsession（[Claude CLI](claude-cli.md)） | `claude_cli` |
+| `manual` | WebStorm内の対話Claude CodeセッションへBridgeで依頼する（[Bridge](bridge.md)） | `bridge_request` |
+
+- 経路はIssueの途中で切り替えない。`permissions`・`stop_after`・`dev_delegation`・worktreeや別セッションの作成の許可は、経路によって変わらない。
+- manual経路でパス別の方針によりauto単位が生じた場合は、対話session内のClaudeが独立レビュー後に人の承認なしでcommitし、人のレビューの省略を記録する。
+- auto経路でmanual単位が生じた場合、非対話CLIは人との相談・承認を扱えない。CodexはLocal Agent QAで判定記録を照合した時点で検出し、差分確定の依頼前に人へ一問で確認する: 「今回の明示指示でその単位をautoとして進める」か「Issueを中止し、未コミット差分を保全したまま設定（通常設定またはルール）を見直してから、manual経路でやり直す」か。黙ってautoへ落とさない。`commit` の中で検出した場合は手順を進めず、判定を記録してresultへ返す。
 
 ## パス別の方針
 
@@ -98,8 +109,8 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 }
 ```
 
-- 上書きは `review_flow` オブジェクト全体を置換する。autoへ切り替える場合はtoolを引き継がない。各ルールは空でない `paths` と `review_flow` オブジェクト だけを必須とする。その他のキー、省略、不正値や構文は設定不備として依存工程を止める。
-- パス別のflowもstageとcommit担当を上記のとおり決める。push・公開・終了地点・ツール権限・必要なQAは変更しない。実装開始時のClaude CLI sessionを保持し、パス例外では切り替えない（[Claude CLI](claude-cli.md)）。
+- 上書きは `review_flow` オブジェクト全体を置換する。各ルールは空でない `paths` と `review_flow` オブジェクト だけを必須とする。その他のキー、省略、不正値や構文は設定不備として依存工程を止める。
+- パス別のflowもstageとcommit担当を上記のとおり決める。push・公開・終了地点・ツール権限・必要なQAは変更しない。経路はパス例外では切り替えず、単位のmodeと経路が異なる場合は上の「経路」に従う。
 - パス設定への合意は対象と工程の許可であり、変更内容に含まれる未合意仕様や権限拡張への承認ではない。内容や拡張子から例外許可を推定しない。
 
 ### パターンとコミット全体の照合
@@ -109,24 +120,34 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 各予定コミットの全変更に現れる旧・新パスが、一つのルールのパターン一覧で覆われる場合だけ、そのルールをそのコミット全体へ適用できる。追加は新パス、削除は旧パス、改名・移動は両方を含め、modeだけの変更も対象にする。新パスだけの一覧や現在残っているファイルだけでは判定しない。
 
 - コミット全体に適用できるルールがなければ、そのコミット全体を通常方針とする。複数ルールをファイル別・項目別に合成しない。
-- コミット全体に適用できるルールが複数ある場合、`review_flow` のmodeとtoolが両方同じならその方針を採用し、適用した全ルールを記録する。同じmanualでもtoolが異なるなど、一つでも結果が異なれば依存工程を止めて競合の解消を求める。並び順やパターンの詳細度では優先しない。
+- コミット全体に適用できるルールが複数ある場合、`review_flow` のmodeが同じならその方針を採用し、適用した全ルールを記録する。一つでも結果が異なれば依存工程を止めて競合の解消を求める。並び順やパターンの詳細度では優先しない。
 - モードによらず自然な責務単位を先に決め、その予定コミットごとに判定する。同じ依頼に別の変更があっても、独立した範囲内コミットには例外を適用できる。例外取得だけを目的とした恣意的な分割はしない。依頼全体は網羅性と最終照合に使い、方針を固定する単位にはしない。
 
 ### 判定記録と変更時の扱い
 
-各予定単位について、設定の正本と内容、適用した全ルール（または適用なしの理由）、単位の比較元と全差分、実効 `review_flow`、今回の明示指示とflowの合意根拠、検証・レビューの結果を記録する。差分の同一性はパスだけでなく内容・mode等も含めて確認する。Linear進行での担当間の引き渡しは [workflow.md](workflow.md)、コミット前後の単位照合と完了時の全体照合は `commit` に従う。
+各予定単位について、設定の正本と内容、適用した全ルール（または適用なしの理由）、単位の比較元と全差分、実効 `review_flow`、今回の明示指示とflowの合意根拠、検証・レビューの結果を記録する。manualの単位は承認記録（承認発話の要約・承認したtree hash・作成したSHA）も残す。差分の同一性はパスだけでなく内容・mode等も含めて確認する。Linear進行での担当間の引き渡しは [workflow.md](workflow.md)、コミット前後の単位照合と完了時の全体照合は `commit` に従う。
 
-予定単位の内容・分割・統合を変更したら、変更した単位を再判定して必要なレビュー・許可確認・検証へ戻す。設定変更時も影響する未実行単位を再判定する。以前の判定や別単位の方針は流用しない。manualで人が修正・commitした場合は `commit` に従い、完了通知後に目的・範囲・実効flowと影響する挙動を確認する。正当な修正は元の予定との差と対応を残して確定単位へ反映する。不明・対象外の変更、確定単位との不一致は停止し、履歴を無断で書き換えない。
+予定単位の内容・分割・統合を変更したら、変更した単位を再判定して必要なレビュー・許可確認・検証へ戻す。設定変更時も影響する未実行単位を再判定する。以前の判定や別単位の方針は流用しない。manualで人の修正・承認を経てcommitした場合は `commit` に従い、commit後に目的・範囲・実効flowと影響する挙動を確認する。正当な修正は元の予定との差と対応を残して確定単位へ反映する。不明・対象外の変更、確定単位との不一致は停止し、履歴を無断で書き換えない。
 
-### 旧設定の移行
+### config_version 1 からの移行
 
-0.32.0から `.shinaps/linear.yaml` とscalar `review_flow` は受け付けない。`linear-plan` で以下を行い、正本発見・検証・保存を完了してから再開する。CLIは移行しない。
+0.33.0から `config_version: 1`、`implementation_skill`、`review_flow.tool`、許可の `codex_task`・`managed_session:*` は受け付けない。Codex実装タスク・Managedセッションの経路はなくなるため、次の順で展開する。
 
-1. 旧設定の正本と保存方式、既存の許可・終了地点・補足を確認する。JSONとYAMLが共存する場合は内容を比較し、移行未完了として扱う。
-2. `config_version: 1`、必須の `config_storage` と `path_policy_overrides` を明記する。省略していた値も移行案で明示する。autoは `{ "mode": "auto" }`、manualは利用する `tool` を含むオブジェクトへ移す。既存のWebStorm等の合意は維持できるが、不明なUIをruntimeから推測しない。
-3. Claudeの実装は両modeとも `claude_cli` を使う。旧Bridge経路からの権限変更は移行案へ明記し、許可なく追加しない。`bridge_request` 自体は有効で、他runtimeや別用途の既存許可を削除しない。
-4. YAMLコメントの運用条件は `instructions.md` または対応する参照資料へ移し、sharedでは参照と共有対象に含める。旧 `human_code_review`・`commit_mode`・permissionsのstage/commit・`document_only_changes`・パス別ai_commitは除去する。旧noneは例外なしへの移行案、旧ai_commitは具体的パスへの移行または廃止を合意し、暗黙変換しない。
-5. 合意済みのJSONを保存して検証し、旧YAMLを除き、ignore・参照・共有対象も更新する。追跡解除・stage・commitは既存の許可と安全手順に従う。新旧差分で許可・工程・保存方式・補足が保たれていることを確認する。
+1. 進行中Issueを棚卸しする（Codex実装タスク・Managedセッション上の未取り込み差分、Coding・QA中のIssue）。
+2. 各Issueを、旧版のまま終了地点まで進めるか、差分を作業先へ取り込んで実装工程からClaudeへ引き継ぐかに分ける。
+3. 0.33.0を公開し、各端末のpluginとCLIを更新する。
+4. リポジトリごとに下の手順で設定と補足を移行し、CLIで検証する。
+5. 進行中Issueを再開する。
+
+`linear-plan` は各リポジトリで以下を行い、検証・保存を完了してから再開する。CLIは移行しない。
+
+1. 現在の設定・許可・補足・進行中Issueを確認する。
+2. `config_version: 2` にし、`implementation_skill`、`review_flow.tool`、`path_policy_overrides[].review_flow.tool` を削除する。
+3. `permissions` から `codex_task`・`managed_session:*` を削除する。経路の許可（通常設定がautoなら `claude_cli`、manualなら `bridge_request`）は、そのリポジトリの利用者と合意して明示的に追加する。既存の `bridge_request` は、任意の引き渡しに加えてmanual経路の依頼も表すようになるため、残すかを確認する。他の許可は増やさない。
+4. `statuses` は変更しない。補足からCodex実装タスク・Managed・tool・人がコミットする条件の記述とそれらの資料へのリンクを除き、合意日付を残す。
+5. `$schema` を0.33.0のURLへ更新し、CLIで検証して読み戻す。
+
+旧 `.shinaps/linear.yaml` とscalar `review_flow`（0.32.0より前）も同じ手順でv2のJSONへ移す。YAMLコメントの運用条件は `instructions.md` または対応する参照資料へ移す。旧 `human_code_review`・`commit_mode`・permissionsのstage/commit・`document_only_changes`・パス別ai_commitは除去し、旧noneは例外なし、旧ai_commitは具体的パスへの移行または廃止を合意して暗黙変換しない。保存後に旧YAMLを除き、ignore・参照・共有対象も更新する。追跡解除・stage・commitは既存の許可と安全手順に従う。
 
 ## 終了地点
 
@@ -134,7 +155,7 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 
 | `stop_after` | 止まる地点 |
 | --- | --- |
-| `pre_push_qa` | `code_review` の工程を終えた後、push前の最終Agent QAが合格し、記録した時点 |
+| `pre_push_qa` | 差分確定を終えた後、公開確認でpush前の最終Agent QAが合格し、記録した時点 |
 | `pr_created` | 必須の検証と許可されたpush・PR作成を終え、IssueとPRの相互リンクを確認した時点。Staging QAが未実施なら残項目として記録する |
 | `issue_done` | Issueの必須受入条件をすべて満たし、Doneにした時点 |
 
@@ -147,19 +168,17 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 | --- | --- |
 | `issue_update` | 対象のteam・projectの中で、利用者が任せたIssue・Cycleの範囲に対する運用上の更新（本文・コメント・状態・依存・Linearへの添付、整理で必要になったIssueの作成・分割）と、利用者から任された目的の作業を着手前にIssueへ紐づけるための作成（[issue.md](issue.md) の「着手前に作業をIssueへ紐づける」）。チーム設定の変更、未合意の範囲・期限の変更、Cycle外への進行、Issueの削除、外部への送信を含めない |
 | `development_operations` | 任された対象の開発に必要な、既存アカウントへの通常のログイン、ローカル環境準備、プロジェクトの依存導入、開発サーバー・Simulatorの起動停止、ビルド・テスト・QA操作を継続的に許可する。下の範囲に従う |
-| `codex_task` | 対象IssueごとのCodex実装タスクの新規作成・状態確認・実装や修正や許可済みコミットの依頼。アーカイブ、worktree作成、操作許可の追加、タスク側でのゴールや実装タスクの再作成は含めない。ツールの明示依頼要件も満たす。アーカイブの合意と手順は [完了後の整理](codex-task.md#完了後の整理) に従う |
-| `claude_cli` | auto/manual共通のClaudeのローカルCLI起動、同じsessionの状態・結果取得、質問への回答・修正・許可済みコミットのresume。既存CLI設定と個別の操作権限を維持する（[手順](claude-cli.md)） |
-| `bridge_request` | Bridgeによる別会話との任意の進行の引き渡し・人の完了報告。報告は照合材料であり、CLIの実装経路・レビューUI・操作許可を変更しない（[手順](workflow.md#bridgeでの任意の引き渡し・報告)） |
-| `managed_session:<USD>` | 対象IssueごとにClaude Managed Agentsのセッションを作り、同じIssueのコミット前のQA修正には続けて使う（コミット後の修正は新しいセッションで行う。扱いは[Managedセッション](managed-session.md)の「QAと修正」に従う）。`<USD>` は1セッションの予算の上限で、正の整数のUSD（作成時にセントへ換算する）。値がない、または正の整数でない場合は設定不備として止める。含める操作: 作業先のコミット済みの内容（git bundle）と、あれば `~/.claude/CLAUDE.md` のFiles APIへのアップロード、上限内での予算の設定、一覧から名前で一件に特定したvaultの受け渡し、状態・イベント・出力の取得、回答と修正依頼の送信、取得した差分の作業先への適用と作業記録の展開。含めない操作: 上限を超える予算の引き上げ（その場で確認する）、セッションとファイルのアーカイブ・削除、定義のapply、vaultの作成・変更 |
+| `claude_cli` | auto経路で、Codexが行うClaudeのローカルCLI起動、同じsessionの状態・結果取得、質問への回答・修正・許可済みコミットのresume。既存CLI設定と個別の操作権限を維持する（[手順](claude-cli.md)） |
+| `bridge_request` | manual経路で、CodexがBridgeで対話Claude Codeセッションへ行う依頼と報告の受け取り、および別会話との任意の進行の引き渡し。報告は照合材料であり、操作許可を変更しない（[手順](bridge.md)） |
 | `push` | 対象Issueの作業ブランチの通常のpush |
 | `pr_create` | 対象IssueのPRの作成と更新 |
 | `merge` | 必要なQA・承認が揃った対象PRのマージと、元のブランチへ戻る操作 |
 | `deploy:<環境>` | 指定した環境への配備・配布（例 `deploy:staging`） |
 | `publish:<操作>` | 一般公開やストアへの提出など、指定した公開操作（例 `publish:app_store_submit`） |
-| `dev_delegation` | `implementation_skill` で選んだdevの入口の中で、サブエージェントへ委託する。許可がない場合は、入口のメインが同じ観点を自分で確認し、独立確認とは報告しない。worktreeの作成は含まない |
+| `dev_delegation` | `shinaps:dev-claude` の中で、サブエージェントへ委託する。許可がない場合は、入口のメインが同じ観点を自分で確認し、独立確認とは報告しない。worktreeの作成は含まない |
 | `evidence:<保存先>` | Linear以外の指定した保存先へQA素材を保存する（LinearのIssueへの添付は `issue_update` に含む） |
 
-- 開発進行には `issue_update` が必要。Claudeの入口はauto/manualとも `claude_cli` とローカルClaude CLIを使う。今回の明示依頼による同じ経路の許可も引き継ぐ。Codexの入口は `codex_task` とタスク操作ツール、Managedの入口は `managed_session:<USD>`・`dev_delegation` と認証済み `ant` CLIが必要。初期設定は `issue_update`・選んだ経路の許可・`dev_delegation` と `review_flow` を具体的に提案し、合意を得る。設定の存在だけでは許可を得ない。manualの提示UIは `review_flow.tool` で選び、利用不能なら止める。
+- 開発進行には `issue_update` と、[経路](#経路)の許可が必要（auto: `claude_cli` とローカルClaude CLI、manual: `bridge_request` と、Bridge MCP・WebStorm内の対話Claude Codeセッション）。今回の明示依頼による同じ経路の許可も引き継ぐ。初期設定は `issue_update`・経路の許可・`dev_delegation` と `review_flow` を具体的に提案し、合意を得る。設定の存在だけでは許可を得ない。
 - `development_operations` は、既存の認証手段と利用者が許可した既存アカウントを使い、対象の開発・検証環境と専用の検証データで行う操作に限る。本人の二要素認証・セキュリティキー・CAPTCHA等が必要なら具体的に依頼し、回避しない。ログイン成功を新しい権限への同意と扱わず、新規アカウント・OAuth権限の拡大・課金・新規クラウド資源・共有環境への破壊的変更・実利用者データの操作は含めない。秘密値をIssueや証拠へ記載しない。
 - この包括許可は `stage`・`commit`・`push`・`pr_create`・`merge`・`deploy:*`・`publish:*`・外部への送信・履歴やデータの破壊的操作を含まない。テストや環境準備がこれらを伴うときも、stage・commitは合意済みflow、その他はそれぞれの許可が必要。人レビュー・Human QA・ツール側の承認条件を省略しない。`permissions` に明示された場合だけ適用し、既存設定に自動で追加しない。
 - 一つの操作が別の操作を伴う場合は、伴う操作の許可も必要とする（マージで本番へ自動配備される場合は `merge` と `deploy:production`）。
@@ -182,12 +201,12 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 
 ## 設定例
 
-shinaps-skills側の例。shinaps-aiも、自分のリポジトリの設定で同じprojectを指す。
+manualの設定例。同じprojectを複数のリポジトリがそれぞれの設定で指してよい。
 
 ```json
 {
-  "$schema": "https://cdn.jsdelivr.net/npm/@shinaps/skills@0.32.1/plugins/shinaps-claude/references/linear/configuration.schema.json",
-  "config_version": 1,
+  "$schema": "https://cdn.jsdelivr.net/npm/@shinaps/skills@0.33.0/plugins/shinaps-claude/references/linear/configuration.schema.json",
+  "config_version": 2,
   "config_storage": "shared",
   "target": {
     "workspace": "shinaps",
@@ -207,17 +226,15 @@ shinaps-skills側の例。shinaps-aiも、自分のリポジトリの設定で�
     "done": "Done"
   },
   "stop_after": "pre_push_qa",
-  "implementation_skill": "dev-claude",
   "review_flow": {
-    "mode": "manual",
-    "tool": "webstorm"
+    "mode": "manual"
   },
   "path_policy_overrides": [],
   "cycle_report": null,
   "permissions": [
     "development_operations",
     "issue_update",
-    "claude_cli",
+    "bridge_request",
     "dev_delegation"
   ],
   "references": {
@@ -248,7 +265,7 @@ Claudeもこの手順で初期設定を行える。合意した設定の保存�
 1. アカウント、workspace、team、projectと、チームのステータス一覧・既存の運用をLinearから読む。
 2. 作業先リポジトリのAGENTS.md・CLAUDE.md・README・CI・検証や配備のスクリプトを読み、`references` の候補を決める。
 3. 設定案を一つ作る。チーム設定を管理できる場合だけ、FamilyStayを基にした工程の分離（[workflow.md](workflow.md) の工程表に対応するステータス）を変更案として示す。利用者のプロジェクトらしいという推測で `manage_on_setup` にしない。
-4. 既存の情報で決まらない運用上の決定（`config_storage`、`stop_after`、`permissions`、`review_flow`、`team_settings`、Cycle報告、`implementation_skill`）だけを一問ずつ確認する。終了地点は上の一覧から選んでもらう。パス別の例外が必要な場合は、具体的な対象パターンと上書き項目、通常設定からの変更を示して合意する。例外を使わない新規設定には `path_policy_overrides: []` を記載する。旧設定の移行は上の手順に従う。
+4. 既存の情報で決まらない運用上の決定（`config_storage`、`stop_after`、`permissions`、`review_flow`、`team_settings`、Cycle報告）だけを一問ずつ確認する。終了地点は上の一覧から選んでもらう。パス別の例外が必要な場合は、具体的な対象パターンと上書き項目、通常設定からの変更を示して合意する。例外を使わない新規設定には `path_policy_overrides: []` を記載する。旧設定の移行は上の手順に従う。
 5. 合意した方式の正本へ、下の保存手順に従って保存する。sharedでは採用する補足の `references` と共有対象を照合し、別checkoutでも同じ条件を読めるようにする。同梱CLIでJSONを検証し、正本と補足を読み直して確認する。
 6. Linearのチーム設定の変更は、設定の保存とは別に扱う。対象チームと変更差分（追加・改名するステータスと順序）を示し、合意を得てから反映して読み戻す。反映後に `statuses` を実物に合わせて確定する。
 
@@ -295,8 +312,4 @@ sharedでは `.shinaps/.gitignore` 自身、`linear.json`、採用した補足�
 
 `instructions.md` には、QA固有の注意（端末・ブラウザ・テストアカウントの取得方法への参照）、版の照合に使うコマンド、報告の文体・見せ方、関係者への依頼方法など、プロジェクト共通の条件・手順・相対パス・URLを書く。共通の手順は複製しない。端末固有の絶対パス、session/thread ID、一時的なログイン状態、進捗、QA結果は現在の `.shinaps/work/` へ記録する。秘密値はshared・localのどちらにも保存しない。
 
-委託時は保存方式、正本の所在、必要な補足・参照資料、合意済みの操作許可を渡す。CodexからClaudeへの依頼にも同じ情報を添える。Managedのセッションには[初回メッセージ](managed-session.md#初回メッセージと修正依頼)で渡す。
-
-## 旧dev入口からの移行
-
-通常／ultraの人数指定は廃止した。旧 `dev-claude-ultra`・`dev-codex-ultra`・`dev-managed-cc-ultra` は、それぞれ `dev-claude`・`dev-codex`・`dev-managed-cc` へ設定と呼び出しを移行する。旧名を受け付ける別名は残さない。移行が依頼・許可されている場合はruntime・操作許可・QA・終了地点を保って該当名だけを更新する。未許可の設定変更は依存する実行前に確認する。人数は恒久設定へ保存せず、各作業の体制記録に残す。
+委託時は保存方式、正本の所在、必要な補足・参照資料、合意済みの操作許可を渡す。CodexからClaudeへの依頼にも同じ情報を添える。

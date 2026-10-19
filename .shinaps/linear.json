@@ -1,6 +1,6 @@
 {
-  "$schema": "https://cdn.jsdelivr.net/npm/@shinaps/skills@0.32.1/plugins/shinaps-claude/references/linear/configuration.schema.json",
-  "config_version": 1,
+  "$schema": "https://cdn.jsdelivr.net/npm/@shinaps/skills@0.33.0/plugins/shinaps-claude/references/linear/configuration.schema.json",
+  "config_version": 2,
   "config_storage": "shared",
   "target": {
     "workspace": "shinaps",
@@ -30,11 +30,10 @@
   },
   "permissions": [
     "development_operations",
-    "codex_task",
     "issue_update",
+    "claude_cli",
     "bridge_request",
     "dev_delegation",
-    "managed_session:40",
     "push",
     "pr_create",
     "merge",
@@ -57,7 +56,6 @@
     "environments": [],
     "deployment": []
   },
-  "implementation_skill": "dev-managed-cc",
   "path_policy_overrides": [],
   "cycle_report": null
 }

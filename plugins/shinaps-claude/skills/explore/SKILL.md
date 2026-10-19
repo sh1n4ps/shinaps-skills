@@ -219,4 +219,4 @@ dev の入口は「実装 handoff」の `status: ready` と `evidenceSnapshot` �
 - **生レポートを保存する**: subagent 応答は全文保存し、会話ログは要約だけ残す
 - **shinaps MCP はメインだけが呼ぶ**: subagent は `search_rules` / `list_search_facets` を直接呼ばない
 
-Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto/manual両modeは [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。
+Linear進行への成果引き渡しでは、確定済みの経路を維持する。autoは同じ[Claude CLI](../../references/linear/claude-cli.md)のsessionのresultへ返す。manualは同じ対話セッションで続け、[Bridge](../../references/linear/bridge.md)で依頼元のCodexへ報告する。調査スキルから経路を切り替えない。

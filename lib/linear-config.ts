@@ -9,12 +9,12 @@ export async function validateLinearConfig(path: string): Promise<void> {
   // 版の不一致は設定修正とskill更新で対処が異なるため、schema検証より先に案内する。
   if (typeof input === 'object' && input !== null && !Array.isArray(input)) {
     const version = 'config_version' in input ? input.config_version : undefined;
-    if (version === undefined || (Number.isInteger(version) && Number(version) < 1)) {
+    if (version === undefined || (Number.isInteger(version) && Number(version) < 2)) {
       throw new Error(
-        'config_version is missing or old. Migrate with linear-plan to config_version: 1.',
+        'config_version is missing or old. Migrate with linear-plan to config_version: 2.',
       );
     }
-    if (Number.isInteger(version) && Number(version) > 1) {
+    if (Number.isInteger(version) && Number(version) > 2) {
       throw new Error(
         'Future config_version. Update the skill and matching CLI before continuing.',
       );

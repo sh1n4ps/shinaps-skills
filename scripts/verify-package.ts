@@ -81,7 +81,7 @@ execFileSync(
   { cwd: consumer, stdio: 'pipe' },
 );
 assert.equal(await readFile(configurationPath, 'utf8'), configurationText);
-configuration.review_flow = { mode: 'manual' };
+configuration.review_flow = { mode: 'manual', tool: 'webstorm' };
 await writeFile(configurationPath, JSON.stringify(configuration));
 assert.throws(() =>
   execFileSync(executable, ['validate-linear-config', configurationPath], {

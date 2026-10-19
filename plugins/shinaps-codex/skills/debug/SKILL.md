@@ -11,6 +11,6 @@ description: 再現手順、コード、ログと必要な外部情報から不�
 
 委託が許可され登録されている場合はshinaps-debuggerで仮説を立て、shinaps-debug-validatorで実コードを検証する。外部調査にはshinaps-tech-surveyorとshinaps-survey-validatorを必要に応じて使う。取得済みのShinapsルールは親が担当へ渡す。MCP不可ならルール照合未確認とする。
 
-結論、証拠、再現状況、最小の修正方針と未確認を報告する。修正まで依頼されている場合は$shinaps:dev-codex-ultraへ引き継ぐ。1体での実行を指定された場合は$shinaps:dev-codexを使う。調査だけなら変更しない。
+結論、証拠、再現状況、最小の修正方針と未確認を報告する。修正まで依頼されている場合は$shinaps:dev-codexへ引き継ぐ。担当と人数はdevのメインが作業に応じて判断する。調査だけなら変更しない。
 
 必要な記録は.shinaps/work/debug/へ保存し、[作業記録の共通手順](../../references/work-records.md)に従って初期化・保全する。秘密情報・既存記録の削除・外部投稿は含めない。

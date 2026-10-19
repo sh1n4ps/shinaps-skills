@@ -18,8 +18,7 @@ sharedで採用する `instructions.md` は共有YAMLの `references.specificati
 |---|---|
 | `explore` | 対話しながら既存挙動と変更影響を調べる |
 | `spec` | 目的・仕様・実現方法を詰める |
-| `dev-claude-ultra` (Claudeのみ) / `dev-codex-ultra` (Codexのみ) / `dev-managed-cc-ultra` (Managed Agentsのみ) | 計画・実装・簡素化・検証・レビューを進める。設計・計画レビュー・計画簡素化を同じ役割の2体で独立に確認する。実装依頼の既定 |
-| `dev-claude` (Claudeのみ) / `dev-codex` (Codexのみ) / `dev-managed-cc` (Managed Agentsのみ) | 同じ工程を、設計・計画レビュー・計画簡素化の担当をそれぞれ1体にして進める |
+| `dev-claude` (Claudeのみ) / `dev-codex` (Codexのみ) / `dev-managed-cc` (Managed Agentsのみ) | メインが作業に応じて担当・人数を判断し、計画・実装・検証・独立レビューを進める |
 | `debug` | 不具合の原因を検証する |
 | `review` | 差分や既存コードをレビューする |
 | `refine` | Shinaps AIのruleと実ファイルを照合する |
@@ -33,7 +32,7 @@ sharedで採用する `instructions.md` は共有YAMLの `references.specificati
 
 コミット・PR・リリースは、利用者の依頼またはLinear進行で合意済みの継続許可に従う。[共通設定](plugins/shinaps-claude/references/linear/configuration.md)・[担当と工程](plugins/shinaps-claude/references/linear/workflow.md)・[終了と待機](plugins/shinaps-claude/references/linear/execution.md)を参照し、必要な前工程が揃えば再確認せずに進む。単独スキル利用にはLinear進行や新しいゴールを必須にしない。`autonomous-commit-review` の役割は `commit` に統合した。個人用の別AI呼び出し・ブラウザ管理・ゴール管理・動画制作はこのpluginに含めない。
 
-`linear-execute` は初版では利用者本人の環境向けで、進行とAgent QAは会話側が担当する（Claude・Codexの入口ではCodex、Managedの入口では linear-execute を実行する Claude Code または Codex）。運用項目は明示必須で、既存設定の `config_storage`・`path_policy_overrides` 欠落は共通設定の説明に従い、それ以外は未記載を既定値で補わない。実装の担当は作業先の `.shinaps/linear.yaml` の `implementation_skill` で選ぶ。`dev-claude`・`dev-claude-ultra` を選ぶと、ClaudeがAI Terminal Bridge経由の依頼で実装する。`dev-codex`・`dev-codex-ultra` を選ぶと、会話側はゴール・進行・Agent QAを担当し、Issueごとの別Codexタスクが実装・QA指摘の修正・許可されたコミットを行う。タスク作成・連絡には `codex_task` とツールが要求する明示依頼が必要。`dev-managed-cc`・`dev-managed-cc-ultra` を選ぶと、Issueごとの Managed Agents セッションが実装し、進行役が差分を適用してQA・コミットを行う。`managed_session:<USD>` と `dev_delegation` が必要で、Bridge は不要。どの入口でも `implementation_skill` は許可を増やさない。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/linear/` に置く。`references/linear/` はClaude版を編集元としてCodex版とManaged Agents版へ同じ内容を複製し、テストで一致を確認する。
+`linear-execute` は初版では利用者本人の環境向けで、進行とAgent QAは会話側が担当する（Claude・Codexの入口ではCodex、Managedの入口では linear-execute を実行する Claude Code または Codex）。運用項目は明示必須で、既存設定の `config_storage`・`path_policy_overrides` 欠落は共通設定の説明に従い、それ以外は未記載を既定値で補わない。実装の担当は作業先の `.shinaps/linear.yaml` の `implementation_skill` で選ぶ。`dev-claude` を選ぶと、ClaudeがAI Terminal Bridge経由の依頼で実装する。`dev-codex` を選ぶと、会話側はゴール・進行・Agent QAを担当し、Issueごとの別Codexタスクが実装・QA指摘の修正・許可されたコミットを行う。タスク作成・連絡には `codex_task` とツールが要求する明示依頼が必要。`dev-managed-cc` を選ぶと、Issueごとの Managed Agents セッションが実装し、進行役が差分を適用してQA・コミットを行う。`managed_session:<USD>` と `dev_delegation` が必要で、Bridge は不要。どの入口でも `implementation_skill` は許可を増やさない。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/linear/` に置く。`references/linear/` はClaude版を編集元としてCodex版とManaged Agents版へ同じ内容を複製し、テストで一致を確認する。
 
 `path_policy_overrides` で、合意したパスの範囲に限り人レビュー・AIコミット許可・コミットモードを個別に上書きできる。たとえば `paths: ["docs/**", "README.md"]` と `human_code_review: skip` を指定すると、予定コミットの全変更がその範囲に収まる場合だけ人レビューを省く。同じコミットに対象外が混ざれば、そのコミット全体を通常方針とし、改名・移動は旧新両パスを判定する。同じ依頼でも自然な責務分割で独立した範囲内コミットには例外を適用できる。stage・push・公開の許可や必要なQAは変わらない。設定例と競合・照合の手順は[パス別の方針](plugins/shinaps-claude/references/linear/configuration.md#パス別の方針)を参照する。
 
@@ -43,24 +42,24 @@ sharedで採用する `instructions.md` は共有YAMLの `references.specificati
 
 旧 `linear` の入口は廃止した。相談・Issue整理・設定変更は `linear-plan`、実行は `linear-execute` を使う。YAMLの名前・運用項目は変わらない。実行範囲は毎回の依頼で確定し、バックログではブロッカー到達と報告を終了条件にできる。人レビュー・Human QA待ちは予定工程として待機する。
 
-### dev の入口
+### dev の入口と体制
 
-| 入口 | 配布 | 担当のモデル | 同じ役割の独立担当数 |
-|---|---|---|---|
-| `dev-claude` | Claude | Opus / medium（登録エージェントの定義） | 1体 |
-| `dev-claude-ultra` | Claude | Opus / medium（登録エージェントの定義） | 2体 |
-| `dev-codex` | Codex | `gpt-6-astra` / medium（起動時に指定） | 1体 |
-| `dev-codex-ultra` | Codex | `gpt-6-astra` / medium（起動時に指定） | 2体 |
-| `dev-managed-cc` | Managed Agents | lead は Fable 5.1 / medium、担当は Opus / medium・fast（定義済みエージェントの定義） | 1体 |
-| `dev-managed-cc-ultra` | Managed Agents | lead は Fable 5.1 / medium、担当は Opus / medium・fast（定義済みエージェントの定義） | 2体 |
+| 入口 | 実行環境 | 担当のモデル |
+| --- | --- | --- |
+| `dev-claude` | Claude Code | Opus / medium（登録エージェントの定義） |
+| `dev-codex` | Codex | `gpt-6-astra` / medium（起動時に指定） |
+| `dev-managed-cc` | Managed Agents | leadはFable 5.1 / medium、担当はOpus / medium・fast |
 
-- `ultra` は同じ役割の独立担当数が2体という意味で、推論・速度・権限は変えない。担当数が変えるのは、独立設計・計画レビュー・計画簡素化の担当2の有無だけである。実装は常に1体で、実装後の設計適合性・独立コードレビュー・refine・実装の簡素化・指摘の検証は1体の入口でも行う。
-- 工程は全版で同じ[dev の工程](plugins/shinaps-claude/references/dev/workflow.md)を使い、担当の起動手順だけを各版の `references/dev/launch.md` に分ける。工程はClaude版を編集元としてCodex版とManaged Agents版の skill の同じパスへ複製し、テストで一致を確認する。
-- Claude版は登録エージェントを直接起動し、Codex CLIを使わない。Codex版は名前付きのカスタムエージェントをサブエージェントとして起動し、CLIで起動しない。Claude版・Codex版とも親セッションの設定を変更しない。
-- 実装依頼と他スキル（explore・spec・review・debug）からの引き継ぎは、同じ runtime の `*-ultra` を既定にする。利用者が1体を指定した場合は1体の入口を使う。以前の dev 入口の別名は残さない。
-- Claude版の入口は、利用者が委託したCodexがAI Terminal Bridgeで依頼してSkillツールから起動できるよう、モデルからの呼び出しを許可している（`disable-model-invocation: true` を付けない）。
-- テスト方針の正本は各版の `references/testing.md`（同じ内容）で、dev の各役割の定義に同じ段落を写し、テストで一致を確認する。
-- Claude版・Codex版の4つの入口（`dev-claude`・`dev-claude-ultra`・`dev-codex`・`dev-codex-ultra`）は、SHINAPS-98・SHINAPS-108 の比較（同じ工程で担当のモデルと担当数を変えた比較）の結果から採用した。比較用の入口・資料・役割は v0.23.0 まで同梱していた（Git 履歴で参照できる）。
+人数による通常／ultraの区別は廃止した。`implementation_skill` は実行環境だけを選ぶ。旧名は対応する通常名へ設定・呼び出しを移行し、互換の入口は残さない。
+
+[実装体制の判断](plugins/shinaps-claude/references/dev/staffing.md)に従い、executeの進行役が各Issue開始時に関連コードを確認し、設計前に役割別の人数・理由・専任なしの責任者・必須検証を決めて渡す。単独devではメインが判断する。不確実性・影響範囲・失敗時の影響を基準に、途中でも必要な担当を追加する。人数を増やすだけで許可・予算・品質条件は変えない。
+
+小さく明確な変更はメインが計画し、実装1体と独立コードレビュー1体で進められる。設計の比較や重要な契約の独立確認が必要なら該当する役割だけ増やす。規約照合・簡素化・指摘検証は専任なしでも責任者を決めて行う。
+
+- 工程と体制基準はClaude版を編集元としてCodex・Managedへ複製する。起動手順だけはruntimeごとに異なる。
+- Claudeは登録エージェント、Codexは名前付きサブエージェント、Managedは定義済みエージェントを使う。モデル・推論の設定は今回の人数判断で変更しない。
+- explore・spec・review・debugからは同じruntimeのdevへ引き継ぐ。ClaudeのdevはSkillツールからの起動も許可する。
+- テスト方針は各版の `references/testing.md` を正本とし、役割定義に同じ段落を複製して検証する。
 
 ## Claude Code
 
@@ -69,7 +68,7 @@ sharedで採用する `instructions.md` は共有YAMLの `references.specificati
 /plugin install shinaps@shinaps-skills
 ```
 
-ユーザースコープで利用する。呼び出しは `/shinaps:dev-claude-ultra`、`/shinaps:create-pr` など。ローカル開発中はmarketplaceにこのcheckoutの絶対パスを登録し、変更後にpluginを更新する。pluginキャッシュへ直接編集しない。更新後は新しいセッションで確認する。
+ユーザースコープで利用する。呼び出しは `/shinaps:dev-claude`、`/shinaps:create-pr` など。ローカル開発中はmarketplaceにこのcheckoutの絶対パスを登録し、変更後にpluginを更新する。pluginキャッシュへ直接編集しない。更新後は新しいセッションで確認する。
 
 ## Codex
 
@@ -88,7 +87,7 @@ npx @shinaps/skills@latest recover codex
 
 ローカル開発では、このcheckoutから `node bin/skills.ts install codex` のように同じ操作を実行できる。Node.js 22.18以上なら型除去でTypeScriptをそのまま実行する (ビルド不要)。
 
-CLIはスキルをCodex pluginとして登録し、16個のカスタムエージェントを`${CODEX_HOME:-~/.codex}/agents/`へ配置する。新しいセッションで`shinaps:dev-codex-ultra`、`shinaps:review`等が読み込まれる。dev の入口から起動した担当は入口が指定するモデルと推論（`gpt-6-astra` / medium）で動き、それ以外のスキルからの利用ではモデルと推論設定を親セッションから継承する。実装担当以外の調査・レビュー担当は読み取り専用を既定にする。0.23.0 まで配置していた比較専用の役割は、更新時に管理済みエージェントとして削除される。親セッションの実行時設定が優先される場合もあるため、権限の強制境界とは扱わない。
+CLIはスキルをCodex pluginとして登録し、16個のカスタムエージェントを`${CODEX_HOME:-~/.codex}/agents/`へ配置する。新しいセッションで`shinaps:dev-codex`、`shinaps:review`等が読み込まれる。dev の入口から起動した担当は入口が指定するモデルと推論（`gpt-6-astra` / medium）で動き、それ以外のスキルからの利用ではモデルと推論設定を親セッションから継承する。実装担当以外の調査・レビュー担当は読み取り専用を既定にする。0.23.0 まで配置していた比較専用の役割は、更新時に管理済みエージェントとして削除される。親セッションの実行時設定が優先される場合もあるため、権限の強制境界とは扱わない。
 
 配布物は`~/.local/share/shinaps-ai/skills/codex/`へ保持し、一時的なnpxキャッシュに依存しない。同じ親ディレクトリの`state.json`に配置したエージェントと内容のハッシュを記録する。管理対象外の同名ファイルや、導入後に編集されたエージェントは上書き・削除せず停止する。必要な変更を退避・整理してから再実行する。`CODEX_HOME`を変更する場合は元の配置先で先にuninstallする。
 
@@ -125,9 +124,9 @@ Claude Codeは標準のmarketplace自動更新機能を使う。`/plugin` のMar
 
 ## Claude Managed Agents
 
-`managed-agents/` に、lead `shinaps-dev-managed-cc`（1体）と `shinaps-dev-managed-cc-ultra`（2体）、dev の8役割、skill `dev-managed-cc` と `dev-managed-cc-ultra`、環境 `shinaps-dev` の定義を置く。セッションの lead が対応する skill の工程で担当を定義済みエージェントへ委任する。
+`managed-agents/` に、lead `shinaps-dev-managed-cc`、devの8役割、skill `dev-managed-cc`、環境 `shinaps-dev` の定義を置く。leadが体制を引き継いで必要な担当へ委任する。
 
-lead は Fable 5.1（`claude-fable-5-1` / medium）、8役割は Opus 5.5 の fast（`speed: fast`）で動く。速度は役割定義の `model` で切り替える。実測では、2体の入口で lead と役割がともに Opus 5.5 の標準速度だったとき、小さな機能追加1本で約 23 USD かかった。そのうち計画の再確認3〜5ラウンド目の分が約 5 USD で、再確認を2ラウンドまでにした現在の規則では約 18 USD の見込みである。そのため起動手順で、計画段階の再確認を最大2ラウンドに制限している。1体の入口では、現在の構成（lead は Fable 5.1、役割は Opus 5.5 の fast）で 24.87 USD（SHINAPS-143 の試走）と 27.32 USD（shinaps-skills の役割定義の言い回しを直すタスク）だった。役割を標準速度にした場合は約 18 USD の見込みである。コミット前の QA 修正は同じセッションへ送り、dev を Phase 1 からやり直すので、その費用も同じセッションの予算に含まれる。コミットの後の修正は新しいセッションになり、予算も別にかかる。`managed_session:40` で月 200 USD なら約5 Issue という目安は、1 Issue を1セッションで終えた場合のものである。
+lead は Fable 5.1（`claude-fable-5-1` / medium）、役割は Opus 5.5 の fast（`speed: fast`）で動く。人数と再確認によって費用は変わるため、固定体制時の費用を現在の見積りに使わない。セッションの合意済み予算内で体制を決め、増員のために予算を自動で増やさない。計画の再確認はManagedの起動手順に従い最大2ラウンドとする。QA修正も同じセッションの予算に含める。
 
 前提は `ant` CLI 1.42.0 以上と `ant auth login` 済みであること。定義の作成・更新は次の npm script だけで行う。
 
@@ -141,10 +140,11 @@ npm run managed:apply         # 作成・更新。確認に対話で答えられ
 `managed-agents/claude-lock.json` は apply が書き出す。リソースの ID を記録しているので commit する。lockfile は shinaps 組織のリソースの記録である。別の組織で使う場合は、lockfile を消してから実行するか、`npm run managed:apply -- --lock-file claude-lock.<組織名>.json` のように別の lockfile を指定する。パスは `managed-agents/` から見た位置で、lockfile は `managed-agents/` の中に置く（外に置くとキーの形が変わり、下の jq の例と合わなくなる）。ID は次のように引ける。
 
 ```sh
-jq -r '.resources["./agents/shinaps-dev-managed-cc-ultra.md"].id' managed-agents/claude-lock.json
 jq -r '.resources["./agents/shinaps-dev-managed-cc.md"].id' managed-agents/claude-lock.json
 jq -r '.resources["./environments/shinaps-dev.yaml"].id' managed-agents/claude-lock.json
 ```
+
+旧ultraのクラウドリソースとlockの対応は過去セッションの参照用に保持する。新規実行には使わず、通常の更新で `--prune` による削除を行わない。
 
 定義を変えたら `npm run managed:apply` を実行する。lead が参照する役割と skill の版も同じ実行で更新される。
 
@@ -217,7 +217,7 @@ ant files download --file-id <file ID> -o <保存先>
 
 ファイルはセッションが待機状態になってから数秒遅れて一覧に現れることがある。予算に達して止まったセッションでは、予算を引き上げて lead が終了処理を行うまで tar は作られない。
 
-担当の委任・継続の方法と、Claude Code 固有の手段の置き換え・未対応のものは、[起動手順](managed-agents/skills/dev-managed-cc-ultra/references/dev/launch.md)にある。
+担当の委任・継続の方法と、Claude Code 固有の手段の置き換え・未対応のものは、[起動手順](managed-agents/skills/dev-managed-cc/references/dev/launch.md)にある。
 
 ### ネットワークと危険
 
@@ -294,8 +294,8 @@ codex mcp login shinaps-ai
 |---|---|
 | `shinaps-explorer` | コードベース探索、必読ファイル抽出 |
 | `shinaps-investigator` | `shinaps:explore` の現在の質問をコード・テスト・設定・履歴から調べ、確実性を分けて回答 |
-| `shinaps-architect` | 設計。dev では設計担当1 が設計・設計案統合・設計適合性・プランと全指摘の最終判断を行い、2体の入口では設計担当2 も独立設計を行う |
-| `shinaps-plan-reviewer` | 計画レビュー (confidence 閾値 70)。2体の入口では2体が独立に指摘と修正案を返す |
+| `shinaps-architect` | 設計。dev では設計担当1 が設計・設計案統合・設計適合性・プランと全指摘の最終判断を行い、必要に応じて追加担当が独立設計を行う |
+| `shinaps-plan-reviewer` | 計画レビュー (confidence 閾値 70)。必要な人数で独立に指摘と修正案を返す |
 | `shinaps-implementer` | 確定した計画の実装・簡素化・検証、レビュー後の修正 |
 | `shinaps-reviewer` | logic / design / security / performance / maintainability / rule 統合レビュー (confidence 閾値 80) |
 | `shinaps-review-validator` | reviewer 指摘の実コード検証 (confirmed / false positive / partial / out-of-scope 分類) |

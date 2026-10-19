@@ -8,9 +8,9 @@
 | 実装担当 | 技術調査、`implementation_skill` で選んだdevの入口による実装・自動テスト・簡素化・セルフレビュー、QA指摘の修正、成果と人の対応結果の報告。実装を伴わない文書整理は、作業先リポジトリの規約に従いdevの入口の対象外にできる。スキル・コードの変更は文書の形でも実装としてdevの入口を使う |
 | 人 | 未合意の仕様・権限の判断、設定で必要なコードレビュー・必要な修正、AIに許可していないコミット、本人の操作が必要な認証等、必要なHuman QA |
 
-実装担当は、作業先リポジトリの設定の `implementation_skill` で決まる。Claudeの入口（`dev-claude`・`dev-claude-ultra`）では、ClaudeがCodexの指示に基づいてBridge経由で実装する。Codexの入口（`dev-codex`・`dev-codex-ultra`）では、この文書でClaudeが行うとした実装・修正・コミット・完了報告を会話側とは別のCodex実装タスクが行い、[Codex実装タスク](codex-task.md)の手順で依頼・結果を扱う。Bridgeは使わない。どちらでも実装担当はdev内レビューと検証を終えて進行役へ結果を返し、進行役がLocal Agent QAを行う。実装担当の報告をQA合格の根拠にせず、この引き渡しを進行全体の終了と扱わない。
+実装担当は、作業先リポジトリの設定の `implementation_skill` で決まる。Claudeの入口（`dev-claude`）では、ClaudeがCodexの指示に基づいてBridge経由で実装する。Codexの入口（`dev-codex`）では、この文書でClaudeが行うとした実装・修正・コミット・完了報告を会話側とは別のCodex実装タスクが行い、[Codex実装タスク](codex-task.md)の手順で依頼・結果を扱う。Bridgeは使わない。どちらでも実装担当はdev内レビューと検証を終えて進行役へ結果を返し、進行役がLocal Agent QAを行う。実装担当の報告をQA合格の根拠にせず、この引き渡しを進行全体の終了と扱わない。
 
-Managedの入口（`dev-managed-cc`・`dev-managed-cc-ultra`）では、linear-executeを実行している会話（ClaudeまたはCodex）が進行役になり、`linear/` の各文書でCodexが行うとした進行・Agent QA・記録・人への窓口を行う。実装・修正はIssueごとのClaude Managed Agentsセッションのleadがその入口のskillで行い、[Managedセッション](managed-session.md)の手順で依頼・結果を扱う。この文書でClaudeまたは実装担当が行うとした実装・修正・完了報告はleadが行う。leadはローカルの作業先へ書けないため、差分の適用・コミットと、人の対応結果の受け取りは進行役が行う。BridgeとCodex実装タスクは使わない。
+Managedの入口（`dev-managed-cc`）では、linear-executeを実行している会話（ClaudeまたはCodex）が進行役になり、`linear/` の各文書でCodexが行うとした進行・Agent QA・記録・人への窓口を行う。実装・修正はIssueごとのClaude Managed Agentsセッションのleadがその入口のskillで行い、[Managedセッション](managed-session.md)の手順で依頼・結果を扱う。この文書でClaudeまたは実装担当が行うとした実装・修正・完了報告はleadが行う。leadはローカルの作業先へ書けないため、差分の適用・コミットと、人の対応結果の受け取りは進行役が行う。BridgeとCodex実装タスクは使わない。
 
 人への質問と依頼は会話側のCodexが窓口になる。実装担当は人へ着手確認やコミット依頼をしない。人がClaudeへ直接伝えた指示や結果は、Claudeが保持してCodexへ報告する。
 
@@ -95,9 +95,9 @@ AI Terminal Bridge（以下Bridge）の本体は同梱しない。導入済み�
 
 | 依頼・報告 | 含めるもの |
 | --- | --- |
-| 実装・修正の依頼（CodexからClaude） | Issueリンク、使う入口（`implementation_skill` の値、またはその場の明示的な指定）、範囲・受入条件、Gitの作業ディレクトリ・ブランチ・既存差分、許可範囲（`dev_delegation` の有無を含む）、返信先のCodexの `session_id`、関係する補足と参照先、下の定型文。修正依頼では、再現手順・期待と実際・対象差分・証拠の場所を加える |
+| 実装・修正の依頼（CodexからClaude） | Issueリンク、使う入口（`implementation_skill` の値、またはその場の明示的な指定）、範囲・受入条件、初期体制（役割別人数・根拠・専任なしの責任者・必須検証）、Gitの作業ディレクトリ・ブランチ・既存差分、許可範囲（`dev_delegation` の有無を含む）、返信先のCodexの `session_id`、関係する補足と参照先、下の定型文。修正依頼では、再現手順・期待と実際・対象差分・証拠の場所を加える |
 | コミットの依頼（CodexからClaude） | Issueリンク、Gitの作業ディレクトリ・ブランチ、返信先のCodexの `session_id` と、上の「単位案からコミット完了まで」で定める依頼情報 |
-| 完了の報告（ClaudeからCodex） | 対象差分、自動検証の結果、起動方法、確認観点、既知の制限、未解決の事項、devの入口内のレビュー結果の要約と未解決の指摘。コミットした場合の返却情報は上の「単位案からコミット完了まで」に従う |
+| 完了の報告（ClaudeからCodex） | 対象差分、自動検証の結果、起動方法、確認観点、既知の制限、未解決の事項、初期体制からの変更と理由、実際の担当と確認範囲、devの入口内のレビュー結果の要約と未解決の指摘。コミットした場合の返却情報は上の「単位案からコミット完了まで」に従う |
 | 人のレビュー・コミット完了の報告（ClaudeからCodex） | 下の「人のレビュー・コミット完了の報告」の項目 |
 | 開発進行の引き渡し（ClaudeからCodex） | 利用者からの依頼の内容、対象Issue・Cycle・バックログの範囲と順序、作業先リポジトリ、利用者が示した範囲と条件。Codexは作業先リポジトリの設定と照合して進行を始め、不足する判断はCodexから利用者へ確認する |
 
@@ -107,7 +107,8 @@ AI Terminal Bridge（以下Bridge）の本体は同梱しない。導入済み�
 
 ```text
 ユーザー承認済みの範囲でCodexが進行する。shinaps:linear-executeを読み込み、この依頼の範囲と受入条件の中では人へ着手を再確認せず、指定した入口で実行する。計画の相談・質問・障害・完了はBridgeで依頼元のCodexへ返す。人のレビュー・コミット完了を受けた場合も同じ返信先へ報告する。
-入口: shinaps:<dev-claude または dev-claude-ultra>
+入口: shinaps:dev-claude
+初期体制: <役割別人数・根拠・専任なしの責任者・必須検証。途中の増員はdevのメインが判断して進行役へ報告する>
 許可範囲: <設定と会話で許可された操作。dev_delegationの有無を含む>
 ```
 

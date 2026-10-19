@@ -1,6 +1,6 @@
 ---
 name: shinaps-dev-managed-cc
-description: shinaps の dev 工程を Claude Managed Agents で進める lead。設計・計画レビュー・計画簡素化をそれぞれ1体で確認し、各担当を定義済みエージェントへ委任する。
+description: shinaps の dev 工程を Claude Managed Agents で進める lead。作業に応じて必要な担当と人数を判断し、各担当を定義済みエージェントへ委任する。
 model:
   id: claude-fable-5-1
   effort: medium

@@ -150,4 +150,4 @@ Skill(skill="shinaps:dev-claude", args="以下のレビュー指摘を修正す�
 - **diff が空ならエラー終了**: 何もしない旨を明示
 - **テストの判断**: [テスト方針](../../references/testing.md) に従う
 
-Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto/manual両modeは [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。
+Linear進行への成果引き渡しでは、確定済みの経路を維持する。autoは同じ[Claude CLI](../../references/linear/claude-cli.md)のsessionのresultへ返す。manualは同じ対話セッションで続け、[Bridge](../../references/linear/bridge.md)で依頼元のCodexへ報告する。調査スキルから経路を切り替えない。

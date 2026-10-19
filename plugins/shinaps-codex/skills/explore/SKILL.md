@@ -14,8 +14,8 @@ description: 既存挙動の理由、実装方針、変更の影響を対話し�
 
 委託を許可されている場合は登録済みのshinaps-investigatorに現在の質問と対象範囲を渡せる。許可がなければ現在のセッションで調べる。調査依頼を実装・設定変更・外部投稿の許可として扱わない。
 
-質問が曖昧なら結果を左右する点だけ一問確認する。回答後に新たな質問が来たら続け、仕様策定や修正へ自動で進まない。理解が揃い実装を依頼されたら、目的・合意事項・未確認事項・関連ファイルを引き継ぎ、$shinaps:dev-codexを読む。担当と人数はdevのメインが作業に応じて判断する。
+質問が曖昧なら結果を左右する点だけ一問確認する。回答後に新たな質問が来たら続け、仕様策定や修正へ自動で進まない。理解が揃い実装を依頼されたら、目的・合意事項・未確認事項・関連ファイルをまとめる。実装はClaude Codeが行い、Codexに実装の入口はない。Linear進行では `$shinaps:linear-execute` でClaudeへ依頼する。
 
 継続用の記録が必要なら.shinaps/work/explorations/へ保存する。[作業記録の共通手順](../../references/work-records.md)に従い、秘密情報や無関係な記録を持ち込まない。MCPが使えないときはルール照合未確認と明記する。
 
-Linear進行への成果引き渡しでは、確定済みの実装経路を維持する。Claudeのauto/manual両modeは [Claude CLI](../../references/linear/claude-cli.md) の同じsessionへの依頼・resultで返し。Codex・Managedは既存の返却先を使い、調査スキルから経路を切り替えない。
+Linear進行への成果引き渡しでは、確定済みの経路を維持する。autoは同じ[Claude CLI](../../references/linear/claude-cli.md)のsessionのresultへ返す。manualは同じ対話セッションで続け、[Bridge](../../references/linear/bridge.md)で依頼元のCodexへ報告する。調査スキルから経路を切り替えない。

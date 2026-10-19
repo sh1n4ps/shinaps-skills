@@ -1,5 +1,0 @@
-name: shinaps-dev
-config:
-  type: cloud
-  networking:
-    type: unrestricted

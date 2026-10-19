@@ -163,7 +163,7 @@ test('Managed lead registers every role its skill names', async () => {
 });
 
 // lead が列挙したファイルが無いと apply が失敗し、lead から到達できない役割定義を置くと apply が
-// 使われない担当を更新し続ける。lock に残る refine・ultra の旧資源は、ソースを置かないことで
+// 使われない担当を更新し続ける。lock に残る旧 refine の項目は、ソースを置かないことで
 // 到達不能のまま保つ。
 test('Managed role definitions are exactly the roles the lead registers', async () => {
   assert.deepEqual(await managedRoleDefinitions(), await managedLeadRoles());

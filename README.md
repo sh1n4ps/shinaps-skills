@@ -1,6 +1,6 @@
 # shinaps-skills
 
-Shinaps AIの利用者向け開発ワークフロー。Claude CodeとCodexにはそれぞれに適したplugin・カスタムエージェントとして配布する。実装はClaude Codeが行い、Codexは進行・QA・レビュー等を担当する。スキルのダウンロードと導入にShinaps AIのアカウントは不要。サービスのrule検索・登録を使うときにアカウント作成と認証を行う。
+Shinaps AIの利用者向け開発ワークフロー。Claude CodeとCodexにはそれぞれに適したplugin・カスタムエージェントとして配布する。実装はClaude Codeが行い、Codexは進行・QA・レビュー等を担当する。Claude Managed Agents向けには、draft PRまで進むdev工程のセットアップ専用構成を `managed-agents/` に置く。スキルのダウンロードと導入にShinaps AIのアカウントは不要。サービスのrule検索・登録を使うときにアカウント作成と認証を行う。
 
 ## プロジェクトごとの条件
 
@@ -56,13 +56,14 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 
 ### dev の入口と体制
 
-実装の入口は Claude Code の `dev-claude` だけで、Codexに実装の入口はない。メインは利用者のClaude CLI・セッションの設定（model・effort）を保持し、起動引数で上書きしない。担当は登録エージェントの定義（Opus / medium）で動く。
+ローカルの実装の入口は Claude Code の `dev-claude` だけで、Codexに実装の入口はない。Claude Managed Agentsはセットアップ専用の別runtimeで、「[Claude Managed Agents](#claude-managed-agents)」節で扱う。メインは利用者のClaude CLI・セッションの設定（model・effort）を保持し、起動引数で上書きしない。担当は登録エージェントの定義（Opus / medium）で動く。
 
 [実装体制の判断](plugins/shinaps-claude/references/dev/staffing.md)に従い、devのメインが設計前に役割別の人数・理由・専任なしの責任者・必須検証を決める。linear-executeでは進行役のCodexが判断の材料を渡し、メインが決めて報告する。不確実性・影響範囲・失敗時の影響を基準に、途中でも必要な担当を追加する。人数を増やすだけで許可・予算・品質条件は変えない。
 
 小さく明確な変更はメインが計画し、実装1体と独立コードレビュー1体で進められる。設計の比較や重要な契約の独立確認が必要なら該当する役割だけ増やす。規約照合・簡素化・指摘検証は専任なしでも責任者を決めて行う。
 
 - 工程と体制基準はClaude版を編集元としてCodexへ複製する。起動手順だけはruntimeごとに異なる。
+- Managedの `staffing.md`・`workflow.md`・`launch.md` はClaude版を編集元に写した適応版で、一致はテストしない。Claude版の工程・体制基準を変えたらManagedへの適用可否を判断する。
 - Claudeは登録エージェント、Codexは名前付きサブエージェントを使う。モデル・推論の設定は今回の人数判断で変更しない。
 - Claudeのexplore・spec・review・debugからは `dev-claude` へ引き継ぐ。ClaudeのdevはSkillツールからの起動も許可する。Codexのスキルは実装へ引き継がず、Linear進行では `linear-execute` でClaudeへ依頼する。
 - テスト方針は各版の `references/testing.md` を正本とし、役割定義に同じ段落を複製して検証する。
@@ -128,12 +129,97 @@ macOS以外では予定実行の登録に対応していないため手動更新
 
 Claude Codeは標準のmarketplace自動更新機能を使う。`/plugin` のMarketplacesから対象marketplaceのauto-updateを有効にする。GitHubから自動取得するにはリモートmarketplaceを登録する必要があり、ローカルcheckout登録ではソースのgit pullまで自動実行しない。
 
+## Claude Managed Agents
+
+`managed-agents/` は、Claude Managed Agentsでdev工程を進めるためのセットアップ専用の構成である。lead `shinaps-dev-managed-cc`、devの7役割、skill `dev-managed-cc`、環境 `shinaps-dev` の定義と、既存のクラウドリソースのIDを記録した `claude-lock.json` を置く。セッションの作成と予定実行はこの構成に含めない。
+
+- leadはFable 5.1（`claude-fable-5-1` / medium）、役割はOpus 5.5（`claude-opus-5-5` / medium）で動く。全agent定義に `speed: standard` を明示する（既存リソースに残るfastを戻すため）。
+- 体制は `dev-claude` と同じ基準でleadが作業ごとに決める。実装者と独立したコードレビューは最低1体で、規約照合もその担当が行う。refine担当とultraの入口は置かない。
+- Shinaps AIのMCPとruleを使わない。規約はマウントしたリポジトリの `AGENTS.md`・`CLAUDE.md` と参照先、添付された利用者CLAUDE.mdだけで、最終報告ではShinaps AI ruleを未照合とする。
+- 初回メッセージにリポジトリ・base・head・範囲と受入条件・許可・予算が揃わなければ、leadは作業を始めず欠落を質問する。許可はそのメッセージで明示された操作だけで、構成の導入からは生じない。
+- 終了地点は範囲を限ったコミット・headブランチへのpush・draft PR。merge・deploy・release・Issueの更新はしない。CodexのQAはセッションの外で、PRの後に行う。
+
+### 前提
+
+- `ant` CLI 1.30以上（確認は1.42.0）
+- lockの組織・ワークスペースに `ant auth login` 済みであること
+
+### 適用
+
+```sh
+(cd managed-agents && ant apply --dry-run .)   # 計画だけを表示する
+(cd managed-agents && ant apply .)             # 計画を確認してから適用する
+```
+
+サブシェルで `managed-agents/` に移動してから実行する。lockfileは実行した場所から上へ探し、キーはlockfileのディレクトリからの相対パスになるので、別の場所から実行すると既存のリソースと対応づかずに重複して作られる。リポジトリ直下を対象にすると `plugins/` の定義も送信対象に含まれる。`--prune`・`--force` は使わず、リソースを削除しない。
+
+この構成を最初に適用したとき（2026-10-19、lead v7）の計画は、更新がlead・7役割・skill `dev-managed-cc` の9件、変更なしが環境 `shinaps-dev`、作成が0件、警告が `./agents/shinaps-refine-agent.md`・`./agents/shinaps-dev-managed-cc-ultra.md`・`./skills/dev-managed-cc-ultra` のソース欠落3件だった。これはクラウドに残っていた旧定義（Shinaps AI MCP・refine・`speed: fast`）を現在の構成へ戻す初回の復元で、lockにはその結果を記録済みである。以後、定義を変えずに実行すれば `Everything is up to date.`（10 unchanged）と同じ3件の警告になる。
+
+定義を変えた後の計画は、変えたリソースの更新だけになる。環境が更新になる、作成がある、`This plan cannot be applied` が出る場合は、適用せずに止めて報告する。適用後は `git diff managed-agents/claude-lock.json` で、更新したリソースの `version`・`hash`・`remote_hash` 以外が変わっていないことを確かめる。変わっていればcommitせずに報告する。
+
+refineとultraのリソースは過去のセッションの参照用にlockへ残している。新しいセッションには使わない。
+
+### セッションの依頼
+
+セッションの作成は構成の適用とは別の作業で、利用者が対象と予算を決めてから行う。次は参照用のひな形で、`<...>` を埋めて使う。GitHub MCP（`https://api.githubcopilot.com/mcp/`）の資格情報は、事前にvaultへ登録しておく。vaultはセッションの作成時にしか渡せない。
+
+```sh
+LEAD_ID=$(jq -r '.resources["./agents/shinaps-dev-managed-cc.md"].id' managed-agents/claude-lock.json)
+ENV_ID=$(jq -r '.resources["./environments/shinaps-dev.yaml"].id' managed-agents/claude-lock.json)
+read -rs GITHUB_TOKEN   # 画面に表示せずに入力する
+ant beta:sessions create --beta managed-agents-2026-04-01 \
+  --agent "$LEAD_ID" \
+  --environment-id "$ENV_ID" \
+  --vault-id <GitHub MCPの資格情報を登録したvaultのID> \
+  --title "<作業名>" <<YAML
+budget: {type: limit, max_list_cost: {amount: "<セント単位の金額。4000 は 40 USD>", currency: USD}}
+resources:
+  - type: github_repository
+    url: https://github.com/<owner>/<repo>
+    mount_path: /workspace/<repo>
+    authorization_token: "$GITHUB_TOKEN"
+    checkout: {type: commit, sha: <baseのSHA>}
+initial_events:
+  - type: user.message
+    content:
+      - type: text
+        text: |
+          リポジトリ: https://github.com/<owner>/<repo>（マウント先 /workspace/<repo>）
+          base: <ブランチ> @ <SHA>
+          head: <ブランチ名>
+          範囲と受入条件: <内容>
+          許可: <commit・headへのpush・draft PRの作成のうち許可するもの>
+          予算: <金額>
+          必須検証（任意）: <コマンド。省略時はリポジトリの規約に従う>
+          author（任意）: <name> <email>
+YAML
+unset GITHUB_TOKEN
+```
+
+- `checkout` はbaseのSHAにする。比較元が必ずチェックアウトされ、headブランチが無ければleadがそこから作る。
+- 利用者CLAUDE.mdを渡す場合は `ant files upload` で上げ、`resources` に `{type: file, file_id: <ID>, mount_path: /CLAUDE.md}` を加える（`/mnt/session/uploads/CLAUDE.md` に置かれる）。
+- leadは最後のメッセージの1行目に `状態: 完了`・`状態: 質問`・`状態: 未完了` を書き、`changes.patch` と作業記録のtarを `/mnt/session/outputs/` に置く。手順は[起動手順](managed-agents/skills/dev-managed-cc/references/launch.md)にある。
+
+### 安全上の注意
+
+- 環境のネットワークは制限しない（`unrestricted`）。bashとGitHub MCPの3ツール（`get_me`・`create_pull_request`・`pull_request_read`）は承認なし（`always_allow`）で動く。無人のセッションが承認待ちで止まらないようにするため。サンドボックスのコードは外へ送ることができ、取得した内容に書かれた指示に従ってしまう危険（プロンプトインジェクション）がある。
+- tokenは対象リポジトリだけに限ったfine-grained tokenにし、ContentsとPull requestsのwriteだけを許可する。mergeできるかはGitHub側のブランチ保護で決まるので、baseを保護しておく。
+- tokenをサンドボックスや作業記録に書かない。
+
+### 未検証の境界
+
+- マウントしたリポジトリのremoteへ `git push` できるか（`authorization_token` がpushに使われるか）。最初のセッションで最優先に確かめ、できなければGitHub MCPのpush系ツール（`create_branch`・`push_files`）を有効にするかを利用者と相談する
+- commitをcheckoutしてマウントした作業先から、originのheadブランチを取得できるか（cloneの深さとfetchの資格情報）
+- GitHub MCPでdraft PRを作れるか。`draft: true` はleadへの指示でしか担保されない
+
+lockのrefine・ultra・環境の項目と各リソースのIDは、初回の適用（lead v7、2026-10-19）で変わらないことを確認済みで、未検証の境界ではない。
+
 ## 開発と配布
 
 - Claude版: `plugins/shinaps-claude/`、marketplaceは`.claude-plugin/marketplace.json`
 - Codex版: `plugins/shinaps-codex/`、marketplaceは`.agents/plugins/marketplace.json`
 - Codexカスタムエージェント: `plugins/shinaps-codex/agents/`
-- `managed-agents/claude-lock.json` は既存クラウドリソースの記録として保持する。`managed-agents/` で `ant` を実行しない（apply・prune・削除をしない）
+- Claude Managed Agents版: `managed-agents/`。npmパッケージには含めない。セットアップ専用構成で、適用は「Claude Managed Agents」節の手順で行い、`--prune`・`--force` を使わない
 - 配布CLI: ソースは `bin/skills.ts` と `lib/*.ts`。`npm run build` (`tsc`) で `dist/` にJSを出力し、npmにはそれを配布する。Node.jsは`node_modules`配下の`.ts`に型除去を適用しないため、ソースのままは配布できない。checkoutでは型除去で直接実行するので、`enum`など型除去で消せない構文は使わない (`tsconfig.json` の `erasableSyntaxOnly`)
 
 品質基準とプロジェクト設定の方針は揃えつつ、クライアント固有の実行手順・エージェント形式は別々に管理する。Codex版の工程の資料（`references/` の、`dev/launch.md` を除くもの）はClaude版と一致させ、テストで確認する。Codex版は役割の本文とスキルを書き分け、Claude向けのエージェント呼び出しをCodexに読み替えさせる方式は使わない。スキルを追加・変更した場合は各版への適用可否を判断する。
@@ -208,7 +294,7 @@ codex mcp login shinaps-ai
 | `shinaps-debug-validator` | 両方 | 仮説の実コード検証 (root-cause / contributing-factor / red-herring / needs-reproduction 分類) |
 | `shinaps-split-reviewer` | Claudeのみ | `shinaps:commit` のmanualの分割案を「単位の diff だけで妥当性を判断できるか」で批判 + 修正版最終分割計画 (worktree は read-only) |
 
-Claude版はMarkdown、Codex版はTOMLで役割を定義する。
+Claude版はMarkdown、Codex版はTOMLで役割を定義する。Managed Agents版はdevの7役割だけを、Claude版の `name`・`description`・本文に `ant apply` 用の frontmatter を付けたMarkdownで定義する。
 
 Claude版は全16エージェントが `opus / medium`。Codex版の役割定義はモデルを書かず、モデルと推論は親セッションから継承する。dev での担当の割り当ては[dev の工程](plugins/shinaps-claude/references/dev/workflow.md)にある。
 

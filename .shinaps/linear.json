@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/sh1n4ps/shinaps-skills/v0.32.0/plugins/shinaps-claude/references/linear/configuration.schema.json",
+  "$schema": "https://cdn.jsdelivr.net/npm/@shinaps/skills@0.32.1/plugins/shinaps-claude/references/linear/configuration.schema.json",
   "config_version": 1,
   "config_storage": "shared",
   "target": {

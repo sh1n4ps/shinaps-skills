@@ -4,7 +4,7 @@
 
 ## 検証CLIと契約版
 
-利用中のskillとCLIの版を確認し、0.32.0のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.32.0`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
+利用中のskillとCLIの版を確認し、0.32.1のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.32.1`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
 
 ```sh
 shinaps-skills --version
@@ -13,7 +13,7 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 
 ローカル開発では `node bin/skills.ts validate-linear-config <file>` を使える。CLIは指定された一つのJSONを読み、同梱schemaで検証する。ネットワーク取得、正本探索、Git操作、入力変更、型変換、既定値の補完、未知キーの除去はしない。未知キーはroot・下位とも拒否する。成功は構造が有効なことだけを表し、許可の合意やLinearの状態・参照ファイルの存在は保証しない。
 
-`config_version` が欠落または旧版なら移行、未来版ならskillとCLIの更新、不正型なら設定修正を案内する。JSONコメントは使わず、運用条件は補足へ書く。`$schema` は設定例の固定URLでエディタを補助し、CLIは外部のschemaを取得しない。
+`config_version` が欠落または旧版なら移行、未来版ならskillとCLIの更新、不正型なら設定修正を案内する。JSONコメントは使わず、運用条件は補足へ書く。`$schema` は公開npmパッケージの固定バージョンURLでエディタを補助する。sourceリポジトリは非公開のため、認証が必要なGitHub raw URLは使わない。CLIは外部のschemaを取得しない。
 
 ## 配置と保存方式
 
@@ -186,7 +186,7 @@ shinaps-skills側の例。shinaps-aiも、自分のリポジトリの設定で�
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/sh1n4ps/shinaps-skills/v0.32.0/plugins/shinaps-claude/references/linear/configuration.schema.json",
+  "$schema": "https://cdn.jsdelivr.net/npm/@shinaps/skills@0.32.1/plugins/shinaps-claude/references/linear/configuration.schema.json",
   "config_version": 1,
   "config_storage": "shared",
   "target": {

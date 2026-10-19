@@ -16,10 +16,10 @@ sharedで採用する `instructions.md` は共有JSONの `references.specificati
 
 0.32.0から `.shinaps/linear.json`（`config_version: 1`）を使います。旧YAML・scalar review_flow・旧キーの共存は移行未完了として止め、[移行手順](plugins/shinaps-claude/references/linear/configuration.md#旧設定の移行)に従います。コメントの運用条件も補足へ移します。
 
-CLIはpluginに含まれないため、利用中のskillと同じ `@shinaps/skills@0.32.0` を導入し、`shinaps-skills --version` で確認します。`shinaps-skills validate-linear-config <明示ファイル>` は同梱schemaだけで検証し、ネットワーク取得・正本探索・Git操作・入力変更は行いません。`$schema` は固定URLによるエディタ補助で、契約の正本は[同梱schema](plugins/shinaps-claude/references/linear/configuration.schema.json)です。
+CLIはpluginに含まれないため、利用中のskillと同じ `@shinaps/skills@0.32.1` を導入し、`shinaps-skills --version` で確認します。`shinaps-skills validate-linear-config <明示ファイル>` は同梱schemaだけで検証し、ネットワーク取得・正本探索・Git操作・入力変更は行いません。`$schema` は固定URLによるエディタ補助で、契約の正本は[同梱schema](plugins/shinaps-claude/references/linear/configuration.schema.json)です。
 
 ```sh
-npm install -g @shinaps/skills@0.32.0
+npm install -g @shinaps/skills@0.32.1
 shinaps-skills --version
 shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 ```

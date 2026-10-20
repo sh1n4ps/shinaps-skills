@@ -4,7 +4,7 @@
 
 ## 検証CLIと契約版
 
-利用中のskillとCLIの版を確認し、0.34.1のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.34.1`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
+利用中のskillとCLIの版を確認し、0.34.2のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.34.2`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
 
 ```sh
 shinaps-skills --version

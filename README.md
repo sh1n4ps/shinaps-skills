@@ -16,10 +16,10 @@ sharedで採用する `instructions.md` は共有JSONの `references.specificati
 
 0.33.0から `.shinaps/linear.json`（`config_version: 2`）を使います。`config_version: 1`・`implementation_skill`・`review_flow.tool`・許可の `codex_task`/`managed_session:*`、旧YAML・scalar review_flowは受け付けず、[移行手順](plugins/shinaps-claude/references/linear/configuration.md#config_version-1-からの移行)に従います。
 
-CLIはpluginに含まれないため、利用中のskillと同じ `@shinaps/skills@0.34.1` を導入し、`shinaps-skills --version` で確認します。`shinaps-skills validate-linear-config <明示ファイル>` は同梱schemaだけで検証し、ネットワーク取得・正本探索・Git操作・入力変更は行いません。`$schema` は固定URLによるエディタ補助で、契約の正本は[同梱schema](plugins/shinaps-claude/references/linear/configuration.schema.json)です。0.34.0から、Managed Agentsの `.shinaps/managed.json`（`config_version: 1`）も `shinaps-skills validate-managed-config <明示ファイル>` で同じ方式で検証します（[Managedの設定](plugins/shinaps-claude/references/managed/configuration.md)）。
+CLIはpluginに含まれないため、利用中のskillと同じ `@shinaps/skills@0.34.2` を導入し、`shinaps-skills --version` で確認します。`shinaps-skills validate-linear-config <明示ファイル>` は同梱schemaだけで検証し、ネットワーク取得・正本探索・Git操作・入力変更は行いません。`$schema` は固定URLによるエディタ補助で、契約の正本は[同梱schema](plugins/shinaps-claude/references/linear/configuration.schema.json)です。0.34.0から、Managed Agentsの `.shinaps/managed.json`（`config_version: 1`）も `shinaps-skills validate-managed-config <明示ファイル>` で同じ方式で検証します（[Managedの設定](plugins/shinaps-claude/references/managed/configuration.md)）。
 
 ```sh
-npm install -g @shinaps/skills@0.34.1
+npm install -g @shinaps/skills@0.34.2
 shinaps-skills --version
 shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 shinaps-skills validate-managed-config /absolute/repository/.shinaps/managed.json

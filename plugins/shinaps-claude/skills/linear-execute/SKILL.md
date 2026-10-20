@@ -12,7 +12,7 @@ Claudeは実装担当で、Codexが進行・Agent QA・Issueの記録・人へ�
 経路は着手時に通常設定の `review_flow.mode` で決まり、Issueの途中で切り替えない（[経路](../../references/linear/configuration.md#経路)）。
 
 - auto: Codexが起動する[ローカルClaude CLI](../../references/linear/claude-cli.md)で依頼を受け、質問・障害・完了はresultへ返す。回答・修正・コミットの依頼は同じsessionのresumeで受ける。
-- manual: WebStorm内の対話Claude Codeセッションで[Bridge](../../references/linear/bridge.md)の依頼を受ける。人と直接作業し、計画上の判断・仕様の不明点は人へ `AskUserQuestion` で一問ずつ確認する。完了・障害・人の承認とcommitの完了は、Bridgeで依頼元のCodexへ報告する。
+- manual: WebStorm内の対話Claude Codeセッションで[Bridge](../../references/linear/bridge.md)の依頼を受ける。人と直接作業し、計画上の判断・仕様の不明点は人へ `AskUserQuestion` で一問ずつ確認する。作業の完了時は人へユーザーのレビュー待ちと明示する（[manualの手順](../../references/human-review.md)）。完了・障害・人の依頼によるcommitの完了は、Bridgeで依頼元のCodexへ報告する。
 
 ## 読む資料
 
@@ -29,12 +29,12 @@ Claudeは実装担当で、Codexが進行・Agent QA・Issueの記録・人へ�
 - devの入口の委託（サブエージェント）は、依頼の許可範囲に `dev_delegation` が書かれている場合だけ使う。worktreeの作成は含まない。
 - QAで見つかった不具合の修正依頼も同じ扱いにし、人の着手許可を改めて取らない。
 - 同じ作業ツリーをCodexや人と同時に編集しない。人や他のAIの変更を保持する。
-- コミットの許可は[共通設定](../../references/linear/configuration.md)、担当とQA後の条件は[担当と工程](../../references/linear/workflow.md)の差分確定に従う。実装完了の直後に先行してコミットせず、Codexへ結果を返す。差分確定の依頼を受けたら `shinaps:commit` を使い、許可済みの操作を再確認しない。
+- コミットの許可は[共通設定](../../references/linear/configuration.md)、担当とQA後の条件は[担当と工程](../../references/linear/workflow.md)の差分確定に従う。実装完了の直後に先行してコミットせず、Codexへ結果を返す。autoはCodexから差分確定の依頼を受けたら、manualは人がコミットの開始を依頼したら `shinaps:commit` を使い（単位の退避・stage・commitはQA結果の引き渡し後）、許可済みの操作を再確認しない。
 
 ## 結果と人の対応を報告する
 
-- 完了の報告と、人の承認・commit完了の報告に含める項目は、経路の資料に従う。
-- 人がClaudeへ直接伝えた指示・決定・承認は保持し、Codexへ報告する。Gitにコミットがあるだけで、人の承認済みと報告しない。設定で人のレビューを省略した単位は、省略と報告する。
+- 完了の報告と、人の依頼とcommitの報告に含める項目は、経路の資料に従う。
+- 人がClaudeへ直接伝えた指示・決定・コミットの依頼は保持し、Codexへ報告する。Gitにコミットがあるだけで、人の依頼によるcommitと報告しない。設定で人のレビューを省略した単位は、省略と報告する。
 
 ## Codexの依頼なしで起動された場合
 

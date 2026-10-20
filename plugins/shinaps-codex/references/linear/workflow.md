@@ -5,8 +5,8 @@
 | 担当 | 責務 |
 | --- | --- |
 | Codex（進行役） | Issueの作成・整理、仕様相談、Ready判定、依存・Cycle管理、進行判断、作業先設定からの経路と許可の確定、体制判断の材料（受入条件・関連範囲・既存検証・リスク）の提示、Claudeへの依頼（auto: CLI、manual: Bridge）、Local・Staging・ProductionのAgent QA、単位・全体の照合、許可されたpush・PR・merge・配備・公開、Issueへの記録、人への依頼 |
-| Claude（実装担当・Claude Code） | 初期体制の決定と途中の増員、`shinaps:dev-claude` による技術調査・計画・実装・検証・独立レビュー、QA指摘の修正、`shinaps:commit`（auto: 独立レビュー後にcommit、manual: 提示・相談・人の単位承認後にcommit）、結果の報告。実装を伴わない文書整理は、作業先リポジトリの規約に従いdevの入口の対象外にできる。スキル・コードの変更は文書の形でも実装としてdevの入口を使う |
-| 人 | 未合意の仕様・権限の判断、manualの単位レビュー・修正相談・承認、本人の操作が必要な認証等、必要なHuman QA |
+| Claude（実装担当・Claude Code） | 初期体制の決定と途中の増員、`shinaps:dev-claude` による技術調査・計画・実装・検証・独立レビュー、QA指摘の修正、`shinaps:commit`（auto: 独立レビュー後にcommit、manual: 人の開始依頼で分割案、人が依頼した単位ごとにcommit）、結果の報告。実装を伴わない文書整理は、作業先リポジトリの規約に従いdevの入口の対象外にできる。スキル・コードの変更は文書の形でも実装としてdevの入口を使う |
+| 人 | 未合意の仕様・権限の判断、manualのWebStormでの差分レビュー・修正相談・コミットの開始と単位ごとの依頼、本人の操作が必要な認証等、必要なHuman QA |
 
 経路は着手時に通常設定の `review_flow.mode` で決まる（[経路](configuration.md#経路)）。autoはCodexが[ローカルClaude CLI](claude-cli.md)の同じsessionをresumeし、manualはWebStorm内の対話Claude Codeセッションへ[Bridge](bridge.md)で依頼する。どちらでもClaudeはdev内レビューと検証を終えて結果を返し、CodexがLocal Agent QAを行う。Claudeの報告をQA合格の根拠にせず、この引き渡しを進行全体の終了と扱わない。
 
@@ -23,8 +23,8 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 | 工程 | 状態キー | 内容と次へ進む条件 |
 | --- | --- | --- |
 | 着手 | `ready` | Readyと依存を確認し、作業先設定を読み、通常設定の `review_flow` から経路と必要な許可（auto: `claude_cli`、manual: `bridge_request`）を確定する。checkout・branch・HEAD・既存差分を固定し、体制判断の材料を添えてClaudeへ依頼する。通常設定がautoでmanualのパス別ルールがあれば、起こり得る停止（[経路](configuration.md#経路)）を依頼に書く |
-| 実装 | `coding`, `local_agent_qa` | Claudeのメインが初期体制を決めて報告し、`shinaps:dev-claude` で実装・検証・独立レビューを行い、未コミット差分・単位案・予定差分・判定記録を返す。CodexがLocal Agent QA（判定記録と経路の整合を含む）を行い、不合格なら同じsessionへ戻す |
-| 差分確定 | `code_review` | QA合格後、Codexが実効flow・判定記録・QA結果を同じsessionへ渡し、Claudeが `shinaps:commit` を行う。autoは単位ごとに独立レビュー後にcommitする。manualは退避・stage・提示、相談・修正、人の明示承認の後にcommitする。Codexは各コミットの単位照合と全体照合を行う。差分確定中の修正は単位の目的・範囲内に限り、超えるものは実装へ戻す。差分確定で差分が変わったIssueは、確定後にCodexのAgent QAを必須にする（公開確認のpush前の最終Agent QAで兼ねてよい） |
+| 実装 | `coding`, `local_agent_qa` | Claudeのメインが初期体制を決めて報告し、`shinaps:dev-claude` で実装・検証・独立レビューを行い、未コミット差分・単位案・予定差分・判定記録を返す。manualでは人へユーザーのレビュー待ちと明示する。CodexがLocal Agent QA（判定記録と経路の整合を含む）を行い、不合格なら同じsessionへ戻す |
+| 差分確定 | `code_review` | QA合格後、Codexが実効flow・判定記録・QA結果を同じsessionへ渡し、Claudeが `shinaps:commit` を行う。autoは単位ごとに独立レビュー後にcommitする。manualではCodexはcommitを依頼せず、渡した後は報告を待つ。人のコミット開始依頼でClaudeが分割案を示し、人が単位ごとに依頼したcommitを行う。Codexは各コミットの単位照合と全体照合を行う。差分確定中の修正は単位の目的・範囲内に限り、超えるものは実装へ戻す。差分確定で差分が変わったIssueは、確定後にCodexのAgent QAを必須にする（公開確認のpush前の最終Agent QAで兼ねてよい） |
 | 公開確認 | `post_commit`, `staging_agent_qa`, `staging_human_qa`, `release`, `production_agent_qa`, `production_human_qa` | 受入条件と許可に応じて必要なものだけ行う: push前の最終Agent QA、push・PR作成、環境配備とStaging/ProductionのAgent QA、必要なHuman QA、merge・配備・公開。適用しない項目は理由を記録する |
 | 結果報告 | （状態キーなし） | 結果・証拠・省略した工程と理由・残項目をIssueへ記録し、終了地点に到達する。必須受入条件をすべて満たしたIssueは `done` にする |
 
@@ -60,7 +60,7 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 | Codexから許可範囲と受入条件を伴う実装・修正の依頼を受けた | Claudeは人へ着手を再確認せず、指定されたスキルで実行する |
 | devの入口の中で計画上の判断が必要になった | autoはClaudeがresultでCodexへ相談し、Codexは既存の合意で判断できれば回答する。manualはClaudeが人へ直接確認し、決定を報告する |
 | QAで受入条件の範囲内の不具合が見つかった | Codexが同じClaude sessionへ修正を依頼し、Claudeは人の着手許可を改めて取らずに修正する。Codexが再検証する |
-| ClaudeがCLIのresultでcommitの完了を、またはBridgeで人の承認とcommitの完了を報告した | Codexは人に同じ事実を聞き直さず、報告の対象とGitの状態を照合して次の工程へ進む |
+| ClaudeがCLIのresultでcommitの完了を、またはBridgeで人の依頼によるcommitの完了を報告した | Codexは人に同じ事実を聞き直さず、報告の対象とGitの状態を照合して次の工程へ進む |
 | 次の操作の継続的な許可があり、必要な工程の結果が揃った | Codexは「進めてもよいか」を再質問せずに実行する |
 | Cycle全体を任され、対象Issueが設定された終了地点に達した | Codexは開始時に確定した対象と順序を照合し、その範囲の次のIssueへ進む |
 
@@ -72,9 +72,9 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 
 1. Claudeは成果引き渡しに、モードによらず自然な責務で決めたコミット単位案と予定差分を含める。CodexはLocal Agent QAで対象を検証し、単位案が依頼全体を漏れなく覆い対象外変更を含まないことと、各単位の[判定記録](configuration.md#判定記録と変更時の扱い)を確認する。依頼の比較元と全体差分も最終照合用に記録する。判定記録に経路と異なるmanual単位があれば、差分確定の依頼前に[経路](configuration.md#経路)に従って人へ確認する。
 2. QA合格後、Codexは実効flow・単位の判定記録・QA結果を同じClaude sessionへ渡す。Claudeは設定・予定差分・合意根拠を照合する。
-3. Claudeは `commit` に従う。autoでは独立レビュー後にClaudeがstage・commitする。manualでは単位外を安全に退避して単位をstage・提示し、人と修正を相談し、人がその単位を承認した後にClaudeがcommitする。各コミット直前・作成後の実差分と確定した予定単位を照合し、予定単位・SHA・検証・レビュー・承認記録・復元結果をCodexへ返す。
+3. Claudeは `commit` に従う。autoでは独立レビュー後にClaudeがstage・commitする。manualでは人のコミット開始依頼で分割案を示し、人がその単位のコミットを依頼したら単位外を安全に退避して単位をstage・検証し、Claudeがcommitする。各コミット直前・作成後の実差分と確定した予定単位を照合し、予定単位・SHA・検証・レビュー・依頼記録・復元結果をCodexへ返す。
 4. 全単位完了後、Codexは各コミットの単位照合結果を実差分で独立確認したうえで、依頼の比較元からの全体差分が、`commit` の手順で正当な人の修正を反映した確定済みの全体期待差分と一致し、対象の未コミット変更が残っていないことを照合する。最終差分だけでは途中で混入し後で相殺された対象外変更を検出できないため、単位照合を省かない。人レビューを省略した単位は、上の省略記録を完成させる。
-5. 単位の組み替え・内容・設定の変更は[変更時の扱い](configuration.md#判定記録と変更時の扱い)に従って再判定し、必要なレビュー・許可確認・検証へ戻す。承認後のcommit（または人自身のcommit）の後は、`commit` に従って正当な修正と元の予定差分の対応を記録し、確定単位に更新する。確定単位と実コミットに不一致があれば次工程を止め、SHA・予定差分・実差分の違いを記録して人に確認する。履歴を無断で書き換えない。
+5. 単位の組み替え・内容・設定の変更は[変更時の扱い](configuration.md#判定記録と変更時の扱い)に従って再判定し、必要なレビュー・許可確認・検証へ戻す。人の依頼によるcommit（または人自身のcommit）の後は、`commit` に従って正当な修正と元の予定差分の対応を記録し、確定単位に更新する。確定単位と実コミットに不一致があれば次工程を止め、SHA・予定差分・実差分の違いを記録して人に確認する。履歴を無断で書き換えない。
 
 ## 待ち状態
 
@@ -90,13 +90,13 @@ manual経路の依頼・報告と、別会話との任意の進行の引き渡�
 
 ## 人への依頼
 
-manualの単位の提示・相談・承認は、WebStorm内の対話Claude Codeセッションで[manualの差分提示と単位承認](../human-review.md)に従って行う。
+manualの差分レビュー・相談・コミットの依頼は、WebStormの差分表示と対話Claude Codeセッションで[manualのレビュー待ちと単位ごとのコミット](../human-review.md)に従って行う。
 
 会話でIssueリンクと必要な作業を明示し、ステータスの変更だけで依頼を済ませない。
 
 | 依頼 | 文例 |
 | --- | --- |
-| manualの単位レビュー | できるようになったことと重点確認点を添えて「[Issueリンク]の単位レビュー・承認を、WebStormのClaude Codeセッションでお願いします。」 |
+| manualのレビュー | できるようになったことと重点確認点を添えて「[Issueリンク]の差分をWebStormでレビューし、コミットはWebStormのClaude Codeセッションで依頼してください。」 |
 | Human QA | 「[Issueリンク]のHuman QAをお願いします。」 |
 | 外部対応 | 「[Issueリンク]の〇〇をお願いします。」 |
 

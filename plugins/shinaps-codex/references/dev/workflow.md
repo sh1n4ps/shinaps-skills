@@ -105,7 +105,7 @@ Issue・既存spec・調査記録・関連コード・検証方法を必要な�
 
 初期体制と変更理由、実際の担当・確認範囲、計画と実装後のレビュー回数、採否・修正、検証結果、未実施・未照合・未解決事項を報告する。
 
-linear-executeから受けた作業は未コミットの差分と結果を進行役へ返す。devの完了はLocal Agent QAへの引き渡しであり、進行全体の終了ではない。[Linear共通設定](../linear/configuration.md)と[担当と工程](../linear/workflow.md)に従い、QA後の差分確定の依頼を受けて `commit` を行う。auto経路は [Claude CLI](../linear/claude-cli.md) のresultへ報告し、同じsessionのresumeで質問・修正を受ける。manual経路は同じ対話セッションで人と作業し、[Bridge](../linear/bridge.md)で依頼元Codexへ報告する。
+linear-executeから受けた作業は未コミットの差分と結果を進行役へ返す。devの完了はLocal Agent QAへの引き渡しであり、進行全体の終了ではない。[Linear共通設定](../linear/configuration.md)と[担当と工程](../linear/workflow.md)に従い、autoはQA後の差分確定の依頼を受けて、manualは人のコミット開始依頼で `commit` を始め、単位の退避・stage・commitはQA結果の引き渡し後に行う。auto経路は [Claude CLI](../linear/claude-cli.md) のresultへ報告し、同じsessionのresumeで質問・修正を受ける。manual経路は同じ対話セッションで人と作業し、[Bridge](../linear/bridge.md)で依頼元Codexへ報告する。manualの完了時は人へユーザーのレビュー待ちと明示する（[manualの手順](../human-review.md)）。
 
 単独のdevではコミットが許可されている場合だけ範囲とモードを `commit` へ渡す。許可がなければ未コミットで返し、形式的な許可確認を追加しない。PR・リリースも許可された範囲で各スキルへ渡す。単独devにLinear進行・新しいゴールを必須にしない。
 

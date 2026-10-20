@@ -16,10 +16,10 @@ sharedで採用する `instructions.md` は共有JSONの `references.specificati
 
 0.33.0から `.shinaps/linear.json`（`config_version: 2`）を使います。`config_version: 1`・`implementation_skill`・`review_flow.tool`・許可の `codex_task`/`managed_session:*`、旧YAML・scalar review_flowは受け付けず、[移行手順](plugins/shinaps-claude/references/linear/configuration.md#config_version-1-からの移行)に従います。
 
-CLIはpluginに含まれないため、利用中のskillと同じ `@shinaps/skills@0.34.0` を導入し、`shinaps-skills --version` で確認します。`shinaps-skills validate-linear-config <明示ファイル>` は同梱schemaだけで検証し、ネットワーク取得・正本探索・Git操作・入力変更は行いません。`$schema` は固定URLによるエディタ補助で、契約の正本は[同梱schema](plugins/shinaps-claude/references/linear/configuration.schema.json)です。0.34.0から、Managed Agentsの `.shinaps/managed.json`（`config_version: 1`）も `shinaps-skills validate-managed-config <明示ファイル>` で同じ方式で検証します（[Managedの設定](plugins/shinaps-claude/references/managed/configuration.md)）。
+CLIはpluginに含まれないため、利用中のskillと同じ `@shinaps/skills@0.34.1` を導入し、`shinaps-skills --version` で確認します。`shinaps-skills validate-linear-config <明示ファイル>` は同梱schemaだけで検証し、ネットワーク取得・正本探索・Git操作・入力変更は行いません。`$schema` は固定URLによるエディタ補助で、契約の正本は[同梱schema](plugins/shinaps-claude/references/linear/configuration.schema.json)です。0.34.0から、Managed Agentsの `.shinaps/managed.json`（`config_version: 1`）も `shinaps-skills validate-managed-config <明示ファイル>` で同じ方式で検証します（[Managedの設定](plugins/shinaps-claude/references/managed/configuration.md)）。
 
 ```sh
-npm install -g @shinaps/skills@0.34.0
+npm install -g @shinaps/skills@0.34.1
 shinaps-skills --version
 shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 shinaps-skills validate-managed-config /absolute/repository/.shinaps/managed.json
@@ -37,7 +37,7 @@ shinaps-skills validate-managed-config /absolute/repository/.shinaps/managed.jso
 | `refine` | Shinaps AIのruleと実ファイルを照合する |
 | `extract-rules` | PRレビューからruleを抽出する |
 | `simplify` | 目的から見直して不要な構造や手順を削る |
-| `commit` | 各単位のreview_flowに従い、autoはAIがレビュー・コミット、manualはAIが退避・stage・提示し、人と修正を相談して、人の単位承認後にAIがコミットする |
+| `commit` | 各単位のreview_flowに従い、autoはAIがレビュー・コミット、manualは人の開始依頼で分割案を示し、人が単位ごとに依頼したコミットを行う |
 | `create-pr` | リポジトリの規約に合わせてPRを作成する |
 | `release` | 公開条件を確定し、対象バージョンの利用可能性を確認する |
 | `linear-plan` | 相談・必要なspec/explore・Issue作成と整理・プロジェクト設定を行い、実装前で止める |
@@ -47,9 +47,9 @@ shinaps-skills validate-managed-config /absolute/repository/.shinaps/managed.jso
 
 コミット・PR・リリースは、利用者の依頼またはLinear進行で合意済みの継続許可に従う。[共通設定](plugins/shinaps-claude/references/linear/configuration.md)・[担当と工程](plugins/shinaps-claude/references/linear/workflow.md)・[終了と待機](plugins/shinaps-claude/references/linear/execution.md)を参照し、必要な前工程が揃えば再確認せずに進む。単独スキル利用にはLinear進行や新しいゴールを必須にしない。`autonomous-commit-review` の役割は `commit` に統合した。個人用の別AI呼び出し・ブラウザ管理・ゴール管理・動画制作はこのpluginに含めない。
 
-`linear-execute` は初版では利用者本人の環境向けで、Codexが進行役として進行・Agent QA・Issueの記録・人への窓口を担当し、Claude Codeが実装・修正・コミットを行う。主フローは着手・実装・差分確定・公開確認・結果報告の5工程。運用項目は明示必須で、未記載を既定値で補わない。経路は着手時に通常の `review_flow.mode` で決まる。autoはCodexがローカル `claude -p` を起動して同じsessionをresumeし（許可 `claude_cli`、[CLI手順](plugins/shinaps-claude/references/linear/claude-cli.md)）、CLIの既存権限・model・effort・pluginsを保持する。manualはWebStorm内の対話Claude CodeセッションへBridgeで依頼する（許可 `bridge_request`、[Bridge](plugins/shinaps-claude/references/linear/bridge.md)）。初期体制はClaudeのメインが決めて報告し、Codexは判断の材料を渡す。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/linear/` に置く。`references/linear/` はClaude版を編集元としてCodex版へ同じ内容を複製し、テストで一致を確認する。
+`linear-execute` は初版では利用者本人の環境向けで、Codexが進行役として進行・Agent QA・Issueの記録・人への窓口を担当し、Claude Codeが実装・修正・コミットを行う。主フローは着手・実装・差分確定・公開確認・結果報告の5工程。運用項目は明示必須で、未記載を既定値で補わない。経路は着手時に通常の `review_flow.mode` で決まる。autoはCodexがローカル `claude -p` を起動して同じsessionをresumeし（許可 `claude_cli`、[CLI手順](plugins/shinaps-claude/references/linear/claude-cli.md)）、CLIの既存権限・model・effort・pluginsを保持する。manualはWebStorm内の対話Claude CodeセッションへBridgeで依頼する（許可 `bridge_request`、[Bridge](plugins/shinaps-claude/references/linear/bridge.md)）。manualではQA後もCodexはcommitを依頼せず、人の依頼でClaudeがcommitする。初期体制はClaudeのメインが決めて報告し、Codexは判断の材料を渡す。Bridge本体は同梱せず、導入済みのMCPとWebStormプラグインを使う。`SKILL.md` は担当ごとに両版で書き分け、共通の手順と書式は `references/linear/` に置く。`references/linear/` はClaude版を編集元としてCodex版へ同じ内容を複製し、テストで一致を確認する。
 
-`review_flow: { "mode": "auto" }` はAIが自然な単位を決め、独立レビュー・QA後にstage・commitする。`review_flow: { "mode": "manual" }` はAIが単位外を安全に退避して単位をstage・提示し、人と修正を相談し、人がその単位を承認した後にAIがcommitする。両方のstage・AI commit権限は利用者との明示合意に含まれ、未合意ファイルからは得ない。`path_policy_overrides` は `paths` と `review_flow` だけを持つ。全変更が一つのルールで覆われる単位だけ適用し、改名は旧新両パスを判定する。競合時は止める。旧 `human_code_review`・`commit_mode`・permissionsのstage/commit・パス別ai_commitは明示移行が必要。[共通設定](plugins/shinaps-claude/references/linear/configuration.md#パス別の方針)を参照する。
+`review_flow: { "mode": "auto" }` はAIが自然な単位を決め、独立レビュー・QA後にstage・commitする。`review_flow: { "mode": "manual" }` はAIがレビュー待ちを明示し、人がWebStormで差分を確認する。人のコミット開始依頼でAIが分割案を示し、人がその単位のコミットを依頼したらAIが単位外を安全に退避して単位をstage・検証・commitする。両方のstage・AI commit権限は利用者との明示合意に含まれ、未合意ファイルからは得ない。`path_policy_overrides` は `paths` と `review_flow` だけを持つ。全変更が一つのルールで覆われる単位だけ適用し、改名は旧新両パスを判定する。競合時は止める。旧 `human_code_review`・`commit_mode`・permissionsのstage/commit・パス別ai_commitは明示移行が必要。[共通設定](plugins/shinaps-claude/references/linear/configuration.md#パス別の方針)を参照する。
 
 0.29.0では旧 `document_only_changes: ai_commit` を廃止した。利用先では依存工程を止め、具体的なパス例外への移行または例外廃止を合意する。説明だけの変更の許可とは同値でないため自動変換しない。旧 `none` もJSONへ明示移行し、新規設定は `path_policy_overrides: []` にする。
 
@@ -178,9 +178,9 @@ npm pack --dry-run
 
 公開前にはnpmスコープ`@shinaps`の利用権限とtarball内容を確認する。CLIのバージョンと両pluginのバージョンを揃える。開発中の同一バージョンも`update codex`で再配置できる。
 
-### manualの提示と承認
+### manualのレビュー待ちとコミットの依頼
 
-manualではWebStorm内の対話Claude Codeセッションで、Claudeが単位外を退避して単位の差分をstage・提示します。人はWebStormの差分表示で確認し、Claudeと修正を相談します。人がその単位を承認したら、Claudeが承認したtreeと一致することを確かめてコミットします。承認後に単位の差分が変われば再提示・再承認が必要です。手順は[共通手順](plugins/shinaps-claude/references/human-review.md)に従います。autoには人レビュー待ちを追加しません。
+manualではWebStorm内の対話Claude Codeセッションで、作業が終わるとClaudeが短く報告して「ユーザーのレビュー待ち」と明示します。人はWebStormの差分表示で全体を確認し、Claudeと修正を相談します。人がコミットの開始を依頼すると、Claudeが自然なコミット分割案を示します。分割案への合意はコミットの承認ではありません。人がその単位のコミットを依頼すると、Claudeが単位外を退避して単位をstage・検証し、stage時のtreeと一致することを確かめてコミットします。stage時のtreeを記録した後に単位の差分が変われば再提示と改めての依頼が必要です。会話には差分本文を貼らず、単位名・目的・検証結果・推奨メッセージなど必要最小限だけを示します。手順は[共通手順](plugins/shinaps-claude/references/human-review.md)に従います。autoには人レビュー待ちを追加しません。
 
 ### CIとnpm自動公開
 

@@ -4,7 +4,7 @@
 
 ## 検証CLIと契約版
 
-利用中のskillとCLIの版を確認し、0.34.0のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.34.0`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
+利用中のskillとCLIの版を確認し、0.34.1のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.34.1`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
 
 ```sh
 shinaps-skills --version
@@ -76,10 +76,10 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 | `permissions` | 継続的に許可した操作の一覧（下の「許可」）。経路の許可（auto: `claude_cli`、manual: `bridge_request`）も含む。許可なしは `[]` |
 | `references` | `specifications`・`validation`・`environments`・`deployment`・`publication` の5分類をすべて記載し、既存資料のパスまたはURLの一覧を指定する。該当資料なしは `[]` |
 | `cycle_report` | Cycle報告の設定（下の「Cycle報告」）。報告を使わない場合は `null` |
-| `review_flow` | `{ "mode": "auto" }`（AIが自然な単位を決め、独立レビュー・QA後にstage・commit）または `{ "mode": "manual" }`（AIが単位外を安全に退避して単位をstage・提示し、人と修正を相談し、人の単位承認後にAIがcommit）。開始時の値で経路も決まる（下の「経路」） |
+| `review_flow` | `{ "mode": "auto" }`（AIが自然な単位を決め、独立レビュー・QA後にstage・commit）または `{ "mode": "manual" }`（AIがレビュー待ちを明示し、人がWebStormで差分を確認する。人のコミット開始依頼でAIが分割案を示し、人が単位ごとに依頼したらAIがstage・commit）。開始時の値で経路も決まる（下の「経路」） |
 | `path_policy_overrides` | パス別に `review_flow` を上書きするルールの一覧。例外なしは `[]`（下の「パス別の方針」） |
 
-- 利用者と合意した `review_flow` は両方とも対象のstageとAIのcommitを許可する。`auto` は独立レビュー後、`manual` は人の単位承認後にcommitする。未合意の設定ファイルから許可を得ない。その場の明示指示が優先し、push・公開・履歴変更は別の許可に従う。
+- 利用者と合意した `review_flow` は両方とも対象のstageとAIのcommitを許可する。`auto` は独立レビュー後、`manual` は人がその単位のコミットを依頼した後にcommitする。未合意の設定ファイルから許可を得ない。その場の明示指示が優先し、push・公開・履歴変更は別の許可に従う。
 - どちらのflowもdev内の確認、必須検証、Agent QA、必要なHuman QAを維持する。`auto` は独立レビューを必須とし、利用できなければ自己確認で代用せず止める。人レビュー省略を人のレビュー済みと記録しない。
 - 状態キーは [workflow.md](workflow.md) の「工程とステータス」の表と同じ。`statuses` の値はチームに実在する正確な名前にする。操作時はLinearから取得した状態のIDを使う。対応が曖昧・欠落・実物と不一致なら、その対応に依存する更新を止める。ステータスを自動で新設しない。
 - `team_settings: manage_on_setup` の場合も、通常実行ではチーム設定を変更しない。
@@ -94,8 +94,8 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 | `manual` | WebStorm内の対話Claude CodeセッションへBridgeで依頼する（[Bridge](bridge.md)） | `bridge_request` |
 
 - 経路はIssueの途中で切り替えない。`permissions`・`stop_after`・`dev_delegation`・worktreeや別セッションの作成の許可は、経路によって変わらない。
-- manual経路でパス別の方針によりauto単位が生じた場合は、対話session内のClaudeが独立レビュー後に人の承認なしでcommitし、人のレビューの省略を記録する。
-- auto経路でmanual単位が生じた場合、非対話CLIは人との相談・承認を扱えない。CodexはLocal Agent QAで判定記録を照合した時点で検出し、差分確定の依頼前に人へ一問で確認する: 「今回の明示指示でその単位をautoとして進める」か「Issueを中止し、未コミット差分を保全したまま設定（通常設定またはルール）を見直してから、manual経路でやり直す」か。黙ってautoへ落とさない。`commit` の中で検出した場合は手順を進めず、判定を記録してresultへ返す。
+- manual経路でパス別の方針によりauto単位が生じた場合は、人のコミット開始依頼の後、対話session内のClaudeがその単位を単位ごとの依頼なしに独立レビュー後にcommitし、人のレビューの省略を記録する。
+- auto経路でmanual単位が生じた場合、非対話CLIは人との相談・コミットの依頼を扱えない。CodexはLocal Agent QAで判定記録を照合した時点で検出し、差分確定の依頼前に人へ一問で確認する: 「今回の明示指示でその単位をautoとして進める」か「Issueを中止し、未コミット差分を保全したまま設定（通常設定またはルール）を見直してから、manual経路でやり直す」か。黙ってautoへ落とさない。`commit` の中で検出した場合は手順を進めず、判定を記録してresultへ返す。
 
 ## パス別の方針
 
@@ -125,9 +125,9 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 
 ### 判定記録と変更時の扱い
 
-各予定単位について、設定の正本と内容、適用した全ルール（または適用なしの理由）、単位の比較元と全差分、実効 `review_flow`、今回の明示指示とflowの合意根拠、検証・レビューの結果を記録する。manualの単位は承認記録（承認発話の要約・承認したtree hash・作成したSHA）も残す。差分の同一性はパスだけでなく内容・mode等も含めて確認する。Linear進行での担当間の引き渡しは [workflow.md](workflow.md)、コミット前後の単位照合と完了時の全体照合は `commit` に従う。
+各予定単位について、設定の正本と内容、適用した全ルール（または適用なしの理由）、単位の比較元と全差分、実効 `review_flow`、今回の明示指示とflowの合意根拠、検証・レビューの結果を記録する。manualの単位は依頼記録（コミットの依頼発話の要約・stage時のtree hash・作成したSHA）も残す。差分の同一性はパスだけでなく内容・mode等も含めて確認する。Linear進行での担当間の引き渡しは [workflow.md](workflow.md)、コミット前後の単位照合と完了時の全体照合は `commit` に従う。
 
-予定単位の内容・分割・統合を変更したら、変更した単位を再判定して必要なレビュー・許可確認・検証へ戻す。設定変更時も影響する未実行単位を再判定する。以前の判定や別単位の方針は流用しない。manualで人の修正・承認を経てcommitした場合は `commit` に従い、commit後に目的・範囲・実効flowと影響する挙動を確認する。正当な修正は元の予定との差と対応を残して確定単位へ反映する。不明・対象外の変更、確定単位との不一致は停止し、履歴を無断で書き換えない。
+予定単位の内容・分割・統合を変更したら、変更した単位を再判定して必要なレビュー・許可確認・検証へ戻す。設定変更時も影響する未実行単位を再判定する。以前の判定や別単位の方針は流用しない。manualで人の修正・依頼を経てcommitした場合は `commit` に従い、commit後に目的・範囲・実効flowと影響する挙動を確認する。正当な修正は元の予定との差と対応を残して確定単位へ反映する。不明・対象外の変更、確定単位との不一致は停止し、履歴を無断で書き換えない。
 
 ### config_version 1 からの移行
 

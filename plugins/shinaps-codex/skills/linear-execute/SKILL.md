@@ -12,7 +12,7 @@ Issueの責務・受入条件・ステータスを、実際の成果と一致さ
 着手時に作業先設定の通常の `review_flow.mode` で経路を決め、Issueの途中で切り替えない（[経路](../../references/linear/configuration.md#経路)）。
 
 - auto: [ローカルClaude CLI](../../references/linear/claude-cli.md)を起動し、質問への回答・修正・差分確定を同じsessionのresumeで依頼する。許可は `claude_cli`。
-- manual: WebStorm内の対話Claude Codeセッションへ[Bridge](../../references/linear/bridge.md)で依頼する。人とClaudeの作業中は同じIssueへ指示を送らず、報告を待つ。許可は `bridge_request`。
+- manual: WebStorm内の対話Claude Codeセッションへ[Bridge](../../references/linear/bridge.md)で依頼する。人とClaudeの作業中は同じIssueへ指示を送らず、報告を待つ。QA合格後もcommitを依頼せず、QA結果と判定記録を渡して人の依頼によるcommitの報告を待つ。許可は `bridge_request`。
 
 体制判断の材料（受入条件・関連範囲・既存検証・リスク）を依頼に添える。初期体制はClaudeのメインが決めて報告する。
 
@@ -22,7 +22,7 @@ Issueの責務・受入条件・ステータスを、実際の成果と一致さ
 
 開発進行には作業先の明示された設定と `issue_update`、経路の許可が必要（[configuration.md](../../references/linear/configuration.md) の「許可」）。設定の許可・`stop_after` を超えない。Issue未作成の明示的な実装依頼は共通の紐づけ手順でIssueを作って続けられるが、仕様が未決なら `shinaps:linear-plan` へ整理を戻す。
 
-実行には対象と終了条件を持つゴールの設定成功が必須。環境が明示許可を要求する場合は、既存の依頼で満たされるか確認し、なければ開始前に一度確認する。ゴール未設定のまま実装へ進まない。Claudeの作業・manualの単位承認・Human QA待ちは予定された工程として待機する。スキルの実行だけで予約実行・定期監視は開始しない。人への確認は会話で一問ずつ行う。
+実行には対象と終了条件を持つゴールの設定成功が必須。環境が明示許可を要求する場合は、既存の依頼で満たされるか確認し、なければ開始前に一度確認する。ゴール未設定のまま実装へ進まない。Claudeの作業・manualの人のレビュー・コミットの依頼・Human QA待ちは予定された工程として待機する。スキルの実行だけで予約実行・定期監視は開始しない。人への確認は会話で一問ずつ行う。
 
 ## 設定と補足を読む
 
@@ -42,4 +42,4 @@ Issueの責務・受入条件・ステータスを、実際の成果と一致さ
 | QAの実施・記録・素材 | [references/qa.md](../../references/linear/qa.md) |
 | Cycle完了QA・報告 | [references/cycle-report.md](../../references/linear/cycle-report.md) |
 
-コミットはClaudeへ差分確定を依頼して `shinaps:commit` で行い、Codexは各コミットの単位照合と全体照合を行う。pushとPRの作成は `shinaps:create-pr`、公開は `shinaps:release` に従い、このスキルで手順を持たない。これらのスキルには[共通設定](../../references/linear/configuration.md)の許可と前工程の結果を渡す。必要な条件が揃えば再確認せずに進み、個別スキルの完了だけで進行を終えず、[終了条件](../../references/linear/execution.md)まで継続する。
+コミットはClaudeへ差分確定を依頼して `shinaps:commit` で行い（manualは上の経路の項に従う）、Codexは各コミットの単位照合と全体照合を行う。pushとPRの作成は `shinaps:create-pr`、公開は `shinaps:release` に従い、このスキルで手順を持たない。これらのスキルには[共通設定](../../references/linear/configuration.md)の許可と前工程の結果を渡す。必要な条件が揃えば再確認せずに進み、個別スキルの完了だけで進行を終えず、[終了条件](../../references/linear/execution.md)まで継続する。

@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { validateLinearConfig } from '../lib/linear-config.ts';
 
 // 人が設定を保存しても、未知キーや廃止した実装経路の指定が許可として解釈されないことを保証する。
+// askはIssueごとに経路を選ぶための通常設定の値であり、パス別で受理するとIssueごとの選択にならないため拒否する。
 test('configuration accepts complete review policies and rejects incomplete, retired or unknown contracts without changing input', async (context) => {
   const directory = await mkdtemp(join(tmpdir(), 'linear-config-'));
   context.after(() => rm(directory, { recursive: true, force: true }));
@@ -38,16 +39,18 @@ test('configuration accepts complete review policies and rejects incomplete, ret
     },
     cycle_report: null,
   };
-  for (const review_flow of [{ mode: 'auto' }, { mode: 'manual' }]) {
-    const input = {
-      ...config,
-      review_flow,
-      path_policy_overrides: [{ paths: ['docs/**'], review_flow }],
-    };
-    const before = JSON.stringify(input);
-    await writeFile(path, before);
-    await validateLinearConfig(path);
-    assert.equal(await readFile(path, 'utf8'), before);
+  for (const review_flow of [{ mode: 'auto' }, { mode: 'manual' }, { mode: 'ask' }]) {
+    for (const path_review_flow of [{ mode: 'auto' }, { mode: 'manual' }]) {
+      const input = {
+        ...config,
+        review_flow,
+        path_policy_overrides: [{ paths: ['docs/**'], review_flow: path_review_flow }],
+      };
+      const before = JSON.stringify(input);
+      await writeFile(path, before);
+      await validateLinearConfig(path);
+      assert.equal(await readFile(path, 'utf8'), before);
+    }
   }
   const invalid = [
     { ...config, review_flow: 'auto' },
@@ -60,6 +63,7 @@ test('configuration accepts complete review policies and rejects incomplete, ret
         { paths: ['docs/**'], review_flow: { mode: 'manual', tool: 'plasma' } },
       ],
     },
+    { ...config, path_policy_overrides: [{ paths: ['docs/**'], review_flow: { mode: 'ask' } }] },
     { ...config, config_storage: undefined },
     { ...config, path_policy_overrides: undefined },
     { ...config, document_only_changes: 'none' },

@@ -4,7 +4,7 @@
 
 ## 検証CLIと契約版
 
-利用中のskillとCLIの版を確認し、0.35.1のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.35.1`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
+利用中のskillとCLIの版を確認し、0.35.2のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.35.2`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
 
 0.35.0から通常設定の `review_flow.mode` に `ask` を受理する。`config_version` は2のままで、既存のauto・manualの設定は変更不要。0.33.0〜0.34.xのCLIと `$schema` のURLは `ask` を拒否するため、`ask` を使う設定では `$schema` も0.35.0以降のURLにする。
 
@@ -180,7 +180,7 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 | `merge` | 必要なQA・承認が揃った対象PRのマージと、元のブランチへ戻る操作 |
 | `deploy:<環境>` | 指定した環境への配備・配布（例 `deploy:staging`） |
 | `publish:<操作>` | 一般公開やストアへの提出など、指定した公開操作（例 `publish:app_store_submit`） |
-| `dev_delegation` | `shinaps:dev-claude` の中で、サブエージェントへ委託する。許可がない場合は、入口のメインが同じ観点を自分で確認し、独立確認とは報告しない。worktreeの作成は含まない |
+| `dev_delegation` | `shinaps:dev-claude` の中で、サブエージェントへ委託する。許可がない場合、入口のメインは担当の作業を代わりに行わず、必要な許可を求める。worktreeの作成は含まない |
 | `evidence:<保存先>` | Linear以外の指定した保存先へQA素材を保存する（LinearのIssueへの添付は `issue_update` に含む） |
 
 - 開発進行には `issue_update` と、[経路](#経路)の許可が必要（auto: `claude_cli` とローカルClaude CLI、manual: `bridge_request` と、Bridge MCP・WebStorm内の対話Claude Codeセッション。ask: 着手時に選んだ経路の許可）。今回の明示依頼による同じ経路の許可も引き継ぐ。初期設定は `issue_update`・経路の許可（askでは選択肢にする両経路の許可）・`dev_delegation` と `review_flow` を具体的に提案し、合意を得る。設定の存在だけでは許可を得ない。

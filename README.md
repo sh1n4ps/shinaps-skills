@@ -18,10 +18,10 @@ sharedで採用する `instructions.md` は共有JSONの `references.specificati
 
 0.35.0から通常設定の `review_flow.mode` に `ask` を追加しました（パス別ルールは `auto`・`manual` だけ）。既存の設定は変更不要です。
 
-CLIはpluginに含まれないため、利用中のskillと同じ `@shinaps/skills@0.35.1` を導入し、`shinaps-skills --version` で確認します。`shinaps-skills validate-linear-config <明示ファイル>` は同梱schemaだけで検証し、ネットワーク取得・正本探索・Git操作・入力変更は行いません。`$schema` は固定URLによるエディタ補助で、契約の正本は[同梱schema](plugins/shinaps-claude/references/linear/configuration.schema.json)です。0.34.0から、Managed Agentsの `.shinaps/managed.json`（`config_version: 1`）も `shinaps-skills validate-managed-config <明示ファイル>` で同じ方式で検証します（[Managedの設定](plugins/shinaps-claude/references/managed/configuration.md)）。
+CLIはpluginに含まれないため、利用中のskillと同じ `@shinaps/skills@0.35.2` を導入し、`shinaps-skills --version` で確認します。`shinaps-skills validate-linear-config <明示ファイル>` は同梱schemaだけで検証し、ネットワーク取得・正本探索・Git操作・入力変更は行いません。`$schema` は固定URLによるエディタ補助で、契約の正本は[同梱schema](plugins/shinaps-claude/references/linear/configuration.schema.json)です。0.34.0から、Managed Agentsの `.shinaps/managed.json`（`config_version: 1`）も `shinaps-skills validate-managed-config <明示ファイル>` で同じ方式で検証します（[Managedの設定](plugins/shinaps-claude/references/managed/configuration.md)）。
 
 ```sh
-npm install -g @shinaps/skills@0.35.1
+npm install -g @shinaps/skills@0.35.2
 shinaps-skills --version
 shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 shinaps-skills validate-managed-config /absolute/repository/.shinaps/managed.json
@@ -33,7 +33,7 @@ shinaps-skills validate-managed-config /absolute/repository/.shinaps/managed.jso
 |---|---|
 | `explore` | 対話しながら既存挙動と変更影響を調べる |
 | `spec` | 目的・仕様・実現方法を詰める |
-| `dev-claude` (Claudeのみ) | メインが作業に応じて担当・人数を判断し、計画・実装・検証・独立レビューを進める |
+| `dev-claude` (Claudeのみ) | メインが作業に応じて担当・人数を判断して進行と取りまとめを行い、担当が計画・実装・検証・独立レビューを行う |
 | `debug` | 不具合の原因を検証する |
 | `review` | 差分や既存コードをレビューする |
 | `refine` | Shinaps AIのruleと実ファイルを照合する |
@@ -65,7 +65,7 @@ shinaps-skills validate-managed-config /absolute/repository/.shinaps/managed.jso
 
 [実装体制の判断](plugins/shinaps-claude/references/dev/staffing.md)に従い、devのメインが設計前に役割別の人数・理由・専任なしの責任者・必須検証を決める。linear-executeでは進行役のCodexが判断の材料を渡し、メインが決めて報告する。不確実性・影響範囲・失敗時の影響を基準に、途中でも必要な担当を追加する。人数を増やすだけで許可・予算・品質条件は変えない。
 
-小さく明確な変更はメインが計画し、実装1体と独立コードレビュー1体で進められる。設計の比較や重要な契約の独立確認が必要なら該当する役割だけ増やす。規約照合・簡素化・指摘検証は専任なしでも責任者を決めて行う。
+小さく明確な変更は実装担当が短い計画を作り、実装1体と独立コードレビュー1体で進められる。設計の比較や重要な契約の独立確認が必要なら該当する役割だけ増やす。規約照合・簡素化・指摘検証は専任なしでもメインへ戻さず、既存の担当に責任を割り当てて行う。
 
 - 工程と体制基準はClaude版を編集元としてCodexへ複製する。起動手順だけはruntimeごとに異なる。
 - Managedの `staffing.md`・`workflow.md`・`launch.md` はClaude版を編集元に写した適応版で、一致はテストしない。Claude版の工程・体制基準を変えたらManagedへの適用可否を判断する。
@@ -139,7 +139,7 @@ Claude Codeは標準のmarketplace自動更新機能を使う。`/plugin` のMar
 両pluginの `managed-agents/` は、Claude Managed Agentsでdev工程を進めるための共通定義である。lead `shinaps-dev-managed-cc`、devの5役割、skill `dev-managed-cc`、環境 `shinaps-dev` を置く。クラウドのIDを記録する `claude-lock.json` と実設定は利用者ごとのものなので、作業先の `.shinaps/` に置き、公開する定義には含めない。予定実行はこの構成に含めない。
 
 - leadはFable 5.1（`claude-fable-5-1` / medium）、役割はOpus 5.5（`claude-opus-5-5` / medium）で動く。全agent定義に `speed: standard` を明示する（既存リソースに残るfastを戻すため）。
-- 体制は `dev-claude` と同じ基準でleadが作業ごとに決める。実装者と独立したコードレビューは最低1体で、規約照合もその担当が行う。refine担当とultraの入口は置かない。explorerとreview-verifierも置かず、探索はlead・設計担当・実装担当が、指摘の検証は設計責任者が行う。
+- 体制は `dev-claude` と同じ基準でleadが作業ごとに決める。実装者と独立したコードレビューは最低1体で、規約照合もその担当が行う。refine担当とultraの入口は置かない。explorerとreview-verifierも置かず、探索は設計担当（いなければ実装担当）が、指摘の検証は設計責任者が行う。
 - Shinaps AIのMCPとruleを使わない。規約はマウントしたリポジトリの `AGENTS.md`・`CLAUDE.md` と参照先、添付された利用者CLAUDE.mdだけで、最終報告ではShinaps AI ruleを未照合とする。
 - 初回メッセージにリポジトリ・base・head・範囲と受入条件・許可・予算が揃わなければ、leadは作業を始めず欠落を質問する。許可はそのメッセージで明示された操作だけで、構成の導入からは生じない。
 - 終了地点は範囲を限ったコミット・headブランチへのpush・draft PR。merge・deploy・release・Issueの更新はしない。CodexのQAはセッションの外で、PRの後に行う。

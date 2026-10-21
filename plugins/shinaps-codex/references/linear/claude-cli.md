@@ -14,9 +14,9 @@
 claude -p --output-format json --permission-mode dontAsk --permission-prompts none < /absolute/work/request.txt > /absolute/work/result.json 2> /absolute/work/stderr.log
 ```
 
-途中経過が必要なら `--output-format stream-json --verbose` を使い、JSONLへ保存する。シェル実行ツールのprocess/session ID、開始時刻、cwd、Issue、出力パスを記録する。実行中は、実行ツールがprocessの終了を通知する場合はその通知を待ち、通知を受け取れない場合だけ同じprocessの終了を確認して、終了コードを取得する。通知を受け取れるかは、利用時の実行ツールが実際に提供する機能で判断する。新しいCLIを並行起動せず、終了後に結果を会話へ返す。stream-jsonはイベントを読み、最終resultがない途中出力を完了と扱わない。
+途中経過が必要なら `--output-format stream-json --verbose` を使い、JSONLへ保存する。シェル実行ツールのprocess/session ID、開始時刻、cwd、Issue、出力パスを記録する。実行中は、実行ツールがprocessの終了を通知する場合はその通知を待つ。通知を受け取れるかは、利用時の実行ツールが実際に提供する機能で判断する。通知を受け取れない場合だけ、起動または前回の確認から5分おきに同じprocessの終了だけを確認する。この5分は確認の間隔で、進行役の1回の待機の長さ（[実行](execution.md) の「待機の手順（進行役）」）とは別に扱い、短い待機から戻るたびには確認しない。終了を待つ間は、stream-json・stderr・出力ファイルなどのログや途中成果を読まない。異常の根拠がある場合と利用者に依頼された場合だけ、必要な範囲で調べる。新しいCLIを並行起動せず、終了したら終了コードを取得して結果を会話へ返す。
 
-jsonの `session_id`、`result`、`is_error`、`permission_denials` を読み、stream-jsonではsession初期化と最終resultを照合する。session_idをIssueとcwdに紐づけてローカル作業記録に保持する。終了コード0だけで成功にせず、エラー・拒否・質問・成果を確認して実差分と検証結果を独立QAする。ID欠落、異常終了、出力欠落なら停止してprocessと記録を調べる。結果不明のまま新規セッションを起動したり同じ依頼を再送したりしない。
+jsonの `session_id`、`result`、`is_error`、`permission_denials` を読み、stream-jsonではsession初期化と最終resultを照合し、最終resultがない出力を完了と扱わない。session_idをIssueとcwdに紐づけてローカル作業記録に保持する。終了コード0だけで成功にせず、エラー・拒否・質問・成果を確認して実差分と検証結果を独立QAする。ID欠落、異常終了、出力欠落なら停止してprocessと記録を調べる。結果不明のまま新規セッションを起動したり同じ依頼を再送したりしない。
 
 ## 依頼・質問・修正・コミット
 

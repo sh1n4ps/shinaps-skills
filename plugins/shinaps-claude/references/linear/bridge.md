@@ -1,6 +1,6 @@
 # Bridge
 
-通常設定が `review_flow.mode: manual` のIssue（[経路](configuration.md#経路)）で、CodexがWebStorm内の対話Claude CodeセッションへAI Terminal Bridge（以下Bridge）で依頼し、報告を受ける手順。`bridge_request` があれば、別会話との任意の進行の引き渡しにも使う。
+通常設定が `review_flow.mode: manual` のIssueと、`ask` で着手時にmanualを選んだIssue（[経路](configuration.md#経路)）で、CodexがWebStorm内の対話Claude CodeセッションへAI Terminal Bridge（以下Bridge）で依頼し、報告を受ける手順。`bridge_request` があれば、別会話との任意の進行の引き渡しにも使う。
 
 各項目の根拠を括弧で示す。「履歴」はこのリポジトリのコミット 6ebbfbf・c766eb6 時点の `plugins/shinaps-claude/skills/linear/references/workflow.md` の「Bridgeでの依頼と報告」に記録された運用、「現物確認」は2026-10-19に進行役がBridge MCPのツール一覧で確認した内容を指す。どちらにもない挙動は、使う時点で現物のツール一覧と挙動で確認し、確認できなければ止める。
 
@@ -38,7 +38,7 @@
 
 | 依頼・報告 | 含めるもの |
 | --- | --- |
-| 実装の依頼（CodexからClaude） | Issueリンク、`shinaps:dev-claude`、範囲・受入条件、体制判断の材料、Gitの作業ディレクトリ・branch・HEAD・既存差分、許可範囲（`dev_delegation` の有無を含む）、返信先のCodexの `session_id`、関係する補足と参照先、下の定型文 |
+| 実装の依頼（CodexからClaude） | Issueリンク、`shinaps:dev-claude`、範囲・受入条件、体制判断の材料、Gitの作業ディレクトリ・branch・HEAD・既存差分、許可範囲（`dev_delegation` の有無を含む）、通常設定が `ask` の場合は解決したmodeと回答の記録、返信先のCodexの `session_id`、関係する補足と参照先、下の定型文 |
 | 修正の依頼（CodexからClaude） | 実装の依頼の項目に加え、再現手順・期待と実際・対象差分・証拠の場所 |
 | QA結果の引き渡し（CodexからClaude。manualの単位のcommitの依頼ではない） | Issueリンク、対象差分・作業ディレクトリ・branch、Local Agent QAの結果、実効flow・単位の判定記録、返信先 |
 | 完了の報告（ClaudeからCodex） | 体制と途中の増員、対象差分、自動検証の結果、確認観点、既知の制限、未解決の事項、devの入口内のレビュー結果の要約、単位案と予定差分、人と決めたこと、人へレビュー待ちと明示したこと |

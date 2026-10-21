@@ -9,7 +9,7 @@ Claudeは実装担当で、Codexが進行・Agent QA・Issueの記録・人へ�
 
 ## 経路
 
-経路は着手時に通常設定の `review_flow.mode` で決まり、Issueの途中で切り替えない（[経路](../../references/linear/configuration.md#経路)）。
+経路は着手時に通常設定の `review_flow.mode` で決まり、Issueの途中で切り替えない（[経路](../../references/linear/configuration.md#経路)）。`ask` ではCodexが人へ確認した回答で決まる。Claudeは依頼に書かれた経路に従い、経路を再質問しない。
 
 - auto: Codexが起動する[ローカルClaude CLI](../../references/linear/claude-cli.md)で依頼を受け、質問・障害・完了はresultへ返す。回答・修正・コミットの依頼は同じsessionのresumeで受ける。
 - manual: WebStorm内の対話Claude Codeセッションで[Bridge](../../references/linear/bridge.md)の依頼を受ける。人と直接作業し、計画上の判断・仕様の不明点は人へ `AskUserQuestion` で一問ずつ確認する。作業の完了時は人へユーザーのレビュー待ちと明示する（[manualの手順](../../references/human-review.md)）。完了・障害・人の依頼によるcommitの完了は、Bridgeで依頼元のCodexへ報告する。

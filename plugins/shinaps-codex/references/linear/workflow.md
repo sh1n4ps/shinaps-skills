@@ -4,11 +4,11 @@
 
 | 担当 | 責務 |
 | --- | --- |
-| Codex（進行役） | Issueの作成・整理、仕様相談、Ready判定、依存・Cycle管理、進行判断、作業先設定からの経路と許可の確定、体制判断の材料（受入条件・関連範囲・既存検証・リスク）の提示、Claudeへの依頼（auto: CLI、manual: Bridge）、Local・Staging・ProductionのAgent QA、単位・全体の照合、許可されたpush・PR・merge・配備・公開、Issueへの記録、人への依頼 |
+| Codex（進行役） | Issueの作成・整理、仕様相談、Ready判定、依存・Cycle管理、進行判断、作業先設定からの経路と許可の確定（askなら人へ一問で確認）、体制判断の材料（受入条件・関連範囲・既存検証・リスク）の提示、Claudeへの依頼（auto: CLI、manual: Bridge）、Local・Staging・ProductionのAgent QA、単位・全体の照合、許可されたpush・PR・merge・配備・公開、Issueへの記録、人への依頼 |
 | Claude（実装担当・Claude Code） | 初期体制の決定と途中の増員、`shinaps:dev-claude` による技術調査・計画・実装・検証・独立レビュー、QA指摘の修正、`shinaps:commit`（auto: 独立レビュー後にcommit、manual: 人の開始依頼で分割案、人が依頼した単位ごとにcommit）、結果の報告。実装を伴わない文書整理は、作業先リポジトリの規約に従いdevの入口の対象外にできる。スキル・コードの変更は文書の形でも実装としてdevの入口を使う |
 | 人 | 未合意の仕様・権限の判断、manualのWebStormでの差分レビュー・修正相談・コミットの開始と単位ごとの依頼、本人の操作が必要な認証等、必要なHuman QA |
 
-経路は着手時に通常設定の `review_flow.mode` で決まる（[経路](configuration.md#経路)）。autoはCodexが[ローカルClaude CLI](claude-cli.md)の同じsessionをresumeし、manualはWebStorm内の対話Claude Codeセッションへ[Bridge](bridge.md)で依頼する。どちらでもClaudeはdev内レビューと検証を終えて結果を返し、CodexがLocal Agent QAを行う。Claudeの報告をQA合格の根拠にせず、この引き渡しを進行全体の終了と扱わない。
+経路は着手時に通常設定の `review_flow.mode` で決まり、askでは着手時の人の回答で決まる（[経路](configuration.md#経路)）。autoはCodexが[ローカルClaude CLI](claude-cli.md)の同じsessionをresumeし、manualはWebStorm内の対話Claude Codeセッションへ[Bridge](bridge.md)で依頼する。どちらでもClaudeはdev内レビューと検証を終えて結果を返し、CodexがLocal Agent QAを行う。Claudeの報告をQA合格の根拠にせず、この引き渡しを進行全体の終了と扱わない。
 
 - Issueに関わる人への質問・依頼はCodexが窓口になる。manualでは人がWebStormの対話セッションで直接Claudeと相談する。Claudeは決定事項を報告に含め、CodexがIssueへ記録する。
 - manualで人とClaudeが作業している間、Codexは同じIssueへ追加の指示を送らず、ゴールを `active` のままClaudeの報告を待つ。Claudeの報告後、CodexのQA中は人とClaudeが作業ツリーを編集しない。
@@ -22,7 +22,7 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 
 | 工程 | 状態キー | 内容と次へ進む条件 |
 | --- | --- | --- |
-| 着手 | `ready` | Readyと依存を確認し、作業先設定を読み、通常設定の `review_flow` から経路と必要な許可（auto: `claude_cli`、manual: `bridge_request`）を確定する。checkout・branch・HEAD・既存差分を固定し、体制判断の材料を添えてClaudeへ依頼する。通常設定がautoでmanualのパス別ルールがあれば、起こり得る停止（[経路](configuration.md#経路)）を依頼に書く |
+| 着手 | `ready` | Readyと依存を確認し、作業先設定を読み、通常設定の `review_flow` から経路と必要な許可（auto: `claude_cli`、manual: `bridge_request`）を確定する。通常設定がaskなら、Claudeへの依頼前に作業内容と推奨理由を添えてautoかmanualかを人へ一問で確認し、回答まで着手しない。回答と根拠を作業記録に残し、同じIssueでは再質問しない。checkout・branch・HEAD・既存差分を固定し、体制判断の材料を添えてClaudeへ依頼する。経路がautoでmanualのパス別ルールがあれば、起こり得る停止（[経路](configuration.md#経路)）を依頼に書く |
 | 実装 | `coding`, `local_agent_qa` | Claudeのメインが初期体制を決めて報告し、`shinaps:dev-claude` で実装・検証・独立レビューを行い、未コミット差分・単位案・予定差分・判定記録を返す。manualでは人へユーザーのレビュー待ちと明示する。CodexがLocal Agent QA（判定記録と経路の整合を含む）を行い、不合格なら同じsessionへ戻す |
 | 差分確定 | `code_review` | QA合格後、Codexが実効flow・判定記録・QA結果を同じsessionへ渡し、Claudeが `shinaps:commit` を行う。autoは単位ごとに独立レビュー後にcommitする。manualではCodexはcommitを依頼せず、渡した後は報告を待つ。人のコミット開始依頼でClaudeが分割案を示し、人が単位ごとに依頼したcommitを行う。Codexは各コミットの単位照合と全体照合を行う。差分確定中の修正は単位の目的・範囲内に限り、超えるものは実装へ戻す。差分確定で差分が変わったIssueは、確定後にCodexのAgent QAを必須にする（公開確認のpush前の最終Agent QAで兼ねてよい） |
 | 公開確認 | `post_commit`, `staging_agent_qa`, `staging_human_qa`, `release`, `production_agent_qa`, `production_human_qa` | 受入条件と許可に応じて必要なものだけ行う: push前の最終Agent QA、push・PR作成、環境配備とStaging/ProductionのAgent QA、必要なHuman QA、merge・配備・公開。適用しない項目は理由を記録する |
@@ -38,7 +38,7 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 - 実効方針が `review_flow.mode: auto` の単位は、Codexが差分確定で対象単位を明示し、人のレビューの省略と実施した確認への参照をIssueへ記録する。人のレビュー済みとは記録しない。
 
   ```text
-  人のコードレビュー: <対象単位>は省略（根拠: <通常設定または適用したパス別ルール>、判定: <Local Agent QAの記録へのリンク>）
+  人のコードレビュー: <対象単位>は省略（根拠: <通常設定（askの場合は着手時の回答）または適用したパス別ルール>、判定: <Local Agent QAの記録へのリンク>）
   実施した確認: devの入口内のレビュー（Claudeの完了報告 <コメントへのリンク>）、Local Agent QA（<記録へのリンク>）
   コミット: <SHAの一覧>（<実際の実施者と方法>）
   ```
@@ -61,6 +61,7 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 | devの入口の中で計画上の判断が必要になった | autoはClaudeがresultでCodexへ相談し、Codexは既存の合意で判断できれば回答する。manualはClaudeが人へ直接確認し、決定を報告する |
 | QAで受入条件の範囲内の不具合が見つかった | Codexが同じClaude sessionへ修正を依頼し、Claudeは人の着手許可を改めて取らずに修正する。Codexが再検証する |
 | ClaudeがCLIのresultでcommitの完了を、またはBridgeで人の依頼によるcommitの完了を報告した | Codexは人に同じ事実を聞き直さず、報告の対象とGitの状態を照合して次の工程へ進む |
+| 通常設定がaskで、同じIssueの経路を着手時に選んでいる | Codexは修正・再開・QA・差分確定で経路を再質問せず、記録した選択を使う |
 | 次の操作の継続的な許可があり、必要な工程の結果が揃った | Codexは「進めてもよいか」を再質問せずに実行する |
 | Cycle全体を任され、対象Issueが設定された終了地点に達した | Codexは開始時に確定した対象と順序を照合し、その範囲の次のIssueへ進む |
 

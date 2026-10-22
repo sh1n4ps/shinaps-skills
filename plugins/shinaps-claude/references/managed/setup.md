@@ -1,6 +1,6 @@
 # Managed 構成の導入と更新
 
-共通の dev 構成（lead `shinaps-dev-managed-cc`、dev の5役割、skill `dev-managed-cc`、環境 `shinaps-dev`）を利用者の組織へ導入・更新する手順。既存の lock を使い、同じリソースを重複して作らない。セッションの作成・予定実行は行わない。dev の工程は [skill `dev-managed-cc`](../../managed-agents/skills/dev-managed-cc/SKILL.md) が持つので、ここでは扱わない。
+共通の dev 構成（lead `shinaps-dev-managed-cc`、dev の7役割、skill `dev-managed-cc`、環境 `shinaps-dev`）を利用者の組織へ導入・更新する手順。既存の lock を使い、同じリソースを重複して作らない。セッションの作成・予定実行は行わない。dev の工程は [skill `dev-managed-cc`](../../managed-agents/skills/dev-managed-cc/SKILL.md) が持つので、ここでは扱わない。
 
 ## 前提
 
@@ -36,9 +36,11 @@
 サブシェルで `<definitions>` に移動してから実行する。lock は実行した場所から上へ探され、キーは lock のディレクトリからの相対パスになるため。
 
 - 出力の `Preview` 行が `./claude-lock.json`（`<definitions>` 直下）であることを確かめる。違えば止める。別の場所の lock を `--lock-file` で指定しない。キーの基準がずれて重複作成につながる。
-- lock があれば、計画は定義を変えたリソースの update と、それ以外の unchanged になる。lock にあってソースの無い項目は警告として残る。`--prune` は付けない。
-- 次の場合は適用せずに止めて報告する: `This plan cannot be applied` が出る、lock があるのに create がある、意図しない環境の更新がある。
-- lock が無く create を含む場合は、`ant beta:agents list --beta managed-agents-2026-04-01` と `ant beta:environments list --beta managed-agents-2026-04-01` で同じ名前の lead・役割・環境が既にあるかを確かめる。あれば止めて、lock を戻す方法を利用者と相談する。同じマシンで同じ組織に導入済みなら、その `<definitions>` を指すよう設定を直してやり直す。別のマシンでは[lock の扱い](configuration.md#lock-の扱い)に従い、バックアップや以前の置き場所から lock を戻し、無ければ相談する。
+- lock があれば、計画は定義を変えたリソースの update、テンプレートに新しく加わったリソースの create、それ以外の unchanged になる。lock にあってソースの無い項目は警告として残る。`--prune` は付けない。
+- 次の場合は適用せずに止めて報告する: `This plan cannot be applied` が出る、意図しない環境の更新がある。
+- create があれば、`ant beta:agents list --beta managed-agents-2026-04-01` と `ant beta:environments list --beta managed-agents-2026-04-01` で、アーカイブされていない同じ名前の lead・役割・環境が既にあるかを確かめる。あれば止める。アーカイブの状態を判定できなければ止める。
+  - lock がある場合は、lock を変えずに状況を報告して利用者と相談する。
+  - lock が無い場合は、lock を戻す方法を利用者と相談する。同じマシンで同じ組織に導入済みなら、その `<definitions>` を指すよう設定を直してやり直す。別のマシンでは[lock の扱い](configuration.md#lock-の扱い)に従い、バックアップや以前の置き場所から lock を戻し、無ければ相談する。
 
 ## 5. 適用する
 

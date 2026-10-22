@@ -1,12 +1,12 @@
 # Managed Agents への依頼と観測
 
-作業先の設定を読み、Claude Managed Agents の lead `shinaps-dev-managed-cc` へ dev を依頼し、進み具合の観測・質問の取り次ぎ・成果物と draft PR の確認を行う手順。計画・実装・レビューの工程と体制は lead が [skill `dev-managed-cc`](../../managed-agents/skills/dev-managed-cc/SKILL.md) に従って決めるので、ここでは指示しない。
+作業先の設定を読み、Claude Managed Agents の lead `shinaps-dev-managed-cc` へ dev を依頼し、進み具合の観測・質問の取り次ぎ・成果物と draft PR の確認を行う手順。体制は合意する入力として渡す。計画・実装・レビューの工程と追加の担当は lead が [skill `dev-managed-cc`](../../managed-agents/skills/dev-managed-cc/SKILL.md) に従って決めるので、ここでは指示しない。
 
 ## 呼び出し時に合意する入力
 
 設定からは読まず、依頼のたびに利用者と合意する。
 
-- 必須: base ブランチとその SHA、head ブランチ、範囲と受入条件、許可（commit・head への push・draft PR の作成のうち明示されたもの）、予算（USD のセント単位）
+- 必須: base ブランチとその SHA、head ブランチ、範囲と受入条件、体制（LITE・BASIC・ULTRA。[体制の選択](../dev/staffing.md)に従い推奨を添えて確認する）、許可（commit・head への push・draft PR の作成のうち明示されたもの）、予算（USD のセント単位）
 - 任意: 必須検証のコマンド、コミットの author、利用者 CLAUDE.md の添付
 
 設定から読むのは `definitions`（lock の場所）・`repository`・`vault_id` だけで、lead と環境の ID は lock から読む（[設定](configuration.md)）。許可と予算は合意した内容だけで、会話の途中で増やさない。
@@ -52,6 +52,7 @@ initial_events:
           base: <ブランチ> @ <SHA>
           head: <ブランチ名>
           範囲と受入条件: <内容>
+          体制: <LITE|BASIC|ULTRA>
           許可: <commit・headへのpush・draft PRの作成のうち許可するもの>
           予算: <金額>
           必須検証（任意）: <コマンド。省略時はリポジトリの規約に従う>
@@ -105,7 +106,7 @@ unset GITHUB_TOKEN
 
 ## 6. 終了する
 
-状態行、取得した出力ファイル、コミット、push 先、PR の URL、未検証の事項を報告する。merge・deploy・release・Issue の更新・セッションのアーカイブは行わない。QA は呼び出し元が別に行う。
+状態行、取得した出力ファイル、コミット、push 先、PR の URL、未検証の事項を報告する。merge・deploy・release・Issue の更新・セッションのアーカイブは行わない。QA は呼び出し元が別に行う。完了後に修正する場合は、新しい依頼として、体制を含めて合意し直す。
 
 ## 未検証の境界
 
@@ -114,3 +115,4 @@ unset GITHUB_TOKEN
 - GitHub MCP で draft PR を作れるか。`draft: true` は lead への指示でしか担保されない。
 - vault に資格情報を登録できたことは、上の3点の確認にならない。
 - `events send` による回答の送信は、本文の構造を API 仕様で確かめただけで、実際のセッションではまだ送っていない。出力ファイルの一覧と取得は既存のセッションで確かめた。
+- 完了したスレッドが同時実行の枠（25本）を空けるか。ULTRAでは、ラウンドごとに新しく起動する担当を含めて、同時に保つスレッドが多い。

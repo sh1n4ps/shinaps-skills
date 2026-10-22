@@ -8,6 +8,8 @@ const CODEX = 'plugins/shinaps-codex';
 const MANAGED = `${CLAUDE}/managed-agents`;
 const MANAGED_LEAD = `${MANAGED}/agents/shinaps-dev-managed-cc.md`;
 const MANAGED_SKILL = `${MANAGED}/skills/dev-managed-cc`;
+// 探索は必須担当ではなく、Managed では各設計担当が自分で調べるので、探索担当は lead に登録しない。
+const MANAGED_UNREGISTERED_ROLES = ['shinaps-explorer'];
 // 起動手順は runtime ごとの機構で書くので、references の中でこれだけは複製しない。
 const RUNTIME_SPECIFIC_REFERENCE = 'dev/launch.md';
 // テスト方針の段落を写す役割定義。Codex には dev 専用の役割を配布しないので、対象は runtime ごとに違う。
@@ -155,30 +157,41 @@ test('Claude dev entries can be invoked through the Skill tool', async () => {
   }
 });
 
-// Managed の lead は predefined_agents に列挙した役割にしか委任できない。skill が名前を挙げる役割が
-// 未登録だと lead がその担当を起動できずに止まる。体制は作業ごとに変わるが、実装者と独立した
-// コードレビュー（最低1体）は人数によらず必須なので、実装担当とレビュー担当は常に登録されている必要がある。
-test('Managed lead registers every role its skill names', async () => {
-  const registered = await managedLeadRoles();
-  for (const role of ['shinaps-implementer', 'shinaps-reviewer']) {
-    assert.ok(registered.includes(role), role);
-  }
-  const skill = await readTree(MANAGED_SKILL);
-  const named = new Set(
-    Object.values(skill).flatMap((text) =>
-      [...text.matchAll(/`(shinaps-[a-z-]+)`/g)].map(([, role]) => role),
-    ),
-  );
-  assert.ok(named.size > 0);
+// auto 経路のメインは Opus で動かす。Codex は CLI 手順のコマンドをそのまま実行するので、resume を含む
+// どれか一つで `--model opus` が抜けると、そのターンは CLI の既定のモデルで再開されてしまう。
+test('every Claude CLI invocation in the auto route pins the main model to Opus', async () => {
+  const procedure = await readFile(`${CLAUDE}/references/linear/claude-cli.md`, 'utf8');
+  const invocations = [...procedure.matchAll(/```[a-z]*\n([\s\S]*?)```/g)]
+    .flatMap(([, block]) => block.split('\n'))
+    .filter((line) => line.startsWith('claude -p'));
+  assert.ok(invocations.length > 0);
   assert.deepEqual(
-    [...named].filter((role) => !registered.includes(role)),
+    invocations.filter((line) => !/(^|\s)--model opus(\s|$)/.test(line)),
+    [],
+  );
+});
+
+// Managed の lead は predefined_agents に列挙した役割にしか委任できない。必須担当は人数によらず
+// 毎回起動されるので、Claude の dev 工程が使う役割や skill が名前を挙げる役割が未登録だと、lead が
+// その担当を起動できずに止まるか、必須の確認を欠いたまま進む。
+test('Managed lead registers every role the dev workflow and its skill use', async () => {
+  const registered = await managedLeadRoles();
+  const skillNames = Object.values(await readTree(MANAGED_SKILL)).flatMap((text) =>
+    [...text.matchAll(/`(shinaps-[a-z-]+)`/g)].map(([, role]) => role),
+  );
+  assert.ok(skillNames.length > 0);
+  const named = [
+    ...[...(await workflowRoles())].filter((role) => !MANAGED_UNREGISTERED_ROLES.includes(role)),
+    ...skillNames,
+  ];
+  assert.deepEqual(
+    [...new Set(named)].filter((role) => !registered.includes(role)),
     [],
   );
 });
 
 // lead が列挙したファイルが無いと apply が失敗し、lead から到達できない役割定義を置くと apply が
-// 使われない担当を更新し続ける。lock に残る旧 refine の項目は、ソースを置かないことで
-// 到達不能のまま保つ。
+// 使われない担当を更新し続ける。
 test('Managed role definitions are exactly the roles the lead registers', async () => {
   assert.deepEqual(await managedRoleDefinitions(), await managedLeadRoles());
 });

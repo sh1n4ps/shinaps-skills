@@ -15,7 +15,7 @@
 
 役割定義は Claude Code 向けの記述を含むので、全ての依頼の冒頭に次を入れる。
 
-> このセッションでは Shinaps AI の rule を取得しないので、役割定義にある rule の検索結果は渡されない。規約の全文はリポジトリの `AGENTS.md`・`CLAUDE.md` とその参照先である。役割定義の `~/.claude/CLAUDE.md` は `/mnt/session/uploads/CLAUDE.md` を指す（添付されていなければ無い）。refine 担当はいないので、規約照合はコードレビュー担当が行う。explorer と verifier の担当もいない。探索は設計担当、いなければ実装担当が自分で行う。担当は commit・push・PR 作成・GitHub の操作をしない。
+> このセッションでは Shinaps AI の rule を取得しないので、役割定義にある rule の検索結果は渡されない。規約の全文はリポジトリの `AGENTS.md`・`CLAUDE.md` とその参照先である。役割定義の `~/.claude/CLAUDE.md` は `/mnt/session/uploads/CLAUDE.md` を指す（添付されていなければ無い）。explorer の担当はいない。探索は設計担当が自分で行う。担当は commit・push・PR 作成・GitHub の操作をしない。
 
 ## 書き込みの制限と比較
 

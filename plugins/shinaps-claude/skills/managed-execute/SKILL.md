@@ -11,8 +11,8 @@ description: 作業先の Managed 設定を読み、Claude Managed Agents の le
 
 [設定](../../references/managed/configuration.md)と[依頼と観測の手順](../../references/managed/execute.md)を読んで進める。
 
-- 呼び出しのたびに base ブランチと SHA・head ブランチ・範囲と受入条件・許可・予算を利用者と合意する。設定・lock・過去の作業から推定しない。
+- 呼び出しのたびに base ブランチと SHA・head ブランチ・範囲と受入条件・体制（LITE・BASIC・ULTRA）・許可・予算を利用者と合意する。設定・lock・過去の作業から推定しない。
 - 設定から読むのは `definitions`（lock の場所）・`repository`・`vault_id` だけで、lead と環境の ID は lock から読む。lock が無ければ止め、導入は managed-setup で行う。
-- 計画・実装・レビューの工程と体制は lead に任せ、ここでは指示しない。
+- 計画・実装・レビューの工程と追加の担当は lead に任せ、ここでは指示しない。
 - Linear の進行とは独立した入口である。merge・deploy・release・Issue の更新・セッションのアーカイブは行わない。
 - 秘密値を表示・記録しない。

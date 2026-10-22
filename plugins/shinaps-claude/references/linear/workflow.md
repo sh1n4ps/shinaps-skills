@@ -4,15 +4,16 @@
 
 | 担当 | 責務 |
 | --- | --- |
-| Codex（進行役） | Issueの作成・整理、仕様相談、Ready判定、依存・Cycle管理、進行判断、作業先設定からの経路と許可の確定（askなら人へ一問で確認）、体制判断の材料（受入条件・関連範囲・既存検証・リスク）の提示、Claudeへの依頼（auto: CLI、manual: Bridge）、Local・Staging・ProductionのAgent QA、単位・全体の照合、許可されたpush・PR・merge・配備・公開、Issueへの記録、人への依頼 |
-| Claude（実装担当・Claude Code） | 初期体制の決定と途中の増員、`shinaps:dev-claude` による技術調査・計画・実装・検証・独立レビュー、QA指摘の修正、`shinaps:commit`（auto: 独立レビュー後にcommit、manual: 人の開始依頼で分割案、人が依頼した単位ごとにcommit）、結果の報告。実装を伴わない文書整理は、作業先リポジトリの規約に従いdevの入口の対象外にできる。スキル・コードの変更は文書の形でも実装としてdevの入口を使う |
-| 人 | 未合意の仕様・権限の判断、manualのWebStormでの差分レビュー・修正相談・コミットの開始と単位ごとの依頼、本人の操作が必要な認証等、必要なHuman QA |
+| Codex（進行役） | Issueの作成・整理、仕様相談、Ready判定、依存・Cycle管理、進行判断、作業先設定からの経路と許可の確定（askなら人へ一問で確認）、メインのモデル（manualのみ）と体制の確認と記録、体制判断の材料（受入条件・関連範囲・既存検証・リスク）の提示、Claudeへの依頼（auto: CLI、manual: Bridge）、境界内の[UIの微調整](#codexによるuiの微調整)、Local・Staging・ProductionのAgent QA、単位・全体の照合、許可されたpush・PR・merge・配備・公開、Issueへの記録、人への依頼 |
+| Claude（実装担当・Claude Code） | 追加の担当の判断と途中の増員（BASIC・ULTRA）、`shinaps:dev-claude` による技術調査・計画・実装・検証・独立レビュー、QA指摘の修正、`shinaps:commit`（auto: 独立レビュー後にcommit、manual: 人の開始依頼で分割案、人が依頼した単位ごとにcommit）、結果の報告。実装を伴わない文書整理は、作業先リポジトリの規約に従いdevの入口の対象外にできる。スキル・コードの変更は文書の形でも実装としてdevの入口を使う |
+| 人 | 未合意の仕様・権限の判断、manualのWebStormでの差分レビュー・修正相談・修正開始の明示・コミットの開始と単位ごとの依頼、本人の操作が必要な認証等、必要なHuman QA |
 
 経路は着手時に通常設定の `review_flow.mode` で決まり、askでは着手時の人の回答で決まる（[経路](configuration.md#経路)）。autoはCodexが[ローカルClaude CLI](claude-cli.md)の同じsessionをresumeし、manualはWebStorm内の対話Claude Codeセッションへ[Bridge](bridge.md)で依頼する。どちらでもClaudeはdev内レビューと検証を終えて結果を返し、CodexがLocal Agent QAを行う。Claudeの報告をQA合格の根拠にせず、この引き渡しを進行全体の終了と扱わない。
 
 - Issueに関わる人への質問・依頼はCodexが窓口になる。manualでは人がWebStormの対話セッションで直接Claudeと相談する。Claudeは決定事項を報告に含め、CodexがIssueへ記録する。
-- manualで人とClaudeが作業している間、Codexは同じIssueへ追加の指示を送らず、ゴールを `active` のままClaudeの報告を待つ。Claudeの報告後、CodexのQA中は人とClaudeが作業ツリーを編集しない。
-- CodexはQAで見つけた不具合を修正せず、再現条件と証拠を同じClaude sessionへ返す。同じ作業ツリーを同時に編集せず、人や他のAIの変更を保持する。
+- manualで人とClaudeが作業している間、Codexは同じIssueへ追加の指示を送らず（Claudeが依頼した途中確認への応答と、[UIの微調整](#codexによるuiの微調整)の人と調整したうえでの一時停止の依頼・返却を除く）、ゴールを `active` のままClaudeの報告を待つ。Claudeの報告の後のCodexのQA中と、Claudeが依頼した途中確認の間は、人とClaudeが作業ツリーを編集しない。
+- 人の指摘は、Codexが窓口としてIssueへ記録する。manualでは、Claudeの報告が台帳（[人のレビュー](../human-review.md)の `human-findings.md`）の未対応・見送りの指摘を伝える。autoでは修正開始の明示を受けたら、未対応の指摘をまとめて同じsessionへ渡す。経路によらず、未対応の指摘があるまま差分確定・pushへ進む前に、人へ一問で確認する。
+- CodexはQAで見つけた不具合を修正せず（[UIの微調整](#codexによるuiの微調整)を除く）、再現条件と証拠を同じClaude sessionへ返す。同じ作業ツリーを同時に編集せず、人や他のAIの変更を保持する。
 
 Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐付けなど）は、Codexが利用可能なブラウザで行う。MCPが対応していないという理由だけで人へ回さない。人の認証や権限が必要な場合だけ人へ依頼する。
 
@@ -22,10 +23,10 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 
 | 工程 | 状態キー | 内容と次へ進む条件 |
 | --- | --- | --- |
-| 着手 | `ready` | Readyと依存を確認し、作業先設定を読み、通常設定の `review_flow` から経路と必要な許可（auto: `claude_cli`、manual: `bridge_request`）を確定する。通常設定がaskなら、Claudeへの依頼前に作業内容と推奨理由を添えてautoかmanualかを人へ一問で確認し、回答まで着手しない。回答と根拠を作業記録に残し、同じIssueでは再質問しない。checkout・branch・HEAD・既存差分を固定し、体制判断の材料を添えてClaudeへ依頼する。経路がautoでmanualのパス別ルールがあれば、起こり得る停止（[経路](configuration.md#経路)）を依頼に書く |
-| 実装 | `coding`, `local_agent_qa` | Claudeのメインが初期体制を決めて報告し、`shinaps:dev-claude` で実装・検証・独立レビューを行い、未コミット差分・単位案・予定差分・判定記録を返す。manualでは人へユーザーのレビュー待ちと明示する。CodexがLocal Agent QA（判定記録と経路の整合を含む）を行い、不合格なら同じsessionへ戻す |
-| 差分確定 | `code_review` | QA合格後、Codexが実効flow・判定記録・QA結果を同じsessionへ渡し、Claudeが `shinaps:commit` を行う。autoは単位ごとに独立レビュー後にcommitする。manualではCodexはcommitを依頼せず、渡した後は報告を待つ。人のコミット開始依頼でClaudeが分割案を示し、人が単位ごとに依頼したcommitを行う。Codexは各コミットの単位照合と全体照合を行う。差分確定中の修正は単位の目的・範囲内に限り、超えるものは実装へ戻す。差分確定で差分が変わったIssueは、確定後にCodexのAgent QAを必須にする（公開確認のpush前の最終Agent QAで兼ねてよい） |
-| 公開確認 | `post_commit`, `staging_agent_qa`, `staging_human_qa`, `release`, `production_agent_qa`, `production_human_qa` | 受入条件と許可に応じて必要なものだけ行う: push前の最終Agent QA、push・PR作成、環境配備とStaging/ProductionのAgent QA、必要なHuman QA、merge・配備・公開。適用しない項目は理由を記録する |
+| 着手 | `ready` | Readyと依存を確認し、作業先設定を読み、通常設定の `review_flow` から経路と必要な許可（auto: `claude_cli`、manual: `bridge_request`）を確定する。通常設定がaskなら、Claudeへの依頼前に作業内容と推奨理由を添えてautoかmanualかを人へ一問で確認し、回答まで着手しない。回答と根拠を作業記録に残し、同じIssueでは再質問しない。依頼の前に `dev_delegation`（または今回の明示依頼）があるかを確かめ、無ければ人へ一問で確認する。経路・メインのモデル（manualのみ。[経路](configuration.md#経路)）・体制（[体制の選択](../dev/staffing.md)）は別の項目とし、指定されていないものだけを推奨とともに一問ずつ確認して記録する。体制は依頼にも書く。checkout・branch・HEAD・既存差分を固定し、体制判断の材料を添えてClaudeへ依頼する。経路がautoでmanualのパス別ルールがあれば、起こり得る停止（[経路](configuration.md#経路)）を依頼に書く |
+| 実装 | `coding`, `local_agent_qa` | Claudeのメインが依頼の体制の担当（BASIC・ULTRAでは追加の担当を含む）を決めて報告し、`shinaps:dev-claude` で実装・検証・独立レビューを行い、未コミット差分・単位案・予定差分・判定記録を返す。manualでは人へユーザーのレビュー待ちと明示する。CodexがLocal Agent QA（判定記録と経路の整合、必須担当の照合を含む）を行う。依頼に書いた体制の必須担当（[実装体制の判断](../dev/staffing.md)）は、完了または合意の記録付きの未実施を合格とする。不合格（必須担当のそれ以外の未完了や代替を含む）なら同じsessionへ戻し、再QAは[初回QAの一部](qa.md#qaの時点対象最終qa)として合格まで続ける |
+| 差分確定 | `code_review` | QA合格後、Codexが実効flow・判定記録・QA結果を同じsessionへ渡し、Claudeが `shinaps:commit` を行う。autoは単位ごとに独立レビュー後にcommitする。manualではCodexはcommitを依頼せず、渡した後は報告を待つ。人のコミット開始依頼でClaudeが分割案を示し、人が単位ごとに依頼したcommitを行う。Codexは各コミットの単位照合と全体照合を行う。差分確定中の実装の修正は、devの修正サイクル（[工程](../dev/workflow.md)の「役割と継続」）で行い、ステータスは `code_review` のままにする。修正やコミットのたびにCodexのQAへ戻さない（[最終QA](qa.md#qaの時点対象最終qa)） |
+| 公開確認 | `post_commit`, `staging_agent_qa`, `staging_human_qa`, `release`, `production_agent_qa`, `production_human_qa` | 受入条件と許可に応じて必要なものだけ行う: push前の最終Agent QAとpushするHEADの照合（[最終QA](qa.md#qaの時点対象最終qa)）、push・PR作成、環境配備とStaging/ProductionのAgent QA、必要なHuman QA、merge・配備・公開。適用しない項目は理由を記録する |
 | 結果報告 | （状態キーなし） | 結果・証拠・省略した工程と理由・残項目をIssueへ記録し、終了地点に到達する。必須受入条件をすべて満たしたIssueは `done` にする |
 
 - `todo`（未着手）・`refinement`（`linear-plan` による仕様整理）・`human_input`（外部対応の待ち）は5工程の外の状態を表す。
@@ -47,7 +48,7 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 
 全工程に共通する。
 
-- **戻し先**: 検証失敗・レビュー指摘・QA不合格・単位照合の不一致は、見つけた担当が直さず原因の担当へ戻す。実装・修正はすべて同じClaude session（autoは同じCLI sessionのresume、manualは同じ対話セッション）で行い、Codexは再検証だけを行う。
+- **戻し先**: 検証失敗・レビュー指摘・QA不合格・単位照合の不一致は、見つけた担当が直さず原因の担当へ戻す。実装・修正は同じClaude session（autoは同じCLI sessionのresume、manualは同じ対話セッション）で行い（[UIの微調整](#codexによるuiの微調整)を除く）、Codexは[QAの時点](qa.md#qaの時点対象最終qa)に従って再検証だけを行う。
 - **許可**: 操作の前に `permissions`・実効 `review_flow`・今回の明示指示を照合する。許可がなければ許可待ちで止める。これは終了地点への到達ではない。設定の存在だけを合意と扱わない。
 - **Issueの範囲**: 範囲はIssueの目的・変更内容・受入条件から判断する。記載のない作業でも、目的の実現に必要な手段は範囲に含む。仕様や範囲の拡大が必要になったら、進める前に次の「停止と人への確認」に従って確認する。
 - **停止と人への確認**: 設定不備、経路と単位modeの競合、照合の不一致、目的・仕様・受入条件・許可範囲の変更、本人にしかできない操作、根拠を確認しても解消できない報告の矛盾では、安全な状態で止める。確認の担当は経路で決まる。auto経路と、manualで人がセッションにいない間は、Codexが人へ一問で確認する。manualの作業中は対話セッションのClaudeが人へ一問で確認し、決定を報告に含める。新しい許可が要る決定や許可範囲を広げる決定（push・PR・merge・配備・公開・破壊的操作など）は報告では成立させず、Codexが人へ一問で確認する。
@@ -59,8 +60,8 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 | 状況 | 必要な行動 |
 | --- | --- |
 | Codexから許可範囲と受入条件を伴う実装・修正の依頼を受けた | Claudeは人へ着手を再確認せず、指定されたスキルで実行する |
-| devの入口の中で計画上の判断が必要になった | autoはClaudeがresultでCodexへ相談し、Codexは既存の合意で判断できれば回答する。manualはClaudeが人へ直接確認し、決定を報告する |
-| QAで受入条件の範囲内の不具合が見つかった | Codexが同じClaude sessionへ修正を依頼し、Claudeは人の着手許可を改めて取らずに修正する。Codexが再検証する |
+| devの入口の中で計画上の判断が必要になった | autoはClaudeがresultでCodexへ相談し、Codexは既存の合意で判断できれば回答する。manualはClaudeが人へ直接確認し、決定を報告する。[途中確認](qa.md#qaの時点対象最終qa)はこの相談の一種で、autoはresult、manualはBridgeで依頼する |
+| QAで受入条件の範囲内の不具合が見つかった | Codexが同じClaude sessionへ修正を依頼し（[UIの微調整](#codexによるuiの微調整)の範囲ならCodexが直せる）、Claudeは人の着手許可を改めて取らずに修正する。Codexは[QAの時点](qa.md#qaの時点対象最終qa)に従って再検証する |
 | ClaudeがCLIのresultでcommitの完了を、またはBridgeで人の依頼によるcommitの完了を報告した | Codexは人に同じ事実を聞き直さず、報告の対象とGitの状態を照合して次の工程へ進む |
 | 通常設定がaskで、同じIssueの経路を着手時に選んでいる | Codexは修正・再開・QA・差分確定で経路を再質問せず、記録した選択を使う |
 | 次の操作の継続的な許可があり、必要な工程の結果が揃った | Codexは「進めてもよいか」を再質問せずに実行する |
@@ -72,11 +73,26 @@ Linear MCPで扱えない画面操作（添付、並べ替え、Cycleへの紐�
 
 単位計画の作成・確認にはコミット許可を要求しない。
 
-1. Claudeは成果引き渡しに、モードによらず自然な責務で決めたコミット単位案と予定差分を含める。CodexはLocal Agent QAで対象を検証し、単位案が依頼全体を漏れなく覆い対象外変更を含まないことと、各単位の[判定記録](configuration.md#判定記録と変更時の扱い)を確認する。依頼の比較元と全体差分も最終照合用に記録する。判定記録に経路と異なるmanual単位があれば、差分確定の依頼前に[経路](configuration.md#経路)に従って人へ確認する。
+1. Claudeは成果引き渡しに、モードによらず自然な責務で決めたコミット単位案と予定差分を含める。CodexはLocal Agent QAで対象を検証し、単位案が依頼全体を漏れなく覆い対象外変更を含まないことと、各単位の[判定記録](configuration.md#判定記録と変更時の扱い)を確認する。合格したLocal Agent QAの比較元と全体差分を、最終照合と[最終QA](qa.md#qaの時点対象最終qa)の控えとして記録する。再QAで合格したら記録し直し、全体期待差分の更新では書き換えない。判定記録に経路と異なるmanual単位があれば、差分確定の依頼前に[経路](configuration.md#経路)に従って人へ確認する。
 2. QA合格後、Codexは実効flow・単位の判定記録・QA結果を同じClaude sessionへ渡す。Claudeは設定・予定差分・合意根拠を照合する。
 3. Claudeは `commit` に従う。autoでは独立レビュー後にClaudeがstage・commitする。manualでは人のコミット開始依頼で分割案を示し、人がその単位のコミットを依頼したら単位外を安全に退避して単位をstage・検証し、Claudeがcommitする。各コミット直前・作成後の実差分と確定した予定単位を照合し、予定単位・SHA・検証・レビュー・依頼記録・復元結果をCodexへ返す。
-4. 全単位完了後、Codexは各コミットの単位照合結果を実差分で独立確認したうえで、依頼の比較元からの全体差分が、`commit` の手順で正当な人の修正を反映した確定済みの全体期待差分と一致し、対象の未コミット変更が残っていないことを照合する。最終差分だけでは途中で混入し後で相殺された対象外変更を検出できないため、単位照合を省かない。人レビューを省略した単位は、上の省略記録を完成させる。
+4. 全単位完了後、Codexは各コミットの単位照合結果を実差分で独立確認したうえで、依頼の比較元からの全体差分が、`commit` の手順で正当な人の修正とdevの修正サイクルで確定した変更を反映した確定済みの全体期待差分と一致し、対象の未コミット変更が残っていないことを照合する。最終差分だけでは途中で混入し後で相殺された対象外変更を検出できないため、単位照合を省かない。人レビューを省略した単位は、上の省略記録を完成させる。
 5. 単位の組み替え・内容・設定の変更は[変更時の扱い](configuration.md#判定記録と変更時の扱い)に従って再判定し、必要なレビュー・許可確認・検証へ戻す。人の依頼によるcommit（または人自身のcommit）の後は、`commit` に従って正当な修正と元の予定差分の対応を記録し、確定単位に更新する。確定単位と実コミットに不一致があれば次工程を止め、SHA・予定差分・実差分の違いを記録して人に確認する。履歴を無断で書き換えない。
+
+## CodexによるUIの微調整
+
+本書と経路の手順にある「Claudeが実装・修正する」規定（戻し先を含む）の例外として、Linear進行に限って、CodexのメインセッションがUIを直接微調整できる範囲をここにだけ定める。Managedには適用しない（作業先が共有されないremote checkoutで、Codexは直接編集できないため）。
+
+- **対象**: iOS・フロントエンドで、画面を見ながら行う方が速いUIの微調整。合意済みの仕様と許可の範囲の内側で、進行役が選ぶ。仕様・アーキテクチャ・データ・契約に関わる変更は対象外とし、通常の相談（Claudeへの修正依頼、または人への確認）へ戻す。
+- **許可**: 依頼・会話・合意済みの設定の対象・操作・範囲で、Codexによる微調整が既に許可されていれば、再確認せず進める。許可が無い場合だけ、必要になった時点で推奨と理由を添えて人へ一問で確認し、回答は同じIssueの中で引き継ぐ。`development_operations` だけから編集の主体の変更を推測しない。別のプロジェクトへ許可を広げない。新しい包括的な権限を加えない。
+- **編集の前**: Claudeのメインと編集中の担当を安全な区切りで待たせる。差分確定中は、単位の退避・stageが無い時点に限る。停止は次の2つで確かめ、auto・manualとも同じに扱う。
+  - Claudeのメインが、実行中の担当（実装担当を含む）が無いことを確かめ、その時点のHEADと変更パスを添えて報告している。autoでは、CLIのprocessが終了してresultを受け取っている。
+  - Codexが編集の前に、報告の状態と現物の `git status` が一致することを確かめる。
+
+  実行中のCLIは終了を待つ。止める必要があるときは、session ID・差分・作業記録を保持し、再開する工程を記録してから止める。manualで人が作業中なら、無断で介入せず人と調整する。同時に編集しない。
+- **編集**: 画面を確認しながら、対象のUIファイルだけを編集する。stage・commit・indexの操作はしない。Codex独自の設計体制や独立レビューは置かない。
+- **返却**: 変更したパスと差分、理由、視覚確認の結果（証拠の所在）、未確認事項を、同じClaudeセッションへ返し（autoは終了したprocessのsessionのresume、manualはBridge）、Issueにも記録する。
+- **Claude側**: 現在の工程の差分として取り込み（実装担当が読み直して `fix-log.md` に記録する）、必要な検証を行って既存のレビューを続ける（[工程](../dev/workflow.md)の「役割と継続」）。全体レビューの回数はリセットしない。Local Agent QAより前の変更はそのQAの対象に含め、QAより後の変更は[変更記録](qa.md#qaの時点対象最終qa)として最終QAへ集約する。QAを追加で起動しない。
 
 ## 待ち状態
 

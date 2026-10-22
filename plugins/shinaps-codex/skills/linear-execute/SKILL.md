@@ -5,17 +5,17 @@ description: 指定したIssue・Cycle・バックログの実装からQA・許�
 
 # Linearを起点に開発を進める
 
-Issueの責務・受入条件・ステータスを、実際の成果と一致させる。初版は利用者本人の環境向けで、Codexが進行役として進行・Agent QA・Issueの記録・人への窓口を担当し、実装・修正・コミットはClaude Codeが行う。Codexに実装の入口はない。主フローは着手・実装・差分確定・公開確認・結果報告の5工程で、担当と工程は[references/workflow.md](../../references/linear/workflow.md)にある。
+Issueの責務・受入条件・ステータスを、実際の成果と一致させる。初版は利用者本人の環境向けで、Codexが進行役として進行・Agent QA・Issueの記録・人への窓口を担当し、実装・修正・コミットはClaude Codeが行う（UIの微調整は[担当と工程](../../references/linear/workflow.md#codexによるuiの微調整)の境界の内側でCodexが行える）。Codexに実装の入口はない。主フローは着手・実装・差分確定・公開確認・結果報告の5工程で、担当と工程は[references/workflow.md](../../references/linear/workflow.md)にある。
 
 ## 経路を先に確定する
 
 着手時に作業先設定の通常の `review_flow.mode` で経路を決め、Issueの途中で切り替えない（[経路](../../references/linear/configuration.md#経路)）。
 
 - auto: [ローカルClaude CLI](../../references/linear/claude-cli.md)を起動し、質問への回答・修正・差分確定を同じsessionのresumeで依頼する。許可は `claude_cli`。
-- manual: WebStorm内の対話Claude Codeセッションへ[Bridge](../../references/linear/bridge.md)で依頼する。人とClaudeの作業中は同じIssueへ指示を送らず、報告を待つ。QA合格後もcommitを依頼せず、QA結果と判定記録を渡して人の依頼によるcommitの報告を待つ。許可は `bridge_request`。
+- manual: WebStorm内の対話Claude Codeセッションへ[Bridge](../../references/linear/bridge.md)で依頼する。人とClaudeの作業中は同じIssueへ指示を送らず（Claudeが依頼した途中確認への応答と、[UIの微調整](../../references/linear/workflow.md#codexによるuiの微調整)の人と調整したうえでの一時停止の依頼・返却を除く）、報告を待つ。QA合格後もcommitを依頼せず、QA結果と判定記録を渡して人の依頼によるcommitの報告を待つ。許可は `bridge_request`。
 - ask: Claudeへ依頼する前に、Issueの作業内容と推奨する経路の理由を添えてautoかmanualかを人へ一問で確認し、回答まで着手しない。記録・再質問しない条件・許可は[経路](../../references/linear/configuration.md#経路)に従う。Claudeへの依頼には解決したmodeと回答の記録を添える。
 
-体制判断の材料（受入条件・関連範囲・既存検証・リスク）を依頼に添える。初期体制はClaudeのメインが決めて報告する。
+体制判断の材料（受入条件・関連範囲・既存検証・リスク）を依頼に添える。体制は[担当と工程](../../references/linear/workflow.md)の着手で確認して依頼に書き、BASIC・ULTRAでは追加の担当をClaudeのメインが決めて報告する。
 
 ## 実行範囲を確定する
 

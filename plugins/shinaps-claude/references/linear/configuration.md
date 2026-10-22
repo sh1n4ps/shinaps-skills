@@ -4,7 +4,7 @@
 
 ## 検証CLIと契約版
 
-利用中のskillとCLIの版を確認し、0.35.3のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.35.3`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
+利用中のskillとCLIの版を確認し、0.36.0のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.36.0`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
 
 0.35.0から通常設定の `review_flow.mode` に `ask` を受理する。`config_version` は2のままで、既存のauto・manualの設定は変更不要。0.33.0〜0.34.xのCLIと `$schema` のURLは `ask` を拒否するため、`ask` を使う設定では `$schema` も0.35.0以降のURLにする。
 
@@ -88,13 +88,17 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 
 ## 経路
 
-実装・修正・コミットはClaude Codeが `shinaps:dev-claude` と `shinaps:commit` で行う。Codexとの間の経路は、着手時に通常設定の `review_flow.mode` で一つに決める。
+実装・修正・コミットはClaude Codeが `shinaps:dev-claude` と `shinaps:commit` で行う（境界内のUIの微調整はCodexが行える。[担当と工程](workflow.md#codexによるuiの微調整)）。Codexとの間の経路は、着手時に通常設定の `review_flow.mode` で一つに決める。
 
-| 通常設定 | 経路 | 必要な許可 |
-| --- | --- | --- |
-| `auto` | Codexが起動するローカルClaude CLIの同じsession（[Claude CLI](claude-cli.md)） | `claude_cli` |
-| `manual` | WebStorm内の対話Claude CodeセッションへBridgeで依頼する（[Bridge](bridge.md)） | `bridge_request` |
-| `ask` | 着手時に人へ一問で確認した回答（auto・manual）の経路 | 回答した経路の許可 |
+| 通常設定 | 経路 | 必要な許可 | メインのモデル |
+| --- | --- | --- | --- |
+| `auto` | Codexが起動するローカルClaude CLIの同じsession（[Claude CLI](claude-cli.md)） | `claude_cli` | Opus。起動とすべてのresumeで `--model opus` を指定する |
+| `manual` | WebStorm内の対話Claude CodeセッションへBridgeで依頼する（[Bridge](bridge.md)） | `bridge_request` | Opusを基本とし、Issueの着手時にFableかOpusかを確認する。同じIssueの一括修正・継続・再開では選択を引き継ぐ |
+| `ask` | 着手時に人へ一問で確認した回答（auto・manual）の経路 | 回答した経路の許可 | 回答した経路のモデル |
+
+- メインはdevを実行するClaude Codeのセッションを指す。担当（独立レビュー・簡素化を含む）のモデルは役割定義の値で、経路とは独立している。単独のdev（Linear進行を経ないdev）のメインは利用者のセッション設定のまま。
+- manualの対話セッションのモデルは、人が `/model` で切り替える。Claudeへのプロンプトや Bridge のメッセージでは切り替えられない（[model-config](https://code.claude.com/docs/en/model-config)）。
+- manualで基本（Opus）と違う選択なら、Codexが人へ切り替えを依頼する。Codexは人の報告を記録し、実際のモデルを照合できたとは扱わない。
 
 - `ask` では、進行役がClaudeへ依頼する前に、Issueの作業内容と推奨する経路の理由を添えてautoかmanualかを一問で確認し、回答まで着手しない。回答・Issue・作業先・設定・選んだ経路を作業記録に残し、同じIssueの修正・再開・QA・差分確定では再質問せず記録した選択を使う。同じIssueに明示的な既存の選択があれば再質問しない。Cycle全体・バックログ消化でもIssueごとに選ぶ。設定の `ask` は書き換えない。選択は他の許可を増やさず、選んだ経路の許可を確認する。
 - 経路はIssueの途中で切り替えない。`permissions`・`stop_after`・`dev_delegation`・worktreeや別セッションの作成の許可は、経路によって変わらない。
@@ -173,7 +177,7 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 | --- | --- |
 | `issue_update` | 対象のteam・projectの中で、利用者が任せたIssue・Cycleの範囲に対する運用上の更新（本文・コメント・状態・依存・Linearへの添付、整理で必要になったIssueの作成・分割）と、利用者から任された目的の作業を着手前にIssueへ紐づけるための作成（[issue.md](issue.md) の「着手前に作業をIssueへ紐づける」）。チーム設定の変更、未合意の範囲・期限の変更、Cycle外への進行、Issueの削除、外部への送信を含めない |
 | `development_operations` | 任された対象の開発に必要な、既存アカウントへの通常のログイン、ローカル環境準備、プロジェクトの依存導入、開発サーバー・Simulatorの起動停止、ビルド・テスト・QA操作を継続的に許可する。下の範囲に従う |
-| `claude_cli` | auto経路で、Codexが行うClaudeのローカルCLI起動、同じsessionの状態・結果取得、質問への回答・修正・許可済みコミットのresume。既存CLI設定と個別の操作権限を維持する（[手順](claude-cli.md)） |
+| `claude_cli` | auto経路で、Codexが行うClaudeのローカルCLI起動、同じsessionの状態・結果取得、質問への回答・修正・許可済みコミットのresume。メインのモデル（[経路](#経路)）の指定のほかは既存CLI設定を保持し、個別の操作権限を維持する（[手順](claude-cli.md)） |
 | `bridge_request` | manual経路で、CodexがBridgeで対話Claude Codeセッションへ行う依頼と報告の受け取り、および別会話との任意の進行の引き渡し。報告は照合材料であり、操作許可を変更しない（[手順](bridge.md)） |
 | `push` | 対象Issueの作業ブランチの通常のpush |
 | `pr_create` | 対象IssueのPRの作成と更新 |

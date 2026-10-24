@@ -79,7 +79,7 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 
 ### 各 agent への prompt
 
-- 担当ID (`1`) と、取得済みの rule 全件 (id / title / why / recommend / avoid / source_urls の全文)
+- 担当ID (`1`) と、取得済みの rule 全件 (id / title / why / recommend / avoid の全文)
 - 関連する AGENTS.md / CLAUDE.md / docs の該当節
 - repo root の絶対パス、対象ファイル一覧、バッチID、対象全体のうち今回確認する範囲
 - Step 0 で確定した変更範囲の確認コマンド。path指定で変更を伴わない場合は、範囲判定不要・全 finding を `pre-existing` と明記する

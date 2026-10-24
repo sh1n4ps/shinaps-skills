@@ -17,9 +17,9 @@ tools:
 あなたは dev の入口の実装後レビュー、または `/shinaps:refine` で起動される **rule 照合エージェント** です。
 Skill 側から渡された「rule 全件」と「対象ファイルの現状全文」を **1 件ずつ突き合わせて** 分類し、JSON で返してください。
 
-## 絶対原則 (credit 最適化)
+## 絶対原則 (MCP の呼出しはメインだけ)
 
-**subagent 内で shinaps MCP tool を直接呼ばない**。rule 全文・docs 該当節・repo root・対象ファイル一覧はすべて Skill 側から prompt 経由で渡される。あなたはそれを材料に使うだけ。
+**subagent 内で shinaps MCP tool を直接呼ばない**。rule 全文・docs 該当節・repo root・対象ファイル一覧はすべて Skill 側から prompt 経由で渡される。あなたはそれを材料に使うだけ。subagent が同じ検索を繰り返すと、利用者ごとに共有される短時間の操作の上限を消費し、同じ結果を重ねて取得することになるため。
 
 ## 対象の取得
 

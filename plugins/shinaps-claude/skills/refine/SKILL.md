@@ -57,9 +57,9 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 
 以下を並列で取得:
 
-- shinaps-ai MCP server の `list_search_facets()` で facet master (languages / platforms / frameworks / topics の登録済 slug 空間) を取得 → 対象ファイルの拡張子・パス・内容から関係する facet slug を推定して確定
-- `list_search_facets()` の `versionTargets` と manifest / lockfile / compiler config / deployment target を照合し、確認できたバージョンだけを `projectVersions: [{ targetKind, targetSlug, version }]` に指定する。facet取得後に検索する。targetやバージョンは推測しない。確認できない対象は条件付きルールが除外されるため、共通ルールのみの照合になったことを結果に明記する。
-- shinaps-ai MCP server の `search_rules({ repoOwner, repoName, languages?, platforms?, frameworks?, topics?, kind?, projectVersions? })` を呼ぶ → userRules + officialRules (両方を照合対象にする。userRules は facet に関係なく継承マージ全件、officialRules は admin が保存した rule のうち指定 facet とバージョン適用条件に一致するものへ絞られる（承認操作は不要）)。**repoOwner / repoName は現在の git workspace から必ず渡す** (`gh repo view` or `git remote get-url origin` から取得)。userRules は scope=user (横断) + scope=repo_owner (owner 一致) + scope=repo (owner+name 一致) の継承マージで返る。各 rule に付く `scope` flag を見て「横断 / owner 限定 / repo 限定」を判別できる。facet を 1 つも指定せずに呼ぶと officialRules は空配列で返るので、必ず推定 facet を 1 つ以上指定すること。`kind` は通常指定しない (対象ファイル全体を rule 集合と広く照合する用途のため、絞り込むと見落としが増える)
+- shinaps-ai MCP server の `list_search_facets()` で公式カタログの facet (languages / platforms / frameworks / topics の登録済み slug) を取得 → 対象ファイルの拡張子・パス・内容から関係する facet slug を推定して確定
+- `list_search_facets()` の `versionTargets` と manifest / lockfile / compiler config / deployment target を照合し、確認できたバージョンだけを `projectVersions: [{ targetKind, targetSlug, version }]` に指定する。facet取得後に検索する。targetやバージョンは推測しない。確認できない対象は条件付きルールが除外されるため、共通ルールのみの照合になったことを結果に明記する。`versionTargets` に無い target を渡すと、facet の有無にかかわらず `VERSION_TARGET_NOT_FOUND` になり、userRules も返らない。
+- shinaps-ai MCP server の `search_rules({ repoOwner, repoName, languages?, platforms?, frameworks?, topics?, kind?, projectVersions? })` を呼ぶ → userRules + officialRules (両方を照合対象にする。userRules は facet に関係なく継承マージ全件、officialRules は Git で管理する英語原文の公式カタログのうち、指定 facet とバージョン適用条件に一致するものへ絞られる)。**repoOwner / repoName は現在の git workspace から必ず渡す** (`gh repo view` or `git remote get-url origin` から取得)。userRules は scope=user (横断) + scope=repo_owner (owner 一致) + scope=repo (owner+name 一致) の継承マージで返る。各 rule に付く `scope` flag を見て「横断 / owner 限定 / repo 限定」を判別できる。facet を 1 つも指定せずに呼ぶと officialRules は空配列で返るので、必ず推定 facet を 1 つ以上指定すること。`kind` は通常指定しない (対象ファイル全体を rule 集合と広く照合する用途のため、絞り込むと見落としが増える)
 - repo root の `AGENTS.md` / `CLAUDE.md` を Read (プロジェクト規約)
 - AGENTS.md が `docs/` 等を「source of truth」として参照していたら **その docs も Read** (今回変更した領域に関連するものに限定して良い)
 - グローバル `~/.claude/CLAUDE.md` の `## コメントルール` `## 実装・設計に関して` 等の節 (一度読んだセッションなら conversation history で代替可)
@@ -79,7 +79,7 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 
 ### 各 agent への prompt
 
-- 担当ID (`1`) と、取得済みの rule 全件 (id / title / why / recommend / avoid / source_urls の全文)
+- 担当ID (`1`) と、取得済みの rule 全件 (id / title / why / recommend / avoid の全文)
 - 関連する AGENTS.md / CLAUDE.md / docs の該当節
 - repo root の絶対パス、対象ファイル一覧、バッチID、対象全体のうち今回確認する範囲
 - Step 0 で確定した変更範囲の確認コマンド。path指定で変更を伴わない場合は、範囲判定不要・全 finding を `pre-existing` と明記する

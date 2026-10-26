@@ -18,10 +18,10 @@ sharedで採用する `instructions.md` は共有JSONの `references.specificati
 
 0.35.0から通常設定の `review_flow.mode` に `ask` を追加しました（パス別ルールは `auto`・`manual` だけ）。既存の設定は変更不要です。
 
-CLIはpluginに含まれないため、利用中のskillと同じ `@shinaps/skills@0.36.1` を導入し、`shinaps-skills --version` で確認します。`shinaps-skills validate-linear-config <明示ファイル>` は同梱schemaだけで検証し、ネットワーク取得・正本探索・Git操作・入力変更は行いません。`$schema` は固定URLによるエディタ補助で、契約の正本は[同梱schema](plugins/shinaps-claude/references/linear/configuration.schema.json)です。0.34.0から、Managed Agentsの `.shinaps/managed.json`（`config_version: 1`）も `shinaps-skills validate-managed-config <明示ファイル>` で同じ方式で検証します（[Managedの設定](plugins/shinaps-claude/references/managed/configuration.md)）。
+CLIはpluginに含まれないため、利用中のskillと同じ `@shinaps/skills@0.37.0` を導入し、`shinaps-skills --version` で確認します。`shinaps-skills validate-linear-config <明示ファイル>` は同梱schemaだけで検証し、ネットワーク取得・正本探索・Git操作・入力変更は行いません。`$schema` は固定URLによるエディタ補助で、契約の正本は[同梱schema](plugins/shinaps-claude/references/linear/configuration.schema.json)です。0.34.0から、Managed Agentsの `.shinaps/managed.json`（`config_version: 1`）も `shinaps-skills validate-managed-config <明示ファイル>` で同じ方式で検証します（[Managedの設定](plugins/shinaps-claude/references/managed/configuration.md)）。
 
 ```sh
-npm install -g @shinaps/skills@0.36.1
+npm install -g @shinaps/skills@0.37.0
 shinaps-skills --version
 shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 shinaps-skills validate-managed-config /absolute/repository/.shinaps/managed.json
@@ -33,7 +33,7 @@ shinaps-skills validate-managed-config /absolute/repository/.shinaps/managed.jso
 |---|---|
 | `explore` | 対話しながら既存挙動と変更影響を調べる |
 | `spec` | 目的・仕様・実現方法を詰める |
-| `dev-claude` (Claudeのみ) | メインが選んだ体制（LITE・BASIC・ULTRA）で進行と取りまとめを行い（LITEは実装担当と独立レビュー担当の2名だけで進め、BASIC・ULTRAは必須担当を下限に追加できる）、担当が計画・実装・検証・独立レビューを行う |
+| `dev-claude` (Claudeのみ) | メインが計画・実装・検証・採否を行い、選んだ体制（LITE・BASIC・ULTRA）の担当が独立した別案と独立レビューを行う |
 | `debug` | 不具合の原因を検証する |
 | `review` | 差分や既存コードをレビューする |
 | `refine` | Shinaps AIのruleと実ファイルを照合する |
@@ -61,15 +61,15 @@ shinaps-skills validate-managed-config /absolute/repository/.shinaps/managed.jso
 
 ### dev の入口と体制
 
-ローカルの実装の入口は Claude Code の `dev-claude` だけで、Codexに実装の入口はない。Claude Managed Agentsは別runtimeで、`managed-setup`・`managed-execute` から使う。「[Claude Managed Agents](#claude-managed-agents)」節で扱う。メインのモデルは[経路](plugins/shinaps-claude/references/linear/configuration.md#経路)で決まる（単独devは利用者のセッション設定のまま）。担当は登録エージェントの定義（Opus / medium）で動く。
+ローカルの実装の入口は Claude Code の `dev-claude` だけで、Codexに実装の入口はない。Claude Managed Agentsは別runtimeで、`managed-setup`・`managed-execute` から使う。「[Claude Managed Agents](#claude-managed-agents)」節で扱う。メインのモデルは[経路](plugins/shinaps-claude/references/linear/configuration.md#経路)で決まる（単独devは利用者のセッション設定のまま）。メインは調査・設計・実装・指摘の採否を自分で行うので、メインのモデルと effort がそのまま設計・実装のモデルになる。担当は登録エージェントの定義（Opus / medium）で動く。
 
-devの体制は、実装担当と独立レビュー担当だけのLITE、担当を少なくして進めるBASIC、独立した確認を厚くするULTRAの3段階で、LITEは実装担当と独立レビュー担当の2名だけで進め、BASIC・ULTRAは必須担当を下限にメインが追加できる（[実装体制の判断](plugins/shinaps-claude/references/dev/staffing.md)）。体制・経路（auto・manual）・メインのモデルは別の軸である。体制は各Issueの着手時と人の指摘の一括修正の開始時に、推奨を添えて人に確認する。人数を増やすだけで許可・予算・品質条件は変えない。
+devの体制は、実装後の独立コードレビューの担当1名だけのLITE、計画レビュー担当1名と独立コードレビューの担当1名を置くBASIC、メインの案を見ない独立設計担当1名・計画レビュー担当2名・実装後の独立レビュー（A: 独立コードレビューの担当1名、B: 技術領域ごとの規約照合・可読性・慣習の担当1名）を置くULTRAの3段階で、BASIC・ULTRAは必須担当を下限にメインが追加できる（[実装体制の判断](plugins/shinaps-claude/references/dev/staffing.md)）。3体制の違いは独立確認の対象・人数・深さだけで、共有する文脈が必要な作業はどの体制でもメインが行う。同じ対象を読む確認の観点（計画の簡素化、規約照合、実装の簡素化など）は少数の担当にまとめて依頼する。体制・経路（auto・manual）・メインのモデルは別の軸である。体制は各Issueの着手時と人の指摘の一括修正の開始時に、推奨を添えて人に確認する。人数を増やすだけで許可・予算・品質条件は変えない。
 
 - 工程と体制基準はClaude版を編集元としてCodexへ複製する。起動手順だけはruntimeごとに異なる。
 - Managedの `staffing.md`・`workflow.md`・`launch.md` はClaude版を編集元に写した適応版で、一致はテストしない。Claude版の工程・体制基準を変えたらManagedへの適用可否を判断する。
 - Claudeは登録エージェント、Codexは名前付きサブエージェントを使う。担当のモデル・推論の設定は人数判断で変更しない。
 - Claudeのexplore・spec・review・debugからは `dev-claude` へ引き継ぐ。ClaudeのdevはSkillツールからの起動も許可する。Codexのスキルは実装へ引き継がず、Linear進行では `linear-execute` でClaudeへ依頼する。
-- テスト方針は各版の `references/testing.md` を正本とし、役割定義に同じ段落を複製して検証する。
+- テスト方針は各版の `references/testing.md` を正本とし、役割定義に同じ段落を複製して検証する。設計の観点は `references/dev/design.md` を正本とし、独立設計担当（`shinaps-architect`）の定義とManagedのskillの `references/design.md` に本文を複製して検証する。
 
 ## Claude Code
 
@@ -134,10 +134,10 @@ Claude Codeは標準のmarketplace自動更新機能を使う。`/plugin` のMar
 
 ## Claude Managed Agents
 
-両pluginの `managed-agents/` は、Claude Managed Agentsでdev工程を進めるための共通定義である。lead `shinaps-dev-managed-cc`、devの7役割、skill `dev-managed-cc`、環境 `shinaps-dev` を置く。クラウドのIDを記録する `claude-lock.json` と実設定は利用者ごとのものなので、作業先の `.shinaps/` に置き、公開する定義には含めない。予定実行はこの構成に含めない。
+両pluginの `managed-agents/` は、Claude Managed Agentsでdev工程を進めるための共通定義である。lead `shinaps-dev-managed-cc`、devの3役割、skill `dev-managed-cc`、環境 `shinaps-dev` を置く。クラウドのIDを記録する `claude-lock.json` と実設定は利用者ごとのものなので、作業先の `.shinaps/` に置き、公開する定義には含めない。予定実行はこの構成に含めない。
 
 - leadはFable 5.1（`claude-fable-5-1` / medium）、役割はOpus 5.5（`claude-opus-5-5` / medium）で動く。全agent定義に `speed: standard` を明示する（既存リソースに残るfastを戻すため）。leadのモデルは定義で決まり、Linear進行の経路ごとのメインのモデルとは別に扱う。
-- 体制はLITE・BASIC・ULTRAを初回メッセージで受け、`dev-claude` と同じ体制の表に従い、BASIC・ULTRAではleadが追加の担当を決める。ULTRAのため指摘検証（review-verifier）と規約照合（refine）の役割も登録する。廃止したdev-ultraなどの入口とexplorerは置かず、探索は設計担当が行う。
+- 体制はLITE・BASIC・ULTRAを初回メッセージで受け、`dev-claude` と同じ体制の表に従い、BASIC・ULTRAではleadが追加の担当を決める。leadがメインとして調査・設計・実装・採否を行い、独立設計・計画レビュー・実装後の独立レビューだけを登録した3役割（architect・plan-reviewer・reviewer）へ委任する。そのため Managed で設計・実装を行うモデルは lead の Fable になる（モデルの定義は変えない）。廃止したdev-ultraなどの入口とexplorerは置かず、探索はleadと独立設計担当が行う。
 - Shinaps AIのMCPとruleを使わない。規約はマウントしたリポジトリの `AGENTS.md`・`CLAUDE.md` と参照先、添付された利用者CLAUDE.mdだけで、最終報告ではShinaps AI ruleを未照合とする。
 - 初回メッセージにリポジトリ・base・head・範囲と受入条件・許可・予算が揃わなければ、leadは作業を始めず欠落を質問する。許可はそのメッセージで明示された操作だけで、構成の導入からは生じない。
 - 終了地点は範囲を限ったコミット・headブランチへのpush・draft PR。merge・deploy・release・Issueの更新はしない。CodexのQAはセッションの外で、PRの後に行う。push前に最終QAを行うLinear進行とは順序が違う。
@@ -219,19 +219,17 @@ codex mcp login shinaps-ai
 
 未登録の利用者は[Shinaps AI](https://app.shinaps.ai)でアカウントを作成する。未認証でもスキルの導入は完了できる。MCPが使えないときに照合済みと報告しない。`simplify`・`commit`・`create-pr`・`release`・`linear-plan`・`linear-execute` の基本手順はMCP接続を必須としない。
 
-## Subagents (Claude: 16 / Codex: 10)
+## Subagents (Claude: 14 / Codex: 10)
 
 | Subagent | 配布 | 役割 |
 |---|---|---|
 | `shinaps-explorer` | 両方 | コードベース探索、必読ファイル抽出 |
 | `shinaps-investigator` | 両方 | `shinaps:explore` の現在の質問をコード・テスト・設定・履歴から調べ、確実性を分けて回答 |
-| `shinaps-architect` | Claudeのみ | 設計。dev では設計担当1 が設計・設計案統合・設計適合性・プランと全指摘の最終判断・修正サイクルの修正計画・人の指摘の調査を行い、設計担当2以降が独立設計を行う |
-| `shinaps-plan-reviewer` | Claudeのみ | 計画レビュー (confidence 閾値 70)。2名以上で独立に指摘と修正案を返す |
-| `shinaps-implementer` | Claudeのみ | 確定した計画の実装・簡素化・検証、レビュー後の修正 |
-| `shinaps-reviewer` | 両方 | logic / design / security / performance / maintainability / rule 統合レビュー (confidence 閾値 80)。Claude の dev では、「可読性・慣習レビュー」も同じ役割の種類として担う |
+| `shinaps-architect` | Claudeのみ | dev で独立設計担当を置く場合（ULTRA、または追加した BASIC）の独立設計。メインの案を見ずに、要件・制約・規約・引き継いだ成果物から別案を返す |
+| `shinaps-plan-reviewer` | Claudeのみ | 計画レビュー (confidence 閾値 70) と計画の簡素化。体制に応じて1〜2名で独立に指摘・修正案・削減の提案を返す |
+| `shinaps-reviewer` | 両方 | logic / design / security / performance / maintainability / rule 統合レビュー (confidence 閾値 80)。Claude の dev では、「可読性・慣習レビュー」「規約照合」「実装の簡素化」も同じ役割の種類として担う |
 | `shinaps-review-validator` | 両方 | reviewer 指摘の実コード検証 (confirmed / false positive / partial / out-of-scope 分類) |
-| `shinaps-review-verifier` | Claudeのみ | dev の計画段階と実装後の各検証ラウンドで新しく起動され、全担当の指摘を検証・重複整理し、出典・反証・対立をarchitectへ渡す |
-| `shinaps-simplifier` | Claudeのみ | 計画・実装の簡素化の提案。仕様・構造・処理の削減を読み取り専用で提案 |
+| `shinaps-simplifier` | Claudeのみ | `shinaps:simplify` の計画・実装の簡素化の提案。仕様・構造・処理の削減を読み取り専用で提案 |
 | `shinaps-refine-agent` | 両方 | rule 照合 (ファイル現状全文と照合、Violation / Improvement / Question 分類 + changed / pre-existing 切り分け) |
 | `shinaps-spec-writer` | 両方 | ヒアリング + 調査結果を spec.md 構造化 |
 | `shinaps-tech-surveyor` | 両方 | 外部技術調査 (WebSearch + WebFetch で 3-5 候補比較) |
@@ -240,9 +238,9 @@ codex mcp login shinaps-ai
 | `shinaps-debug-validator` | 両方 | 仮説の実コード検証 (root-cause / contributing-factor / red-herring / needs-reproduction 分類) |
 | `shinaps-split-reviewer` | Claudeのみ | `shinaps:commit` のmanualの分割案を「単位の diff だけで妥当性を判断できるか」で批判 + 修正版最終分割計画 (worktree は read-only) |
 
-Claude版はMarkdown、Codex版はTOMLで役割を定義する。Managed Agents版（両pluginの `managed-agents/agents/`）はdevの7役割だけを、Claude版の `name`・`description`・本文に `ant apply` 用の frontmatter を付けたMarkdownで定義する。
+Claude版はMarkdown、Codex版はTOMLで役割を定義する。Managed Agents版（両pluginの `managed-agents/agents/`）はdevの3役割だけを、Claude版の `name`・`description`・本文に `ant apply` 用の frontmatter を付けたMarkdownで定義する。
 
-Claude版は全16エージェントが `opus / medium`。Codex版の役割定義はモデルを書かず、モデルと推論は親セッションから継承する。dev での担当の割り当ては[dev の工程](plugins/shinaps-claude/references/dev/workflow.md)にある。
+Claude版は全14エージェントが `opus / medium`。Codex版の役割定義はモデルを書かず、モデルと推論は親セッションから継承する。dev での担当の割り当ては[dev の工程](plugins/shinaps-claude/references/dev/workflow.md)にある。
 
 **subagent 内では shinaps MCP を直接呼び出さず、rule 全文は Skill 側から prompt 経由で渡す** 原則を全 system prompt に明記する。MCP呼び出しの利用量が重複しないようにするため。
 

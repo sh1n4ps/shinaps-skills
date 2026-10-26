@@ -1,6 +1,6 @@
 # Managed 構成の導入と更新
 
-共通の dev 構成（lead `shinaps-dev-managed-cc`、dev の7役割、skill `dev-managed-cc`、環境 `shinaps-dev`）を利用者の組織へ導入・更新する手順。既存の lock を使い、同じリソースを重複して作らない。セッションの作成・予定実行は行わない。dev の工程は [skill `dev-managed-cc`](../../managed-agents/skills/dev-managed-cc/SKILL.md) が持つので、ここでは扱わない。
+共通の dev 構成（lead `shinaps-dev-managed-cc`、dev の3役割、skill `dev-managed-cc`、環境 `shinaps-dev`）を利用者の組織へ導入・更新する手順。既存の lock を使い、同じリソースを重複して作らない。セッションの作成・予定実行は行わない。dev の工程は [skill `dev-managed-cc`](../../managed-agents/skills/dev-managed-cc/SKILL.md) が持つので、ここでは扱わない。
 
 ## 前提
 

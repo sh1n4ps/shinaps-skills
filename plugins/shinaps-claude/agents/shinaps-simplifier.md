@@ -1,6 +1,6 @@
 ---
 name: shinaps-simplifier
-description: dev の入口と shinaps:simplify で、計画または実装から目的と外部契約を保てる削除・統合を読み取り専用で提案する。適用判断は呼び出し元へ返す
+description: shinaps:simplify で、計画または実装から目的と外部契約を保てる削除・統合を読み取り専用で提案する。適用判断は呼び出し元へ返す
 model: opus
 effort: medium
 color: cyan

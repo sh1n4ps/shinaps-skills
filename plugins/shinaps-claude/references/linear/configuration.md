@@ -4,7 +4,7 @@
 
 ## 検証CLIと契約版
 
-利用中のskillとCLIの版を確認し、0.36.1のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.36.1`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
+利用中のskillとCLIの版を確認し、0.37.0のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.37.0`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
 
 0.35.0から通常設定の `review_flow.mode` に `ask` を受理する。`config_version` は2のままで、既存のauto・manualの設定は変更不要。0.33.0〜0.34.xのCLIと `$schema` のURLは `ask` を拒否するため、`ask` を使う設定では `$schema` も0.35.0以降のURLにする。
 
@@ -96,7 +96,7 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 | `manual` | WebStorm内の対話Claude CodeセッションへBridgeで依頼する（[Bridge](bridge.md)） | `bridge_request` | Opusを基本とし、Issueの着手時にFableかOpusかを確認する。同じIssueの一括修正・継続・再開では選択を引き継ぐ |
 | `ask` | 着手時に人へ一問で確認した回答（auto・manual）の経路 | 回答した経路の許可 | 回答した経路のモデル |
 
-- メインはdevを実行するClaude Codeのセッションを指す。担当（独立レビュー・簡素化を含む）のモデルは役割定義の値で、経路とは独立している。単独のdev（Linear進行を経ないdev）のメインは利用者のセッション設定のまま。
+- メインはdevを実行するClaude Codeのセッションを指す。担当（独立レビューを含む）のモデルは役割定義の値で、経路とは独立している。単独のdev（Linear進行を経ないdev）のメインは利用者のセッション設定のまま。メインは調査・設計・実装・指摘の採否を自分で行うので、メインのモデル（manualでFableを選べばFable）がそのまま設計・実装のモデルになる。
 - manualの対話セッションのモデルは、人が `/model` で切り替える。Claudeへのプロンプトや Bridge のメッセージでは切り替えられない（[model-config](https://code.claude.com/docs/en/model-config)）。
 - manualで基本（Opus）と違う選択なら、Codexが人へ切り替えを依頼する。Codexは人の報告を記録し、実際のモデルを照合できたとは扱わない。
 

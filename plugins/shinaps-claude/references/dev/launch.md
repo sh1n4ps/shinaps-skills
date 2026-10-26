@@ -8,4 +8,4 @@
 - 同じ担当の継続は、同じ ID へ SendMessage で依頼する。
 - 対話セッションの質問は `AskUserQuestion` で一問ずつ行う。CodexからローカルCLIで受けた依頼（auto経路）では質問・障害・再開点を最終resultへ返してターンを終了し（CLI内で `AskUserQuestion` や入力待ちを行わない）、同じsessionのresumeで回答を受ける（[CLI手順](../linear/claude-cli.md)）。Bridgeで受けた依頼（manual経路の対話セッション）では人へ `AskUserQuestion` で確認し、決定を依頼元Codexへの報告に含める（[Bridge](../linear/bridge.md)）。進捗は `TaskCreate`・`TaskUpdate` で管理する。他スキル（`commit`・`create-pr`・`release`）への引き継ぎは `Skill` を使う。現在のセッションで提供されていないツールは仮定しない。
 - `EnterPlanMode` は使わない。bypassPermissions モード（リモート実行など）と両立させるため。
-- 起動・再開できない、または完了しない担当は未完了として記録し、[工程](workflow.md)の「役割と継続」の交代へ進む。交代もできなければ未完了として必要な判断を返す。他のモデルや Fable へ切り替えず、メインが代わりに作業しない。
+- 起動・再開できない、または完了しない担当は未完了として記録し、[工程](workflow.md)の「役割と継続」の交代へ進む。交代もできなければ未完了として必要な判断を返す。他のモデルや Fable へ切り替えず、メインがその独立確認を代わりに行わない。

@@ -8,22 +8,29 @@ const CODEX = 'plugins/shinaps-codex';
 const MANAGED = `${CLAUDE}/managed-agents`;
 const MANAGED_LEAD = `${MANAGED}/agents/shinaps-dev-managed-cc.md`;
 const MANAGED_SKILL = `${MANAGED}/skills/dev-managed-cc`;
-// 探索は必須担当ではなく、Managed では各設計担当が自分で調べるので、探索担当は lead に登録しない。
+// 探索は必須担当ではなく、Managed では lead と独立設計担当が自分で調べるので、探索担当は lead に登録しない。
 const MANAGED_UNREGISTERED_ROLES = ['shinaps-explorer'];
 // 起動手順は runtime ごとの機構で書くので、references の中でこれだけは複製しない。
 const RUNTIME_SPECIFIC_REFERENCE = 'dev/launch.md';
-// テスト方針の段落を写す役割定義。Codex には dev 専用の役割を配布しないので、対象は runtime ごとに違う。
+// テスト方針の段落を写す定義。Codex には dev 専用の役割を配布しないので、対象は runtime ごとに違う。
+// Managed の lead はメインとして実装と検証を行うので、lead の定義にも写す。
 const TESTING_POLICY_DEFINITIONS = [
   ...[
     'shinaps-architect',
-    'shinaps-implementer',
     'shinaps-plan-reviewer',
     'shinaps-reviewer',
     'shinaps-refine-agent',
     'shinaps-simplifier',
-    'shinaps-review-verifier',
   ].map((role) => `${CLAUDE}/agents/${role}.md`),
+  MANAGED_LEAD,
   ...['shinaps-reviewer', 'shinaps-refine-agent'].map((role) => `${CODEX}/agents/${role}.toml`),
+];
+// 設計の観点を写す先（役割定義と skill の reference）。Claude ではメインが design.md を読み、独立設計担当は
+// 定義の写しで同じ観点を使う。Managed の lead は自分の skill の中の写しを読む（Managed の architect は
+// Claude 版との本文一致で結ばれる）。
+const DESIGN_COPIES = [
+  `${CLAUDE}/agents/shinaps-architect.md`,
+  `${MANAGED_SKILL}/references/design.md`,
 ];
 
 async function readTree(root: string): Promise<Record<string, string>> {
@@ -147,6 +154,21 @@ test('role definitions contain the testing policy paragraph verbatim', async () 
   assert.deepEqual(stale, []);
 });
 
+// メインの案と独立設計担当の案は、同じ観点と書式で比べる。担当は plugin 内の資料を読めるとは
+// 限らず、Managed の skill は plugin の外の資料を読めないので、design.md の本文を写す。正本だけを
+// 直すと、独立案や Managed の計画が古い観点で作られ、比べる基準が揃わない。
+test('design copies in role definitions and the Managed skill contain the design reference body verbatim', async () => {
+  const design = (await readFile(`${CLAUDE}/references/dev/design.md`, 'utf8'))
+    .replace(/^# .*\n/, '')
+    .trim();
+  assert.ok(design);
+  const stale: string[] = [];
+  for (const path of DESIGN_COPIES) {
+    if (!(await readFile(path, 'utf8')).includes(design)) stale.push(path);
+  }
+  assert.deepEqual(stale, []);
+});
+
 // Claude の dev 入口は、Codex がローカル CLI または Bridge で依頼して Skill ツールから起動する。
 // disable-model-invocation: true を付けると、Skill ツールからの起動が拒否される（63102d2 で直した不具合）。
 test('Claude dev entries can be invoked through the Skill tool', async () => {
@@ -210,8 +232,9 @@ test('Managed role definitions copy the Claude name, description and body', asyn
   assert.deepEqual(stale, []);
 });
 
-// Managed 構成は Shinaps AI に依存せず自己完結させる。役割の本文は Claude 版と同一であることを上の
-// テストで固定しているので、役割は frontmatter だけを見る。
+// Managed 構成は Shinaps AI に依存せず自己完結させる。役割の本文は
+// `Managed role definitions copy the Claude name, description and body` で Claude 版と同一に固定しているので、
+// 役割は frontmatter だけを見る。
 // クラウドの既存リソースには speed: fast が残っており、ソースで speed を省略しても apply は変更と
 // みなさず fast のまま残る。全 agent 定義に speed: standard を明示して戻し、再び fast にならないよう固定する。
 test('Managed configuration does not depend on Shinaps AI or fast mode', async () => {

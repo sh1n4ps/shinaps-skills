@@ -1,11 +1,11 @@
 ---
 name: dev-managed-cc
-description: Claude Managed Agents のセッションで、初回メッセージで受けた体制（LITE・BASIC・ULTRA）の担当で進め、BASIC・ULTRAでは作業に応じて追加の担当を決めて計画・実装・検証・独立レビューを進め、範囲を限ったコミット・push・draft PR で終える。
+description: Claude Managed Agents のセッションで、初回メッセージで受けた体制（LITE・BASIC・ULTRA）の担当で dev を進める。lead がメインとして計画・実装・検証・採否を行い、体制に応じた担当が独立した別案と独立レビューを行う。BASIC・ULTRAでは作業に応じて担当を追加する。範囲を限ったコミット・push・draft PR で終える。
 ---
 
 # Managed Agents で開発する
 
-[体制の判断](references/staffing.md)・[工程](references/workflow.md)・[起動手順](references/launch.md)を読んで進める。初回メッセージの体制の担当で進め、BASIC・ULTRAでは lead が関連コードを確認して計画の前に追加の担当を決める。継続のターンでは初回の体制を引き継ぎ、利用者がメッセージに体制を書けばそれに従う。途中でも必要な役割・人数を追加する（BASIC・ULTRA。LITEで足りないときは `状態: 質問` で体制の変更を相談する）。
+[体制の判断](references/staffing.md)・[工程](references/workflow.md)・[起動手順](references/launch.md)を読んで進める。どの体制でも lead がメインとして調査・設計・実装・修正・指摘の採否を行い、独立した担当に別案と独立確認を委任する。初回メッセージの体制の担当で進め、BASIC・ULTRAでは lead が関連コードを確認して計画の前に追加の担当を決める。継続のターンでは初回の体制を引き継ぎ、利用者がメッセージに体制を書けばそれに従う。途中でも必要な役割・人数を追加する（BASIC・ULTRA。LITEで足りないときは `状態: 質問` で体制の変更を相談する）。
 
 ## 初回メッセージ
 
@@ -47,6 +47,7 @@ description: Claude Managed Agents のセッションで、初回メッセージ
 - PR の URL
 - 検証結果
 - 独立レビューの結果と未解決の指摘
+- 退けた Critical・Warning と、欠陥を示す Info・提案の件数と根拠の場所、人の判断で解決した件数と判断の記録の場所、既存箇所の指摘の件数
 - 体制（必須担当の完了・未完了と、合意による未実施を含む）と、途中で変えた場合の理由
 - 書き込み制限の比較で見つかった違い
 - 未検証の事項

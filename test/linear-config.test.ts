@@ -24,6 +24,7 @@ test('configuration accepts complete review policies and rejects incomplete, ret
     permissions: [
       'issue_update',
       'claude_cli',
+      'claude_cli_bypass_permissions',
       'bridge_request',
       'dev_delegation',
       'deploy:staging',

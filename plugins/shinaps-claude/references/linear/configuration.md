@@ -4,9 +4,11 @@
 
 ## 検証CLIと契約版
 
-利用中のskillとCLIの版を確認し、0.38.0のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.38.0`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
+利用中のskillとCLIの版を確認し、0.39.0のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.39.0`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
 
 0.35.0から通常設定の `review_flow.mode` に `ask` を受理する。`config_version` は2のままで、既存のauto・manualの設定は変更不要。0.33.0〜0.34.xのCLIと `$schema` のURLは `ask` を拒否するため、`ask` を使う設定では `$schema` も0.35.0以降のURLにする。
+
+0.39.0から許可 `claude_cli_bypass_permissions` を受理する。`config_version` は2のままで、0.33.0〜0.38.xのCLIと `$schema` のURLはこの許可を拒否するため、使う設定では `$schema` も0.39.0以降のURLにする。
 
 ```sh
 shinaps-skills --version
@@ -75,7 +77,7 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 | `team_settings` | `existing_only`（既存の定義に合わせ、変更しない）または `manage_on_setup`（初期設定・設定変更のときだけ変更案を示し、合意後に整備できる） |
 | `statuses` | 状態キーと待ち状態の `human_input` から、実在するステータス名への対応。複数のキーに同じステータスを指定できる |
 | `stop_after` | 終了地点（下の「終了地点」） |
-| `permissions` | 継続的に許可した操作の一覧（下の「許可」）。経路の許可（auto: `claude_cli`、manual: `bridge_request`）も含む。許可なしは `[]` |
+| `permissions` | 継続的に許可した操作の一覧（下の「許可」）。経路の許可（auto: `claude_cli` と `claude_cli_bypass_permissions`、manual: `bridge_request`）も含む。許可なしは `[]` |
 | `references` | `specifications`・`validation`・`environments`・`deployment`・`publication` の5分類をすべて記載し、既存資料のパスまたはURLの一覧を指定する。該当資料なしは `[]` |
 | `cycle_report` | Cycle報告の設定（下の「Cycle報告」）。報告を使わない場合は `null` |
 | `review_flow` | `{ "mode": "auto" }`（AIが自然な単位を決め、独立レビュー・QA後にstage・commit）または `{ "mode": "manual" }`（AIがレビュー待ちを明示し、人がWebStormで差分を確認する。人のコミット開始依頼でAIが分割案を示し、人が単位ごとに依頼したらAIがstage・commit）、または `{ "mode": "ask" }`（着手時に進行役が人へautoかmanualかを一問で確認し、回答を同じIssueの通常flowとして使う）。開始時の値（askでは回答）で経路も決まる（下の「経路」） |
@@ -92,7 +94,7 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 
 | 通常設定 | 経路 | 必要な許可 | メインのモデル |
 | --- | --- | --- | --- |
-| `auto` | Codexが起動するローカルClaude CLIの同じsession（[Claude CLI](claude-cli.md)） | `claude_cli` | Opus。起動とすべてのresumeで `--model opus` を指定する |
+| `auto` | Codexが起動するローカルClaude CLIの同じsession（[Claude CLI](claude-cli.md)） | `claude_cli`・`claude_cli_bypass_permissions` | Opus。起動とすべてのresumeで `--model opus` を指定する |
 | `manual` | WebStorm内の対話Claude CodeセッションへBridgeで依頼する（[Bridge](bridge.md)） | `bridge_request` | Opusを基本とし、Issueの着手時にFableかOpusかを確認する。同じIssueの一括修正・継続・再開では選択を引き継ぐ |
 | `ask` | 着手時に人へ一問で確認した回答（auto・manual）の経路 | 回答した経路の許可 | 回答した経路のモデル |
 
@@ -152,7 +154,7 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 
 1. 現在の設定・許可・補足・進行中Issueを確認する。
 2. `config_version: 2` にし、`implementation_skill`、`review_flow.tool`、`path_policy_overrides[].review_flow.tool` を削除する。
-3. `permissions` から `codex_task`・`managed_session:*` を削除する。経路の許可（通常設定がautoなら `claude_cli`、manualなら `bridge_request`）は、そのリポジトリの利用者と合意して明示的に追加する。既存の `bridge_request` は、任意の引き渡しに加えてmanual経路の依頼も表すようになるため、残すかを確認する。他の許可は増やさない。
+3. `permissions` から `codex_task`・`managed_session:*` を削除する。経路の許可（通常設定がautoなら `claude_cli` と `claude_cli_bypass_permissions`、manualなら `bridge_request`）は、そのリポジトリの利用者と合意して明示的に追加する。既存の `bridge_request` は、任意の引き渡しに加えてmanual経路の依頼も表すようになるため、残すかを確認する。他の許可は増やさない。
 4. `statuses` は変更しない。補足からCodex実装タスク・Managed・tool・人がコミットする条件の記述とそれらの資料へのリンクを除き、合意日付を残す。
 5. `$schema` を利用中の公開版のURLへ更新し、CLIで検証して読み戻す。
 
@@ -177,7 +179,8 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 | --- | --- |
 | `issue_update` | 対象のteam・projectの中で、利用者が任せたIssue・Cycleの範囲に対する運用上の更新（本文・コメント・状態・依存・Linearへの添付、整理で必要になったIssueの作成・分割）と、利用者から任された目的の作業を着手前にIssueへ紐づけるための作成（[issue.md](issue.md) の「着手前に作業をIssueへ紐づける」）。チーム設定の変更、未合意の範囲・期限の変更、Cycle外への進行、Issueの削除、外部への送信を含めない |
 | `development_operations` | 任された対象の開発に必要な、既存アカウントへの通常のログイン、ローカル環境準備、プロジェクトの依存導入、開発サーバー・Simulatorの起動停止、ビルド・テスト・QA操作を継続的に許可する。下の範囲に従う |
-| `claude_cli` | auto経路で、Codexが行うClaudeのローカルCLI起動、同じsessionの状態・結果取得、質問への回答・修正・許可済みコミットのresume。メインのモデル（[経路](#経路)）の指定のほかは既存CLI設定を保持し、個別の操作権限を維持する（[手順](claude-cli.md)） |
+| `claude_cli` | auto経路で、Codexが行うClaudeのローカルCLI起動、同じsessionの状態・結果取得、質問への回答・修正・許可済みコミットのresume。メインのモデル（[経路](#経路)）と権限モードの指定のほかは既存CLI設定を保持する（[手順](claude-cli.md)）。bypassPermissionsでの起動への同意は含まない |
+| `claude_cli_bypass_permissions` | auto経路のClaudeのローカルCLIを、起動と同じsessionのすべてのresumeで `--permission-mode bypassPermissions` にすることへの、利用者の継続的な同意。CLIの権限チェックを省くだけで、操作の許可を追加しない。Claudeの操作は依頼の範囲と他の許可・合意済みの `review_flow` に限る（[手順](claude-cli.md#操作権限)） |
 | `bridge_request` | manual経路で、CodexがBridgeで対話Claude Codeセッションへ行う依頼と報告の受け取り、および別会話との任意の進行の引き渡し。報告は照合材料であり、操作許可を変更しない（[手順](bridge.md)） |
 | `push` | 対象Issueの作業ブランチの通常のpush |
 | `pr_create` | 対象IssueのPRの作成と更新 |
@@ -187,7 +190,7 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 | `dev_delegation` | `shinaps:dev-claude` の中で、サブエージェントへ委託する。許可がない場合、入口のメインは担当の作業を代わりに行わず、必要な許可を求める。worktreeの作成は含まない |
 | `evidence:<保存先>` | Linear以外の指定した保存先へQA素材を保存する（LinearのIssueへの添付は `issue_update` に含む） |
 
-- 開発進行には `issue_update` と、[経路](#経路)の許可が必要（auto: `claude_cli` とローカルClaude CLI、manual: `bridge_request` と、Bridge MCP・WebStorm内の対話Claude Codeセッション。ask: 着手時に選んだ経路の許可）。今回の明示依頼による同じ経路の許可も引き継ぐ。初期設定は `issue_update`・経路の許可（askでは選択肢にする両経路の許可）・`dev_delegation` と `review_flow` を具体的に提案し、合意を得る。設定の存在だけでは許可を得ない。
+- 開発進行には `issue_update` と、[経路](#経路)の許可が必要（auto: `claude_cli`・`claude_cli_bypass_permissions` とローカルClaude CLI、manual: `bridge_request` と、Bridge MCP・WebStorm内の対話Claude Codeセッション。ask: 着手時に選んだ経路の許可）。今回の明示依頼による同じ経路の許可も引き継ぐ。初期設定は `issue_update`・経路の許可（askでは選択肢にする両経路の許可）・`dev_delegation` と `review_flow` を具体的に提案し、合意を得る。設定の存在だけでは許可を得ない。
 - `development_operations` は、既存の認証手段と利用者が許可した既存アカウントを使い、対象の開発・検証環境と専用の検証データで行う操作に限る。本人の二要素認証・セキュリティキー・CAPTCHA等が必要なら具体的に依頼し、回避しない。ログイン成功を新しい権限への同意と扱わず、新規アカウント・OAuth権限の拡大・課金・新規クラウド資源・共有環境への破壊的変更・実利用者データの操作は含めない。秘密値をIssueや証拠へ記載しない。
 - この包括許可は `stage`・`commit`・`push`・`pr_create`・`merge`・`deploy:*`・`publish:*`・外部への送信・履歴やデータの破壊的操作を含まない。テストや環境準備がこれらを伴うときも、stage・commitは合意済みflow、その他はそれぞれの許可が必要。人レビュー・Human QA・ツール側の承認条件を省略しない。`permissions` に明示された場合だけ適用し、既存設定に自動で追加しない。
 - 一つの操作が別の操作を伴う場合は、伴う操作の許可も必要とする（マージで本番へ自動配備される場合は `merge` と `deploy:production`）。
@@ -214,7 +217,7 @@ manualの設定例。同じprojectを複数のリポジトリがそれぞれの�
 
 ```json
 {
-  "$schema": "https://cdn.jsdelivr.net/npm/@shinaps/skills@0.35.0/plugins/shinaps-claude/references/linear/configuration.schema.json",
+  "$schema": "https://cdn.jsdelivr.net/npm/@shinaps/skills@0.39.0/plugins/shinaps-claude/references/linear/configuration.schema.json",
   "config_version": 2,
   "config_storage": "shared",
   "target": {

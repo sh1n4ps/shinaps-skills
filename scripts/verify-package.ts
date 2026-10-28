@@ -44,7 +44,7 @@ async function collect(path: string) {
     else throw new Error(`Unsupported package entry: ${child}`);
   }
 }
-for (const path of ['dist', 'plugins']) await collect(path);
+for (const path of ['dist', 'docs', 'plugins']) await collect(path);
 assert.deepEqual(actual, expected.sort());
 const tarball = join(destination, artifact.filename);
 // tarball を実際に install して起動する。Node は node_modules 配下の .ts に型除去を適用しないので、

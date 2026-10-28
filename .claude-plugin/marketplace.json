@@ -1,8 +1,7 @@
 {
   "name": "shinaps-skills",
   "owner": {
-    "name": "shinaps",
-    "email": "ryuta@shinaps.jp"
+    "name": "shinaps"
   },
   "metadata": {
     "description": "shinaps-ai と統合した開発 workflow skill を配布するマーケットプレイス"
@@ -13,8 +12,7 @@
       "source": "./plugins/shinaps-claude",
       "description": "Shinaps AIの開発ワークフロー。プロジェクトの指示から条件を読み、調査・設計・実装・簡素化・レビュー・コミット・PR・リリースとLinearでの開発進行を支援する。",
       "author": {
-        "name": "shinaps",
-        "email": "ryuta@shinaps.jp"
+        "name": "shinaps"
       },
       "homepage": "https://github.com/sh1n4ps/shinaps-skills",
       "repository": "https://github.com/sh1n4ps/shinaps-skills",

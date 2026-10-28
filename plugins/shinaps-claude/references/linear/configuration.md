@@ -4,7 +4,7 @@
 
 ## 検証CLIと契約版
 
-利用中のskillとCLIの版を確認し、0.39.0のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.39.0`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
+利用中のskillとCLIの版を確認し、0.39.1のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.39.1`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
 
 0.35.0から通常設定の `review_flow.mode` に `ask` を受理する。`config_version` は2のままで、既存のauto・manualの設定は変更不要。0.33.0〜0.34.xのCLIと `$schema` のURLは `ask` を拒否するため、`ask` を使う設定では `$schema` も0.35.0以降のURLにする。
 
@@ -17,7 +17,7 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 
 ローカル開発では `node bin/skills.ts validate-linear-config <file>` を使える。CLIは指定された一つのJSONを読み、同梱schemaで検証する。ネットワーク取得、正本探索、Git操作、入力変更、型変換、既定値の補完、未知キーの除去はしない。未知キーはroot・下位とも拒否する。成功は構造が有効なことだけを表し、許可の合意やLinearの状態・参照ファイルの存在は保証しない。
 
-`config_version` が欠落または旧版なら移行、未来版ならskillとCLIの更新、不正型なら設定修正を案内する。JSONコメントは使わず、運用条件は補足へ書く。`$schema` は公開npmパッケージの固定バージョンURLでエディタを補助する。sourceリポジトリは非公開のため、認証が必要なGitHub raw URLは使わない。CLIは外部のschemaを取得しない。
+`config_version` が欠落または旧版なら移行、未来版ならskillとCLIの更新、不正型なら設定修正を案内する。JSONコメントは使わず、運用条件は補足へ書く。`$schema` は公開npmパッケージの固定バージョンURLでエディタを補助する。CLIは外部のschemaを取得しない。
 
 ## 配置と保存方式
 
@@ -72,7 +72,7 @@ shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 | `$schema` | 任意のエディタ補助。固定URLは下記。CLIはこのURLを取得しない |
 | `config_storage` | `shared`（Git共有）または `local`（メインの作業ツリーだけに保存）。保存・読取規則は上記に従う |
 | `target.workspace` | Linearのworkspace |
-| `target.team` | チームのキー（例 `SHINAPS`） |
+| `target.team` | チームのキー（例 `ENG`） |
 | `target.project` | 使うprojectのURL。projectを使わない運用では `null` |
 | `team_settings` | `existing_only`（既存の定義に合わせ、変更しない）または `manage_on_setup`（初期設定・設定変更のときだけ変更案を示し、合意後に整備できる） |
 | `statuses` | 状態キーと待ち状態の `human_input` から、実在するステータス名への対応。複数のキーに同じステータスを指定できる |
@@ -221,9 +221,9 @@ manualの設定例。同じprojectを複数のリポジトリがそれぞれの�
   "config_version": 2,
   "config_storage": "shared",
   "target": {
-    "workspace": "shinaps",
-    "team": "SHINAPS",
-    "project": "https://linear.app/shinaps/project/shinaps-ai-76ed13db8314"
+    "workspace": "your-workspace",
+    "team": "ENG",
+    "project": "https://linear.app/your-workspace/project/your-project-0123456789ab"
   },
   "team_settings": "existing_only",
   "statuses": {

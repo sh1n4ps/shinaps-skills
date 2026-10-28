@@ -44,6 +44,7 @@
   "references": {
     "specifications": [
       "README.md",
+      "docs/development.md",
       ".shinaps/linear/instructions.md"
     ],
     "validation": [
@@ -51,7 +52,7 @@
       ".github/workflows/publish.yml"
     ],
     "publication": [
-      "README.md",
+      "docs/development.md",
       ".github/workflows/publish.yml"
     ],
     "environments": [],

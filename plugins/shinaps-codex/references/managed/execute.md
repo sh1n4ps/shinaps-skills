@@ -63,7 +63,7 @@ shinaps-skills managed collect --account <name> --session <ID>
 ```
 
 - セッションに紐づく Files（`changes.patch` と作業記録の tar）を、そのアカウントの `sessions/<ID>/outputs/` へ保存し、保存したパスを表示する。同じ名前のファイルは最新のものだけを保存する（lead は毎ターン `changes.patch` を比較元からの全体の差分で置き換える）。名前がファイル名だけでないものは保存せずに止まる。保存したサイズは一覧の値と比べる。
-- CLI は差分を適用しない。`changes.patch` は合意した base の SHA のチェックアウトで `git apply --check` してから、範囲と受入条件に対する差分を確かめる。適用するかは利用者と決める。
+- CLI は差分を適用しない。ローカルの CLI は git を呼ばず、自分では push しない。push と draft PR の作成は、許可した場合にセッション内の lead が行う。`changes.patch` は合意した base の SHA のチェックアウトで `git apply --check` してから、範囲と受入条件に対する差分を確かめる。適用するかは利用者と決める。
 - `コミット:` と push 先がある場合は `git fetch origin <head>` で head ブランチを取得し、base の SHA からのコミットと差分を確かめる。
 - `PR:` がある場合は `gh pr view <PR の URL> --json isDraft,baseRefName,headRefName` または GitHub MCP の読み取りで、draft であること・base と head が合意どおりであることを確かめる。
 

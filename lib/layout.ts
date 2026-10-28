@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 // launchd ジョブは enable した版の CLI ではなく、実行のたびに npm から取得した最新版の CLI を起動する。
 // そのためここに定義した場所と形式 (auto-update.json、state.json、transaction/journal.json) は
 // どの版でも読めるように保ち、変える場合は旧形式も読めるようにする。
+// Managed Agents のアカウントごとの配置 (managed/<account>/ の lock とセッション記録) も同じ約束で、
+// 版を変えても既存の lock を見失わないようにする。lock を見失うと、次の適用が同じリソースを重複して作る。
 
 /**
  * このパッケージのルートディレクトリ。リポジトリの checkout、または npm が展開したディレクトリ。
@@ -44,6 +46,18 @@ export const managedRoot = (home: string): string =>
 /** 配置済みの配布物。Codex の marketplace はここを指す。 */
 export const payloadDir = (root: string): string => join(root, 'codex');
 export const statePath = (root: string): string => join(root, 'state.json');
+
+/**
+ * Managed Agents のアカウントのディレクトリ。lock は組織・workspace (APIキー) に属し、リポジトリには
+ * 属さないので、リポジトリではなくマシン単位の管理ディレクトリに置く。
+ * - `definitions/`: `ant apply` の cwd。同梱の共通定義の写しと `claude-lock.json` だけを置く。
+ * - `sessions/<request_id>.json`: このアカウントで作成したセッションの記録。
+ * - `sessions/<session_id>/outputs/`: 回収したファイル。
+ */
+export const managedAccountDir = (root: string, account: string): string =>
+  join(root, 'managed', account);
+/** 同梱の Managed 共通定義。両 plugin の内容は同一 (テストで確認) なので Claude 版を使う。 */
+export const managedTemplatePath = 'plugins/shinaps-claude/managed-agents';
 
 /** CODEX_HOME の解決値。オプション (`auto-update check` が渡す) → 環境変数 → Codex の既定の順。 */
 export const codexHomeOf = (options: { codexHome?: string }, home: string): string =>

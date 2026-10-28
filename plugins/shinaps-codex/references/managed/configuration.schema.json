@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://cdn.jsdelivr.net/npm/@shinaps/skills@0.34.0/plugins/shinaps-claude/references/managed/configuration.schema.json",
-  "title": "Shinaps Managed Agents configuration v1",
+  "$id": "https://cdn.jsdelivr.net/npm/@shinaps/skills@0.38.0/plugins/shinaps-claude/references/managed/configuration.schema.json",
+  "title": "Shinaps Managed Agents configuration v2",
   "type": "object",
   "properties": {
     "$schema": {
@@ -9,11 +9,7 @@
     },
     "config_version": {
       "type": "integer",
-      "const": 1
-    },
-    "definitions": {
-      "type": "string",
-      "minLength": 1
+      "const": 2
     },
     "repository": {
       "type": "object",
@@ -30,18 +26,32 @@
       "required": ["url", "mount_path"],
       "additionalProperties": false
     },
-    "vault_id": {
-      "anyOf": [
-        {
-          "type": "string",
-          "minLength": 1
+    "accounts": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "vault_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
         },
-        {
-          "type": "null"
-        }
-      ]
+        "required": ["vault_id"],
+        "additionalProperties": false
+      }
     }
   },
-  "required": ["config_version", "definitions", "repository", "vault_id"],
+  "required": ["config_version", "repository", "accounts"],
   "additionalProperties": false
 }

@@ -15,8 +15,8 @@ export type ConfigContract = {
   migration: string;
 };
 
-/** 明示されたファイルを同梱の契約で検証する。設定の探索・変更や外部取得は行わない。 */
-export async function validateConfig(path: string, contract: ConfigContract): Promise<void> {
+/** 明示されたファイルを同梱の契約で検証し、検証した内容を返す。設定の探索・変更や外部取得は行わない。 */
+export async function validateConfig(path: string, contract: ConfigContract): Promise<unknown> {
   const input: unknown = JSON.parse(await readFile(path, 'utf8'));
   // 版の不一致は設定修正とskill更新で対処が異なるため、schema検証より先に案内する。
   if (typeof input === 'object' && input !== null && !Array.isArray(input)) {
@@ -51,4 +51,5 @@ export async function validateConfig(path: string, contract: ConfigContract): Pr
       `Invalid ${contract.name} configuration. Correct the JSON to match configuration.schema.json:\n${errors}`,
     );
   }
+  return input;
 }

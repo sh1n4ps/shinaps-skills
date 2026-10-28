@@ -266,3 +266,15 @@ test('Managed configuration does not depend on Shinaps AI or fast mode', async (
   }
   assert.deepEqual(found, []);
 });
+
+// Managed の lead はメインとして設計・実装を行うので、そのモデルが Managed の設計・実装のモデルになる。
+// 利用者の指定で lead・役割とも Opus で動かす (SHINAPS-240)。
+test('every Managed agent runs on Opus', async () => {
+  const notOpus: string[] = [];
+  for (const role of [...(await managedLeadRoles()), 'shinaps-dev-managed-cc']) {
+    const path = `${MANAGED}/agents/${role}.md`;
+    const { frontmatter } = splitDefinition(await readFile(path, 'utf8'));
+    if (!/^model:\n\s+id: claude-opus-5-5$/m.test(frontmatter)) notOpus.push(path);
+  }
+  assert.deepEqual(notOpus, []);
+});

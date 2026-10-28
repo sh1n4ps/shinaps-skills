@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { packageRoot } from '../lib/layout.ts';
 import { validateLinearConfig } from '../lib/linear-config.ts';
 import { validateManagedConfig } from '../lib/managed-config.ts';
+import { managed } from '../lib/managed.ts';
 import { run } from '../lib/install.ts';
 import { autoUpdate } from '../lib/auto-update.ts';
 import { errorMessage } from '../lib/fs.ts';
@@ -19,8 +20,9 @@ try {
   } else if (command === 'validate-managed-config') {
     if (rest.length !== 1) throw new Error('Usage: shinaps-skills validate-managed-config <file>');
     await validateManagedConfig(rest[0]);
-    console.log('Managed configuration is valid (config_version: 1).');
-  } else if (command === 'auto-update') await autoUpdate(rest);
+    console.log('Managed configuration is valid (config_version: 2).');
+  } else if (command === 'managed') await managed(rest);
+  else if (command === 'auto-update') await autoUpdate(rest);
   else await run(process.argv.slice(2));
 } catch (error) {
   console.error(`Shinaps: ${errorMessage(error)}`);

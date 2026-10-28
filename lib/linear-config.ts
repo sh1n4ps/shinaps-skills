@@ -1,8 +1,8 @@
 import { validateConfig } from './config-validation.ts';
 
 /** `.shinaps/linear.json` を同梱の契約で検証する。 */
-export function validateLinearConfig(path: string): Promise<void> {
-  return validateConfig(path, {
+export async function validateLinearConfig(path: string): Promise<void> {
+  await validateConfig(path, {
     name: 'Linear',
     schema: 'plugins/shinaps-claude/references/linear/configuration.schema.json',
     version: 2,

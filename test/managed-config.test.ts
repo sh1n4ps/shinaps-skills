@@ -29,24 +29,24 @@ test('Managed configuration cannot carry permissions', async (context) => {
   await writeFile(
     path,
     JSON.stringify({
-      config_version: 1,
-      definitions: '.shinaps/managed',
+      config_version: 2,
       repository: { url: 'https://github.com/acme/widgets', mount_path: '/workspace/widgets' },
-      vault_id: null,
+      accounts: { work: { vault_id: null } },
       permissions: ['commit', 'push', 'draft_pull_request'],
     }),
   );
   await assert.rejects(validateManagedConfig(path), /Invalid Managed configuration/);
 });
 
-// 旧版は setup で作り直し、未来版は skill と CLI の更新で直す。案内を取り違えると利用者が直せない。
+// 旧版 (1 は lock を作業先に置いていた) は設定を読む managed-execute で作り直して lock を移し、未来版は
+// skill と CLI の更新で直す。案内を取り違えると利用者が直せない。
 test('Managed version errors distinguish setup from skill update', async (context) => {
   const directory = await mkdtemp(join(tmpdir(), 'managed-version-'));
   context.after(() => rm(directory, { recursive: true, force: true }));
   const path = join(directory, 'managed.json');
   for (const [config_version, message] of [
-    [0, /managed-setup/],
-    [2, /Update the skill/],
+    [1, /managed-execute.*claude-lock\.json/],
+    [3, /Update the skill/],
   ] as const) {
     await writeFile(path, JSON.stringify({ config_version }));
     await assert.rejects(validateManagedConfig(path), message);

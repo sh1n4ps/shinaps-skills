@@ -179,16 +179,21 @@ test('Claude dev entries can be invoked through the Skill tool', async () => {
   }
 });
 
-// auto 経路のメインは Opus で動かす。Codex は CLI 手順のコマンドをそのまま実行するので、resume を含む
-// どれか一つで `--model opus` が抜けると、そのターンは CLI の既定のモデルで再開されてしまう。
-test('every Claude CLI invocation in the auto route pins the main model to Opus', async () => {
+// auto 経路のメインは Opus・bypassPermissions で動かす。Codex は CLI 手順のコマンドをそのまま実行するので、
+// resume を含むどれか一つで指定が抜けると、そのターンは CLI の既定のモデル・権限モードで再開される。
+// 権限モードが既定に戻ると、非対話では足りない許可を求められないまま作業が止まる。
+test('every Claude CLI invocation in the auto route pins the main model and permission mode', async () => {
   const procedure = await readFile(`${CLAUDE}/references/linear/claude-cli.md`, 'utf8');
   const invocations = [...procedure.matchAll(/```[a-z]*\n([\s\S]*?)```/g)]
     .flatMap(([, block]) => block.split('\n'))
     .filter((line) => line.startsWith('claude -p'));
   assert.ok(invocations.length > 0);
   assert.deepEqual(
-    invocations.filter((line) => !/(^|\s)--model opus(\s|$)/.test(line)),
+    invocations.filter(
+      (line) =>
+        !/(^|\s)--model opus(\s|$)/.test(line) ||
+        !/(^|\s)--permission-mode bypassPermissions(\s|$)/.test(line),
+    ),
     [],
   );
 });

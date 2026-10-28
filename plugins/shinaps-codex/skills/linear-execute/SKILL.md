@@ -11,7 +11,7 @@ Issueの責務・受入条件・ステータスを、実際の成果と一致さ
 
 着手時に作業先設定の通常の `review_flow.mode` で経路を決め、Issueの途中で切り替えない（[経路](../../references/linear/configuration.md#経路)）。
 
-- auto: [ローカルClaude CLI](../../references/linear/claude-cli.md)を起動し、質問への回答・修正・差分確定を同じsessionのresumeで依頼する。許可は `claude_cli`。
+- auto: [ローカルClaude CLI](../../references/linear/claude-cli.md)を起動し、質問への回答・修正・差分確定を同じsessionのresumeで依頼する。許可は `claude_cli` と、起動・resumeを `--permission-mode bypassPermissions` にする同意の `claude_cli_bypass_permissions`。
 - manual: WebStorm内の対話Claude Codeセッションへ[Bridge](../../references/linear/bridge.md)で依頼する。人とClaudeの作業中は同じIssueへ指示を送らず（Claudeが依頼した途中確認への応答と、[UIの微調整](../../references/linear/workflow.md#codexによるuiの微調整)の人と調整したうえでの一時停止の依頼・返却を除く）、報告を待つ。QA合格後もcommitを依頼せず、QA結果と判定記録を渡して人の依頼によるcommitの報告を待つ。許可は `bridge_request`。
 - ask: Claudeへ依頼する前に、Issueの作業内容と推奨する経路の理由を添えてautoかmanualかを人へ一問で確認し、回答まで着手しない。記録・再質問しない条件・許可は[経路](../../references/linear/configuration.md#経路)に従う。Claudeへの依頼には解決したmodeと回答の記録を添える。
 

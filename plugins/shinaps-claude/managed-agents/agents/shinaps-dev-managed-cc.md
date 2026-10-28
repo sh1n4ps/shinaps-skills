@@ -2,7 +2,7 @@
 name: shinaps-dev-managed-cc
 description: shinaps の dev 工程を Claude Managed Agents で進める lead。メインとして調査・設計・実装・指摘の採否を行い、選んだ体制の独立した担当に別案と独立レビューを委任し（BASIC・ULTRAでは追加の担当を判断する）、draft PR まで進める。
 model:
-  id: claude-fable-5-1
+  id: claude-opus-5-5
   effort: medium
   speed: standard
 mcp_servers:

@@ -18,10 +18,10 @@ sharedで採用する `instructions.md` は共有JSONの `references.specificati
 
 0.35.0から通常設定の `review_flow.mode` に `ask` を追加しました（パス別ルールは `auto`・`manual` だけ）。既存の設定は変更不要です。
 
-CLIはpluginに含まれないため、利用中のskillと同じ `@shinaps/skills@0.37.0` を導入し、`shinaps-skills --version` で確認します。`shinaps-skills validate-linear-config <明示ファイル>` は同梱schemaだけで検証し、ネットワーク取得・正本探索・Git操作・入力変更は行いません。`$schema` は固定URLによるエディタ補助で、契約の正本は[同梱schema](plugins/shinaps-claude/references/linear/configuration.schema.json)です。0.34.0から、Managed Agentsの `.shinaps/managed.json`（`config_version: 1`）も `shinaps-skills validate-managed-config <明示ファイル>` で同じ方式で検証します（[Managedの設定](plugins/shinaps-claude/references/managed/configuration.md)）。
+CLIはpluginに含まれないため、利用中のskillと同じ `@shinaps/skills@0.38.0` を導入し、`shinaps-skills --version` で確認します。`shinaps-skills validate-linear-config <明示ファイル>` は同梱schemaだけで検証し、ネットワーク取得・正本探索・Git操作・入力変更は行いません。`$schema` は固定URLによるエディタ補助で、契約の正本は[同梱schema](plugins/shinaps-claude/references/linear/configuration.schema.json)です。Managed Agentsの `.shinaps/managed.json` も `shinaps-skills validate-managed-config <明示ファイル>` で同じ方式で検証します。0.38.0から `config_version: 2`（リポジトリとアカウント別のvault）になり、lockはアカウントごとの管理ディレクトリへ移ります（[Managedの設定と移行](plugins/shinaps-claude/references/managed/configuration.md)）。
 
 ```sh
-npm install -g @shinaps/skills@0.37.0
+npm install -g @shinaps/skills@0.38.0
 shinaps-skills --version
 shinaps-skills validate-linear-config /absolute/repository/.shinaps/linear.json
 shinaps-skills validate-managed-config /absolute/repository/.shinaps/managed.json
@@ -44,8 +44,8 @@ shinaps-skills validate-managed-config /absolute/repository/.shinaps/managed.jso
 | `release` | 公開条件を確定し、対象バージョンの利用可能性を確認する |
 | `linear-plan` | 相談・必要なspec/explore・Issue作成と整理・プロジェクト設定を行い、実装前で止める |
 | `linear-execute` | Issue単体・Cycle全体・バックログ消化を選び、設定に従って実装・QA・許可された公開を進める |
-| `managed-setup` | Claude Managed Agentsの共通dev構成を自分の組織へ導入・更新する。既存のlockを使い、重複して作らない |
-| `managed-execute` | Managed Agentsのleadへdevを依頼し、観測・質問の取り次ぎ・成果物とdraft PRの確認を行う |
+| `managed-setup` | Claude Managed Agentsの共通dev構成を1つ以上のアカウントへ一コマンドで導入・更新する。アカウントごとのlockを使い、重複して作らない |
+| `managed-execute` | Managed Agentsのleadへdevを依頼し、観測・質問の取り次ぎ・出力のローカル回収とdraft PRの確認を行う |
 
 コミット・PR・リリースは、利用者の依頼またはLinear進行で合意済みの継続許可に従う。[共通設定](plugins/shinaps-claude/references/linear/configuration.md)・[担当と工程](plugins/shinaps-claude/references/linear/workflow.md)・[終了と待機](plugins/shinaps-claude/references/linear/execution.md)を参照し、必要な前工程が揃えば再確認せずに進む。単独スキル利用にはLinear進行や新しいゴールを必須にしない。`autonomous-commit-review` の役割は `commit` に統合した。個人用の別AI呼び出し・ブラウザ管理・ゴール管理・動画制作はこのpluginに含めない。
 
@@ -134,38 +134,50 @@ Claude Codeは標準のmarketplace自動更新機能を使う。`/plugin` のMar
 
 ## Claude Managed Agents
 
-両pluginの `managed-agents/` は、Claude Managed Agentsでdev工程を進めるための共通定義である。lead `shinaps-dev-managed-cc`、devの3役割、skill `dev-managed-cc`、環境 `shinaps-dev` を置く。クラウドのIDを記録する `claude-lock.json` と実設定は利用者ごとのものなので、作業先の `.shinaps/` に置き、公開する定義には含めない。予定実行はこの構成に含めない。
+両pluginの `managed-agents/` は、Claude Managed Agentsでdev工程を進めるための共通定義である。lead `shinaps-dev-managed-cc`、devの3役割、skill `dev-managed-cc`、環境 `shinaps-dev` を置く。クラウドのIDを記録する `claude-lock.json` は利用者のアカウント（APIキーの組織・workspace）ごとのものなので、マシン単位の管理ディレクトリに置き、公開する定義には含めない。予定実行はこの構成に含めない。
 
-- leadはFable 5.1（`claude-fable-5-1` / medium）、役割はOpus 5.5（`claude-opus-5-5` / medium）で動く。全agent定義に `speed: standard` を明示する（既存リソースに残るfastを戻すため）。leadのモデルは定義で決まり、Linear進行の経路ごとのメインのモデルとは別に扱う。
-- 体制はLITE・BASIC・ULTRAを初回メッセージで受け、`dev-claude` と同じ体制の表に従い、BASIC・ULTRAではleadが追加の担当を決める。leadがメインとして調査・設計・実装・採否を行い、独立設計・計画レビュー・実装後の独立レビューだけを登録した3役割（architect・plan-reviewer・reviewer）へ委任する。そのため Managed で設計・実装を行うモデルは lead の Fable になる（モデルの定義は変えない）。廃止したdev-ultraなどの入口とexplorerは置かず、探索はleadと独立設計担当が行う。
+- leadと3役割はOpus 5.5（`claude-opus-5-5` / medium）で動く。全agent定義に `speed: standard` を明示する（既存リソースに残るfastを戻すため）。leadのモデルは定義で決まり、Linear進行の経路ごとのメインのモデルとは別に扱う。
+- 体制はLITE・BASIC・ULTRAを初回メッセージで受け、`dev-claude` と同じ体制の表に従い、BASIC・ULTRAではleadが追加の担当を決める。leadがメインとして調査・設計・実装・採否を行い、独立設計（ULTRAでは必須）・計画レビュー・実装後の独立レビューだけを登録した3役割（architect・plan-reviewer・reviewer）へ委任する。Managedで設計・実装を行うモデルはleadのOpusになる。廃止したdev-ultraなどの入口・explorer・refine専用の役割は置かず、探索はleadと独立設計担当が行う。
 - Shinaps AIのMCPとruleを使わない。規約はマウントしたリポジトリの `AGENTS.md`・`CLAUDE.md` と参照先、添付された利用者CLAUDE.mdだけで、最終報告ではShinaps AI ruleを未照合とする。
-- 初回メッセージにリポジトリ・base・head・範囲と受入条件・許可・予算が揃わなければ、leadは作業を始めず欠落を質問する。許可はそのメッセージで明示された操作だけで、構成の導入からは生じない。
+- 初回メッセージにリポジトリ・base・head・範囲と受入条件・体制・許可・予算が揃わなければ、leadは作業を始めず欠落を質問する。許可はそのメッセージで明示された操作だけで、構成の導入からは生じない。
 - 終了地点は範囲を限ったコミット・headブランチへのpush・draft PR。merge・deploy・release・Issueの更新はしない。CodexのQAはセッションの外で、PRの後に行う。push前に最終QAを行うLinear進行とは順序が違う。
+
+### CLI
+
+導入・依頼・観測・回収は配布CLIの `shinaps-skills managed` で行い、クラウドの操作は公式の `ant` CLI（2.4.0以上。コマンド・フラグ・stdin・出力はこの版のソースで照合した）へ委ねる。各アカウントのAPIキーは環境変数 `SHINAPS_MANAGED_API_KEY_<NAME>` か引数 `--api-key <name>=<key>` で渡し、CLIは保存・表示しない。lock・セッション記録・回収した出力は `~/.local/share/shinaps-ai/skills/managed/<account>/` にアカウントごとに分かれる。
+
+```sh
+shinaps-skills managed setup --account personal --account work          # 計画の表示だけ
+shinaps-skills managed setup --account personal --account work --apply  # 合意後に適用
+shinaps-skills managed run .shinaps/managed.json --account work --base main --base-sha <SHA> --head feat/x \
+  --staffing BASIC --allow commit,push,draft_pr --budget-cents 4000 --task-file task.md
+shinaps-skills managed status --account work --session <ID>
+shinaps-skills managed reply --account work --session <ID> --message-file answer.md
+shinaps-skills managed collect --account work --session <ID>
+```
+
+- setupはアカウントごとのlockで既存のリソースを更新し、lockが無いのに同名のリソースがあれば作らずに止まる。`--apply` を付けない限りクラウドを変更しない。
+- runはリポジトリ・base・head・範囲・体制・許可・予算を毎回明示し、同じ入力の再実行では新しいセッションを作らない。
+- collectはセッションの出力を保存するだけで、差分を適用しない。CLIはgitを呼ばず、pushしない。
+
+手順・安全上の注意・止める条件は[設定とアカウント](plugins/shinaps-claude/references/managed/configuration.md)・[導入と更新の手順](plugins/shinaps-claude/references/managed/setup.md)・[依頼と観測の手順](plugins/shinaps-claude/references/managed/execute.md)にある。これらはpluginに含まれ、どちらのruntimeからも読める。
 
 ### 定義の更新と適用
 
-1. 共通定義は `plugins/shinaps-claude/managed-agents/` を編集元とし、`plugins/shinaps-codex/managed-agents/` へ同じ内容を複製する。一致はテストで確認する。
-2. 作業先では `managed-setup` が、`.shinaps/managed.json`（[設定](plugins/shinaps-claude/references/managed/configuration.md)）の `definitions` が指すディレクトリ（既定は `.shinaps/managed/`、Git対象外）へ共通定義をコピーする。
-3. そのディレクトリで `ant apply --dry-run .` を実行し、計画を確認する。
-4. 利用者の合意後に `ant apply .` で適用する。`--prune`・`--force` は使わず、リソースを削除しない。
-5. 適用前に複製したlock（`.shinaps/work/` に置く）と比べ、更新したリソースの `version`・`hash`・`remote_hash` 以外が変わっていないことを確かめる。
-
-手順・安全上の注意・止める条件は[導入と更新の手順](plugins/shinaps-claude/references/managed/setup.md)にある。セッションの依頼・観測・未検証の境界は[依頼と観測の手順](plugins/shinaps-claude/references/managed/execute.md)にある。これらはpluginに含まれ、どちらのruntimeからも読める。
+共通定義は `plugins/shinaps-claude/managed-agents/` を編集元とし、`plugins/shinaps-codex/managed-agents/` へ同じ内容を複製する。一致はテストで確認する。定義を変えたら `managed setup` で計画を確かめてから `--apply` で適用する。`--prune`・`--force` は使わず、リソースを削除しない。
 
 ### このリポジトリのlock
 
-shinaps-skills自身のlockは0.34.0で `.shinaps/managed/claude-lock.json`（Git対象外）へ移した。以前の内容は `git show 8679d8f:managed-agents/claude-lock.json` で取り出せる。
+shinaps-skills自身のlockは0.34.0から0.37.0まで `.shinaps/managed/claude-lock.json`（Git対象外）に置いていた。0.38.0では[version 1 からの移行](plugins/shinaps-claude/references/managed/configuration.md#version-1-からの移行)に従い、アカウントの `definitions/claude-lock.json` へ移してから適用する。それ以前の内容は `git show 8679d8f:managed-agents/claude-lock.json` で取り出せる。旧CC Ultraのleadと専用skill、旧explorerと旧review-verifierはクラウドでアーカイブ済みで、lockでも追跡しない。
 
-定義を変えたら、`managed-setup` の手順（[導入と更新の手順](plugins/shinaps-claude/references/managed/setup.md)）でdry-runの計画を確かめてから適用する。`--prune` は付けない。旧CC Ultraのleadと専用skill、旧explorerと旧review-verifierはクラウドでアーカイブ済みで、lockでも追跡しない。
-
-GitHub MCP（`https://api.githubcopilot.com/mcp`）の資格情報はvaultに登録し、セッション作成時に渡す。vaultの資格情報はMCPサーバーのURLで照合されるので、lead定義のURLと末尾のスラッシュまで揃える。leadは最後のメッセージの1行目に `状態: 完了`・`状態: 質問`・`状態: 未完了` を書き、`changes.patch` と作業記録のtarを `/mnt/session/outputs/` に置く（[起動手順](plugins/shinaps-claude/managed-agents/skills/dev-managed-cc/references/launch.md)）。マウントしたリポジトリへのpushとdraft PRの作成は、実際のセッションで確かめるまで未検証である。
+GitHub MCP（`https://api.githubcopilot.com/mcp`）の資格情報はアカウントの組織のvaultに登録し、セッション作成時に渡す。vaultの資格情報はMCPサーバーのURLで照合されるので、lead定義のURLと末尾のスラッシュまで揃える。leadは最後のメッセージの1行目に `状態: 完了`・`状態: 質問`・`状態: 未完了` を書き、`changes.patch` と作業記録のtarを `/mnt/session/outputs/` に置く（[起動手順](plugins/shinaps-claude/managed-agents/skills/dev-managed-cc/references/launch.md)）。CLIの実クラウドでの実行、マウントしたリポジトリへのpushとdraft PRの作成は、実際のセッションで確かめるまで未検証である。
 
 ## 開発と配布
 
 - Claude版: `plugins/shinaps-claude/`、marketplaceは`.claude-plugin/marketplace.json`
 - Codex版: `plugins/shinaps-codex/`、marketplaceは`.agents/plugins/marketplace.json`
 - Codexカスタムエージェント: `plugins/shinaps-codex/agents/`
-- Claude Managed Agents版: 両pluginの `managed-agents/`（Claude版が編集元）。pluginと一緒に配布され、npmパッケージの `plugins/` にも含まれる。適用は作業先の `.shinaps/managed/` へコピーしてから「Claude Managed Agents」節の手順で行い、`--prune`・`--force` を使わない
+- Claude Managed Agents版: 両pluginの `managed-agents/`（Claude版が編集元）。pluginと一緒に配布され、npmパッケージの `plugins/` にも含まれる。適用は `shinaps-skills managed setup` がアカウントごとの管理ディレクトリへコピーしてから行い、`--prune`・`--force` を使わない
 - 配布CLI: ソースは `bin/skills.ts` と `lib/*.ts`。`npm run build` (`tsc`) で `dist/` にJSを出力し、npmにはそれを配布する。Node.jsは`node_modules`配下の`.ts`に型除去を適用しないため、ソースのままは配布できない。checkoutでは型除去で直接実行するので、`enum`など型除去で消せない構文は使わない (`tsconfig.json` の `erasableSyntaxOnly`)
 
 品質基準とプロジェクト設定の方針は揃えつつ、クライアント固有の実行手順・エージェント形式は別々に管理する。Codex版の工程の資料（`references/` の、`dev/launch.md` を除くもの）はClaude版と一致させ、テストで確認する。Codex版は役割の本文とスキルを書き分け、Claude向けのエージェント呼び出しをCodexに読み替えさせる方式は使わない。スキルを追加・変更した場合は各版への適用可否を判断する。
@@ -254,8 +266,7 @@ Claude版は全14エージェントが `opus / medium`。Codex版の役割定義
 ├── .gitignore             # 保存方式に応じた除外・共有対象の例外
 ├── linear.json            # linear のプロジェクト設定（任意）
 ├── linear/                # linear の補足（任意）
-├── managed.json           # Managed Agents のローカル設定（任意・Git対象外）
-├── managed/               # Managed の共通定義のコピーと claude-lock.json（任意・Git対象外）
+├── managed.json           # Managed Agents の依頼先リポジトリとアカウント別のvault（任意・Git対象外）
 └── work/
     ├── {日時}-{作業名}/
     ├── explorations/
@@ -263,6 +274,8 @@ Claude版は全14エージェントが `opus / medium`。Codex版の役割定義
     ├── reviews/
     └── debug/
 ```
+
+Managed Agentsのアカウントごとのlock・セッション記録・回収した出力は、リポジトリではなく `~/.local/share/shinaps-ai/skills/managed/<account>/` に置く（[設定とアカウント](plugins/shinaps-claude/references/managed/configuration.md)）。
 
 旧 `.claude/shinaps/` の成果物はパスを指定して引き継げる。既存記録を自動移動・削除しない。共有する仕様書などの明示された納品先は尊重し、作業記録に秘密情報を含めない。
 

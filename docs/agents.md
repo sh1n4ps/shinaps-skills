@@ -22,4 +22,3 @@ Claude 版は 14、Codex 版は 10 の担当を配布します。
 | `shinaps-split-reviewer` | Claudeのみ | `shinaps:commit` のmanualの分割案を「単位の diff だけで妥当性を判断できるか」で批判 + 修正版最終分割計画 (worktree は read-only) |
 
 Claude 版は全エージェントが `opus / medium` で動きます。Codex 版はモデルを指定せず、親セッションの設定を引き継ぎます。調査・レビューの担当は読み取り専用を既定にしますが、親セッションの実行時設定が優先される場合もあるため、権限の強制境界としては扱いません。
-

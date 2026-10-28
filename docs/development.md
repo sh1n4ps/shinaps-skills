@@ -47,4 +47,3 @@ npm run verify:package
 ## 公開物に書かない情報
 
 このリポジトリと npm パッケージは公開される。個人の連絡先（plugin の manifest の author・owner には名前だけを書く）、秘密値、実在の Linear の project や Issue の URL、Managed Agents の組織・workspace・リソースの ID、端末の絶対パスを、配布物・資料・テストの例に書かない。例には架空の値を使う。運用に使う `.shinaps/linear.json` は対象の Linear project を記す必要があるため例外とする。
-

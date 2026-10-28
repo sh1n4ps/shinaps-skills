@@ -57,4 +57,3 @@ launchctl kickstart -k gui/$(id -u)/io.shinaps.skills.update
 launchctl print gui/$(id -u)/io.shinaps.skills.update | grep 'last exit code'
 npx @shinaps/skills@latest auto-update status codex
 ```
-

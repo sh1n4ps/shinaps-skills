@@ -75,14 +75,14 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 #### 前準備 (メインスレッド)
 
-`list_search_facets()` + `search_rules({ repoOwner, repoName, ...推定 facet })` を実行して rule カタログを確保。
+[Shinaps規約の取得](../../references/rules.md) に従い、推定 facet で一覧を取って必要な規約全文を取得する。
 
 #### shinaps-reviewer プロンプト
 
 - レビューモード (branch / pr / path)
 - `input.md` 全文
 - **Phase 1 で作成した既存成果物の要約**
-- **前準備の `search_rules` 結果 (userRules + officialRules 全文)**
+- **前準備で取得した規約全文 (userRules + officialRules)**
 - モード別追加指示 (branch なら base branch との差分の背景、PR なら PR description、path ならファイル配下の責務)
 - 「confidence ≥ 80 のみ報告、rule 違反は必ず Critical タグ」
 
@@ -90,7 +90,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 - `input.md` 全文
 - **Phase 1 で作成した既存成果物の要約**
-- **前準備の `search_rules` 結果**
+- **前準備で取得した規約全文**
 - 「(a) 採用 API / library / 言語機能は現代的か、(b) より良い代替があるか、(c) 既知の落とし穴、(d) 採用バージョンの安全性、を WebSearch / WebFetch で調査せよ。既存スタック + rule カタログ整合性を絞り込み条件に」
 
 **記録先**: メインが Write で `review.md` / `tech-survey.md` に全文保存
@@ -101,7 +101,7 @@ tech-surveyor が「特筆事項なし」以外を返した場合のみ起動。
 
 **プロンプト**:
 - `tech-survey.md` 全文
-- 前準備の `search_rules` 結果
+- 前準備で取得した規約全文
 - 「全ての出典 URL を WebFetch で再確認せよ」
 
 **記録先**: メインが Write で `tech-survey-validated.md`
@@ -111,7 +111,7 @@ tech-surveyor が「特筆事項なし」以外を返した場合のみ起動。
 **プロンプト**:
 - `input.md` 全文
 - `review.md` 全文
-- **前準備の `search_rules` 結果**
+- **前準備で取得した規約全文**
 - `tech-survey-validated.md` 全文 (Phase 3.5 実施時のみ、なければ tech-survey.md を渡す)
 - 「指摘ごとに該当コードを Read で確認し、confirmed / false positive / partial / out-of-scope に分類せよ。rule 起点の追加発見は積極的に報告」
 
@@ -143,7 +143,7 @@ Skill(skill="shinaps:dev-claude", args="以下のレビュー指摘を修正す�
 - **並列 + 検証パイプライン**: reviewer + tech-surveyor を並列、その結果を review-validator が統合
 - **tech-surveyor は毎回起動**: 現代的な代替や落とし穴を必ずチェック
 - **survey-validator は省略可**: tech-surveyor が「特筆事項なし」なら起動しない
-- **rule 照合を reviewer / review-validator に組み込む**: `search_rules` 結果を prompt に埋め込む
+- **rule 照合を reviewer / review-validator に組み込む**: 取得済みの規約全文を prompt に埋め込む
 - **subagent は文字列応答のみ**: raw/*.md への Write / Edit は必ずメインが担当
 - **生レポート保存厳守**: すべての subagent 応答を全文保存
 - **PR コメント投稿は要承認**: 外部影響のある操作は必ず本文確認

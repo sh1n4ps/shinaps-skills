@@ -16,7 +16,7 @@ description: 曖昧な要望を対話と既存実装・実現可能性の調査�
 
 委託が許可されている場合、登録済みのshinaps-explorer、shinaps-tech-surveyor、shinaps-survey-validatorに調査を依頼し、shinaps-spec-writerで結果を構造化できる。担当の起動・継続は[担当の起動](../../references/dev/launch.md)に従う。提供されていない担当やツールは仮定せず、同じ観点を現在のセッションで確認する。
 
-利用可能なShinapsルールを制約の根拠に含める。利用できないときはルール照合を未確認とし、実現可能性や仕様確定に残る影響を明記する。
+[Shinaps規約の取得](../../references/rules.md)に従って取得したShinapsルールを制約の根拠に含める。利用できないときはルール照合を未確認とし、実現可能性や仕様確定に残る影響を明記する。
 
 合意した仕様を.shinaps/work/specs/のspec.mdへ保存する。[作業記録の共通手順](../../references/work-records.md)に従って初期化・保全する。仕様には目的・範囲・挙動・受入条件・設計判断・根拠・未決事項を含める。実装はClaude Codeが行い、Codexに実装の入口はない。Linear進行での実装依頼は `$shinaps:linear-execute` でClaudeへこの記録を渡す。仕様作成だけの依頼で自動実装しない。
 

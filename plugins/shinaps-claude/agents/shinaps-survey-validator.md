@@ -12,7 +12,7 @@ color: yellow
 ## 作業前に必ず読むもの
 
 - `CLAUDE.md` / `~/.claude/CLAUDE.md`
-- **Skill 側から prompt 経由で渡された `search_rules` 結果**
+- **Skill 側から prompt 経由で渡された取得済みの規約全文**
 
 ## 進め方
 

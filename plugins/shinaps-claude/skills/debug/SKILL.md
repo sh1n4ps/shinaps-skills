@@ -77,14 +77,14 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 #### 前準備 (メインスレッド)
 
-`list_search_facets()` + `search_rules({ repoOwner, repoName, topics: ["debugging", ...推定 topic] })` を実行。
+[Shinaps規約の取得](../../references/rules.md) に従い、`topics: ["debugging", ...推定 topic]` で一覧を取って必要な規約全文を取得する。
 
 #### プロンプト
 
 - `input.md` 全文
 - プロジェクト `CLAUDE.md` 全文
 - **Phase 1 で作成した既存成果物の要約**
-- **前準備の `search_rules` 結果 (userRules + officialRules 全文)**
+- **前準備で取得した規約全文 (userRules + officialRules)**
 - 「対症療法ではなく根本原因を特定せよ。既存成果物 と rule カタログを仮説の優先順位付けに使う」
 - trace モードの場合: 起点ファイル指定
 
@@ -96,7 +96,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 - `input.md` 全文
 - `debug-report.md` 全文
-- 前準備の `search_rules` 結果
+- 前準備で取得した規約全文
 - 「各仮説について該当コードを Read で確認し、root-cause / contributing-factor / red-herring / needs-reproduction に分類せよ。対症療法禁止、根本解決を提示」
 
 **記録先**: メインが Write で `debug-validated.md`
@@ -110,8 +110,8 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 実施する場合、`shinaps-tech-surveyor` → `shinaps-survey-validator` の順に 2 段階で実行する。
 
-- **shinaps-tech-surveyor プロンプト**: `input.md` + `debug-validated.md` + `search_rules` 結果 + 「関連 library / API の既知バグ / breaking change / 挙動仕様を WebSearch + GitHub Issue で調査」
-- **shinaps-survey-validator プロンプト**: `raw/survey.md` 全文 + `search_rules` 結果 + 「出典 URL を再確認、CLAUDE.md / rule に反する候補は Critical」
+- **shinaps-tech-surveyor プロンプト**: `input.md` + `debug-validated.md` + 取得済みの規約全文 + 「関連 library / API の既知バグ / breaking change / 挙動仕様を WebSearch + GitHub Issue で調査」
+- **shinaps-survey-validator プロンプト**: `raw/survey.md` 全文 + 取得済みの規約全文 + 「出典 URL を再確認、CLAUDE.md / rule に反する候補は Critical」
 
 **記録先**: メインが Write で `raw/survey.md` / `raw/survey-validated.md`
 
@@ -143,7 +143,7 @@ Skill(skill="shinaps:dev-claude", args="以下のデバッグ結果に基づき�
 - **根本原因志向**: 対症療法を推奨しない、根本解決を導く
 - **多角的調査**: コード + docs + WebSearch + GitHub Issue を組み合わせる
 - **二段検証**: debugger の仮説を debug-validator が必ず実コードで検証
-- **rule と既存成果物を仮説の優先順位付けに活用**: `search_rules` の結果と、今回の依頼に関連する Git・spec・raw report の根拠を debugger prompt に埋め込む
+- **rule と既存成果物を仮説の優先順位付けに活用**: 取得済みの規約全文と、今回の依頼に関連する Git・spec・raw report の根拠を debugger prompt に埋め込む
 - **subagent は文字列応答のみ**: ファイル書き込みは必ずメインが担当
 - **生レポート保存厳守**: すべての subagent 応答を全文保存
 - **根本原因確定時に ローカル成果物（implementation.md / 調査・レビューレポート）**: 後の作業者と別 AI agent が辿れるように

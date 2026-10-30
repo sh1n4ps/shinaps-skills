@@ -12,7 +12,7 @@ color: gray
 ## 作業前に必ず読むもの
 
 - リポジトリの `CLAUDE.md` / `AGENTS.md`、`~/.claude/CLAUDE.md` (特に「対症療法禁止方針」を強調)
-- **Skill 側から prompt 経由で渡された `search_rules` 結果**
+- **Skill 側から prompt 経由で渡された取得済みの規約全文**
 
 ## 検証項目
 

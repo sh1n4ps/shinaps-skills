@@ -43,7 +43,7 @@ Issue・既存spec・調査記録・関連コード・検証方法を必要な�
 
 規約はメインが取得し、以降の担当へ全文を渡す。担当はShinaps MCPを呼ばない。
 
-- `list_search_facets` でfacetを確認し、`search_rules` に現在のrepoOwner・repoNameと対象に関連するfacetを渡す。manifest・lockfileなどで確認できた対象バージョンだけ `projectVersions` に指定する。確認できない場合は共通ルールのみの照合と記録する。
+- [Shinaps規約の取得](../rules.md)に従い、対象に関連するfacetで一覧を取り、必要な全文を取得する。
 - プロジェクト規約と関連docs、引き継いだ調査の必読ファイルを確認する。時間に依存する根拠が判断に影響する場合は公式情報で確かめる。
 - 調査はメインが行う。BASIC・ULTRAでは、互いに独立した領域を並行して調べる場合に探索担当を置ける（任意）。探索担当には既存成果物と不足する問いを渡し、`raw/explorer-{n}.md` に結果を保存する。
 

@@ -58,8 +58,7 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 以下を並列で取得:
 
 - shinaps-ai MCP server の `list_search_facets()` で公式カタログの facet (languages / platforms / frameworks / topics の登録済み slug) を取得 → 対象ファイルの拡張子・パス・内容から関係する facet slug を推定して確定
-- `list_search_facets()` の `versionTargets` と manifest / lockfile / compiler config / deployment target を照合し、確認できたバージョンだけを `projectVersions: [{ targetKind, targetSlug, version }]` に指定する。facet取得後に検索する。targetやバージョンは推測しない。確認できない対象は条件付きルールが除外されるため、共通ルールのみの照合になったことを結果に明記する。`versionTargets` に無い target を渡すと、facet の有無にかかわらず `VERSION_TARGET_NOT_FOUND` になり、userRules も返らない。
-- shinaps-ai MCP server の `search_rules({ repoOwner, repoName, languages?, platforms?, frameworks?, topics?, kind?, projectVersions? })` を呼ぶ → userRules + officialRules (両方を照合対象にする。userRules は facet に関係なく継承マージ全件、officialRules は Git で管理する英語原文の公式カタログのうち、指定 facet とバージョン適用条件に一致するものへ絞られる)。**repoOwner / repoName は現在の git workspace から必ず渡す** (`gh repo view` or `git remote get-url origin` から取得)。userRules は scope=user (横断) + scope=repo_owner (owner 一致) + scope=repo (owner+name 一致) の継承マージで返る。各 rule に付く `scope` flag を見て「横断 / owner 限定 / repo 限定」を判別できる。facet を 1 つも指定せずに呼ぶと officialRules は空配列で返るので、必ず推定 facet を 1 つ以上指定すること。`kind` は通常指定しない (対象ファイル全体を rule 集合と広く照合する用途のため、絞り込むと見落としが増える)
+- [Shinaps規約の取得](../../references/rules.md) に従って規約全文を取得する (`search_rules` の `fields: "summary"` を全ページ → `get_rules`)。userRules と officialRules の両方を照合対象にする。userRules は facet に関係なく scope=user / repo_owner / repo の継承マージで返り、officialRules は指定 facet とバージョン適用条件に一致するものへ絞られる。`kind` は通常指定しない (対象ファイル全体を rule 集合と広く照合する用途のため、絞り込むと見落としが増える)
 - repo root の `AGENTS.md` / `CLAUDE.md` を Read (プロジェクト規約)
 - AGENTS.md が `docs/` 等を「source of truth」として参照していたら **その docs も Read** (今回変更した領域に関連するものに限定して良い)
 - グローバル `~/.claude/CLAUDE.md` の `## コメントルール` `## 実装・設計に関して` 等の節 (一度読んだセッションなら conversation history で代替可)
@@ -79,7 +78,7 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 
 ### 各 agent への prompt
 
-- 担当ID (`1`) と、取得済みの rule 全件 (id / title / why / recommend / avoid の全文)
+- 担当ID (`1`) と、取得済みの rule の全文。取得した応答の単位でバッチに分けて渡し、読み終えた rule の id を報告させる
 - 関連する AGENTS.md / CLAUDE.md / docs の該当節
 - repo root の絶対パス、対象ファイル一覧、バッチID、対象全体のうち今回確認する範囲
 - Step 0 で確定した変更範囲の確認コマンド。path指定で変更を伴わない場合は、範囲判定不要・全 finding を `pre-existing` と明記する
@@ -175,7 +174,7 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 
 1. **修正する** — どう直すかを 1-2 文で提案 (agent が返した `detail` を活用)。承認されたら `Edit` / `Write` で実行
 2. **このまま許容する** — 妥当な理由があるとき。理由を今回のローカル成果物（implementation.md / 調査・レビューレポート）に残す (後から「なぜ違反のままにしたか」を辿れるように)
-3. **ルールの方を修正する** — 規約自体が現実と乖離している場合。shinaps-ai MCP server の `record_rule` (新規) or `update_rule` (既存修正) を実行。新規 record_rule のときは scope (user / repo_owner / repo) も選ばせる (横断的なら user、この repo 限定なら repo)
+3. **ルールの方を修正する** — 規約自体が現実と乖離している場合。[Shinaps規約の書き方](../../references/rule-writing.md) に従って shinaps-ai MCP server の `record_rule` (新規) or `update_rule` (既存修正) を実行。新規 record_rule のときは scope (user / repo_owner / repo) も選ばせる (横断的なら user、この repo 限定なら repo)
 4. **後回し** — 別タスクとして扱う。`TaskCreate` で TODO 化し、後の作業セッションで着手できるようにする
 
 **提示順は `changed` を先、`pre-existing` を後**。それぞれの中では Violation → Improvement → Question の順。各 finding には `pre-existing` かどうかを明示して提示する (ユーザーが「今回の commit に混ぜるか」を判断する材料になるため)。件数が少なければ 1 回の `AskUserQuestion` に複数 question をまとめてよい (各 finding には前提説明を添える)。
@@ -199,7 +198,7 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 - テストに関わる指摘と修正の判断は [テスト方針](../../references/testing.md) に従う
 - **Info レベルは report しない**。Critical / Warning 相当だけを扱う。ノイズが多いと「規約照合は手間」という否定的な印象が定着するため
 - **1体で対象全体を確認する**。対象量が増えても担当数を増やさず、同じ担当へ続きのバッチを渡す
-- **Agent への rule 受け渡しは full text**。id + title だけを渡して agent 側に search_rules を再取得させると shinaps MCP を N 回呼ぶことになるため無駄。メインスレッドが 1 度取得したものを prompt に貼る
+- **Agent への rule 受け渡しは full text**。id + title だけを渡して agent 側に再取得させると shinaps MCP を N 回呼ぶことになるため無駄。メインスレッドが 1 度取得したものを prompt に貼る
 - **根拠を確認する**: 担当は渡された規約と対象全体を照合し、規約や docs の根拠がある指摘だけを返す
 - finding 同士が重複していたら Step 4 の集約で統合する (「同じファイルで console.log 3 件、まとめて削除しますか?」等)
-- 規約が 0 件 (= `search_rules` の userRules / officialRules が空) のとき: 「rule が登録されていません。今日の作業で rule 化したい習慣はありますか?」と逆に質問して、`record_rule` を引き出すきっかけにする (この場合 Step 2-4 はスキップ)
+- 規約が 0 件 (= `search_rules` の一覧で userRules / officialRules が空) のとき: 「rule が登録されていません。今日の作業で rule 化したい習慣はありますか?」と逆に質問して、[Shinaps規約の書き方](../../references/rule-writing.md) に従う `record_rule` を引き出すきっかけにする (この場合 Step 2-4 はスキップ)

@@ -12,7 +12,7 @@ color: purple
 ## 作業前の必須確認
 
 - リポジトリ直下の `CLAUDE.md` / `AGENTS.md`、`~/.claude/CLAUDE.md`
-- **Skill 側から prompt 経由で渡された `search_rules` 結果 (userRules + officialRules 全文)**
+- **Skill 側から prompt 経由で渡された取得済みの規約全文 (userRules + officialRules)**
 
 ## 役割分担 (重要)
 

@@ -75,7 +75,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 #### 前準備 (メインスレッド)
 
-[Shinaps規約の取得](../../references/rules.md) に従い、推定 facet で一覧を取って必要な規約全文を取得する。
+[Shinaps規約の取得](../../references/rules.md) に従い、対象ファイルから確認した技術の facet と `filterUserRulesByLabels: true` で一覧を取って必要な規約全文を取得する。
 
 #### shinaps-reviewer プロンプト
 

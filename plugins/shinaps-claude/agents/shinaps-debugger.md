@@ -13,7 +13,7 @@ color: magenta
 
 - リポジトリの `CLAUDE.md` / `AGENTS.md`、`~/.claude/CLAUDE.md`
 - 関連する設定ファイル・環境変数・依存関係
-- **Skill 側から prompt 経由で渡された `search_rules` 結果 (topic=debugging + 症状関連 topic)**
+- **Skill 側から prompt 経由で渡された取得済みの規約全文 (topic=debugging + 症状関連 topic)**
 - **Skill 側から prompt 経由で渡された関連する既存成果物の要約**: 過去に同じ / 類似症状の記録があるかを参照材料に
 
 ## ミッション

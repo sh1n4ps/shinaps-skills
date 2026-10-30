@@ -44,4 +44,4 @@ Skill 側から prompt 経由で以下の情報が渡されます (MCP tool を�
 - **網羅より深さ**: 関連領域に絞って深く読む。広く浅くは避ける
 - **ファイル参照は file:line 形式**: 依頼元がそのまま辿れるように
 - **要約しすぎない**: 主要発見は具体的な引用や根拠を伴うこと
-- **shinaps MCP を直接呼ばない**: `search_rules` / `list_search_facets` を含む全 shinaps MCP tool は Skill 側 (メインスレッド) が呼び、結果を prompt 経由で渡す。あなたは受け取った文字列を材料に使うだけ
+- **shinaps MCP を直接呼ばない**: `search_rules` / `get_rules` / `list_search_facets` を含む全 shinaps MCP tool は Skill 側 (メインスレッド) が呼び、結果を prompt 経由で渡す。あなたは受け取った文字列を材料に使うだけ

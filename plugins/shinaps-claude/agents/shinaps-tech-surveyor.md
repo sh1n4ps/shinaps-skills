@@ -12,7 +12,7 @@ WebSearch / WebFetch で **一次情報** を集め、3-5 候補の比較レポ�
 ## 作業前に必ず読むもの
 
 - リポジトリの `CLAUDE.md` / `AGENTS.md`、`~/.claude/CLAUDE.md`
-- **Skill 側から prompt 経由で渡された `search_rules` 結果**
+- **Skill 側から prompt 経由で渡された取得済みの規約全文**
 - 既存依存ファイル: `package.json` / `pyproject.toml` / `Cargo.toml` / `go.mod` など
 
 ## 必ず評価対象に含める観点

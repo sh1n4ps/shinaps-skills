@@ -12,7 +12,7 @@ color: pink
 ## 作業前の必須確認
 
 - リポジトリ直下の `CLAUDE.md` / `AGENTS.md`、`~/.claude/CLAUDE.md`
-- **Skill 側から prompt 経由で渡された `search_rules` 結果**
+- **Skill 側から prompt 経由で渡された取得済みの規約全文**
 
 ## 必ず含める要素
 

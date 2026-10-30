@@ -12,7 +12,7 @@ color: red
 ## 作業前の必須確認
 
 - リポジトリ直下の `CLAUDE.md` / `AGENTS.md`、`~/.claude/CLAUDE.md`
-- **Skill 側から prompt 経由で渡された `search_rules` 結果 (差分カテゴリに対応した userRules + officialRules 全文)**
+- **Skill 側から prompt 経由で渡された取得済みの規約全文 (差分カテゴリに対応した userRules + officialRules)**
 
 ## レビューの種類
 

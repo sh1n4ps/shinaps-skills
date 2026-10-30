@@ -67,7 +67,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 ### Phase 2: 段階的ヒアリング
 
-**ヒアリング前の準備**: `list_search_facets()` + 予備 `search_rules({ repoOwner, repoName, ...推定 facet })` を呼び、rule カタログを把握する (制約セクションを rule 起点で組み立てるため)。
+**ヒアリング前の準備**: [Shinaps規約の取得](../../references/rules.md) に従い、推定 facet で一覧を取って必要な規約全文を取得する (制約セクションを rule 起点で組み立てるため)。
 
 メインエージェントがインタビュアーとして、以下の観点を順次 `AskUserQuestion` で確認する。**1 観点ずつ**、回答を踏まえて次の質問を決める。回数に制限なし、不明な点は必ず聞く。
 
@@ -123,10 +123,10 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
    - Phase 1-2 の要望と機能要件
    - Phase 3 の explorer 結果 (実施した場合)
    - プロジェクト `CLAUDE.md` の関連抜粋 (既存スタック制約があれば)
-   - **Phase 2 前準備で取得した `search_rules` 結果 (userRules + officialRules 全文)**
+   - **Phase 2 前準備で取得した規約全文 (userRules + officialRules)**
    - 「この機能を実装する際の関連ライブラリ / 公式推奨パターン / 知られた落とし穴 / 似たユースケースの実装例を WebSearch / WebFetch で調査せよ。**実現可能性を判断する材料を集めると同時に、複数候補がある場合は観点別に比較すること**。既存スタック + rule カタログ整合性を最初の絞り込み条件に」
 3. 生レポートをメインが Write で `raw/survey.md` に全文保存
-4. `shinaps-survey-validator` を起動 (プロンプトに search_rules 結果も渡す)、メインが Write で `raw/survey-validated.md` に全文保存
+4. `shinaps-survey-validator` を起動 (プロンプトに取得済みの規約全文も渡す)、メインが Write で `raw/survey-validated.md` に全文保存
 5. **採用候補の決定**:
    - 候補が 1 つしかない / 推奨が明確 → そのまま採用としてメインが採用理由・注意点を整理
    - 候補が複数で判断が割れる → `AskUserQuestion` で「どの候補を採用するか」を選ばせる
@@ -168,7 +168,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 - `raw/survey-validated.md` 全文 (実施時のみ)
 - Phase 4-A で決定した採用候補・選定理由・注意点 (実施時のみ)
 - プロジェクトコンテキスト (CLAUDE.md の関連部分)
-- **Phase 2 前準備で取得した `search_rules` 結果 (userRules + officialRules 全文)**
+- **Phase 2 前準備で取得した規約全文 (userRules + officialRules)**
 - 「ヒアリングと調査結果を統合した構造化された仕様書を作成せよ。既存実装の状況・技術的方向性・採用技術 (あれば) も spec.md に反映すること。CLAUDE.md + rule カタログを制約セクションに集約すること」
 
 **記録先**: メインが Write で `.shinaps/work/specs/{ts}-{slug}/spec.md`
@@ -207,6 +207,6 @@ Skill(skill="shinaps:dev-claude", args="以下の仕様書を実装する。詳�
 - **生レポート保存厳守**: ヒアリングログ・仕様書・調査結果は全文保存 (メインが Write)
 - **subagent は文字列応答のみ**: ファイル書き込みは必ずメインが担当
 - **フィジビリティ調査は spec で済ませる**: dev での差し戻しを減らすため、Phase 3/4 の調査を惜しまない
-- **rule カタログを制約に反映**: `search_rules` 結果を spec.md の制約セクションに集約
+- **rule カタログを制約に反映**: 取得済みの規約全文を spec.md の制約セクションに集約
 
 Linear進行への成果引き渡しでは、確定済みの経路を維持する。autoは同じ[Claude CLI](../../references/linear/claude-cli.md)のsessionのresultへ返す。manualは同じ対話セッションで続け、[Bridge](../../references/linear/bridge.md)で依頼元のCodexへ報告する。調査スキルから経路を切り替えない。

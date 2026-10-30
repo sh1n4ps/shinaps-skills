@@ -63,7 +63,7 @@ PR description (本文) は対象外。あくまで「レビュー観点」を�
 
 ## Step 6. 既存 rules 把握
 
-100 PR を 1 ブロックとして処理する。ブロックの開始時に必ず shinaps-ai MCP server の `search_rules({ repoOwner, repoName })` を呼んで、既存 userRules を取得する (facet を渡さないので officialRules は空、userRules は継承マージで scope=user / repo_owner / repo の全件、最大 200)。これを「新規 (= `record_rules` の投入対象に含める) か、既存 rule を更新する `update_rule` か」を判断する材料にする。
+100 PR を 1 ブロックとして処理する。ブロックの開始時に必ず shinaps-ai MCP server の `search_rules({ fields: "summary", repoOwner, repoName })` を `nextCursor` が null になるまで呼んで、既存 userRules の一覧を取得する (facet を渡さないので officialRules は空、userRules は継承マージで scope=user / repo_owner / repo の全件)。全文は Step 7 で候補ごとに確かめる。これを「新規 (= `record_rules` の投入対象に含める) か、既存 rule を更新する `update_rule` か」を判断する材料にする。
 
 ## Step 7. rules 生成と投入
 
@@ -72,33 +72,37 @@ PR description (本文) は対象外。あくまで「レビュー観点」を�
 - 複数 PR / 複数 reviewer で繰り返し言及されている指摘 (1 回限りの軽い指摘は採用しない)
 - DO/DON'T が明確で、再現可能な規約として書き下せる粒度のもの
 - WHY (なぜそうするか) を 1-3 文で要約できる材料があるもの
+- 本文は [Shinaps規約の書き方](../../references/rule-writing.md) に従って書く
 
 Good/Bad サンプルコード (examples) の付け方:
 
 - レビューコメントや diff から Good/Bad ペアを構成できる rule にのみ `examples: { good, bad, language }` を付ける。**素材が無い rule に捏造しない** (プロジェクト固有の識別子を一般名に置換する・最小化する程度の編集は可)
-- good / bad は各 1000 文字以内・5〜15 行目安の短いコード片。language は shiki の言語 id 小文字 (`typescript` / `tsx` / `python` / `go` 等)
+- good / bad の大きさは [Shinaps規約の書き方](../../references/rule-writing.md) の目安に従う。language は shiki の言語 id 小文字 (`typescript` / `tsx` / `python` / `go` 等)
 - good / bad / language は 3 つセットでしか登録できない (揃っていないと入力の schema 検証で拒否される)
 
 出典 URL (sourceUrls) の付け方:
 
-- 根拠になったレビューコメントの HTML URL (`#discussion_r...` / `#issuecomment-...`) を優先し、特定できなければ PR URL にフォールバック。最大 10 件・各 500 文字・http(s) のみ
+- 根拠になったレビューコメントの HTML URL (`#discussion_r...` / `#issuecomment-...`) を優先し、特定できなければ PR URL にフォールバック。http(s) のみ。上限は MCP ツールの入力の説明に従う
 - **出典素材が無い rule に URL を捏造しない** (省略可 = 出典なしで保存される)
 
 投入手順:
 
-- 候補を既存 rules と照合し、**新規** (該当 rule 不在) だけを集めて `record_rules({ scope: 'repo', repoOwner, repoName, rules: [{ title, why, recommend?, avoid?, kind?, labels?, examples?, sourceUrls? }, ...] })` で **1 call bulk 投入** する。`labels` は language / platform / framework / topic の slug 配列 (`list_search_facets` が返す公式カタログの slug のみ、language/platform/framework は 1 rule に各 1 つまで) (1 call 最大 100 件、超えたら分割。同一 title の重複は入力の schema 検証で拒否される)。extract-rules は対象 repo の PR レビューから抽出する性質上 scope=repo (当該 repo 限定) がデフォルト。横断ルールとして残したい場合だけユーザー判断で `scope: 'user'` に格上げ。**格上げするときは why / recommend / avoid / examples を当該 repo の固有文脈 (内部 API 名・モジュール構成・ドメイン固有の識別子) から切り離し、他プロジェクトでも適用場面を想定できる汎用的な表現・汎用サンプルに解釈し直してから登録する** (scope=repo のままなら repo 固有の具体的な記述・コード片で良い)。title は 200 字以内、規約本文は why (必須、なぜこの規約か、2000 字以内) / recommend (推奨行動、任意、1000 字以内) / avoid (避けるべきこと、任意、1000 字以内) の 3 フィールドに構造化する
+- 候補ごとに、title か label が重なる既存 rule の全文を `get_rules` で確かめて照合する (重複確認のための絞り込みで、照合対象の除外ではない)。判断できなければ全文を取得する。同じ判断の既存 rule があれば下の差分確認へ回し、それ以外の**新規**候補だけを集めて `record_rules({ scope: 'repo', repoOwner, repoName, rules: [{ title, why, recommend?, avoid?, kind?, labels?, examples?, sourceUrls? }, ...] })` で **1 call bulk 投入** する。本文の書き方は [Shinaps規約の書き方](../../references/rule-writing.md)、上限は MCP ツールの入力の説明に従う。`labels` は language / platform / framework / topic の slug 配列 (`list_search_facets` が返す公式カタログの slug のみ、language/platform/framework は 1 rule に各 1 つまで) (1 call 最大 100 件、超えたら分割。同一 title の重複は入力の schema 検証で拒否される)。
+- extract-rules は対象 repo の PR レビューから抽出する性質上 scope=repo (当該 repo 限定) がデフォルト。横断ルールとして残したい場合だけユーザー判断で `scope: 'user'` に格上げ。**格上げするときは why / recommend / avoid / examples を当該 repo の固有文脈 (内部 API 名・モジュール構成・ドメイン固有の識別子) から切り離し、他プロジェクトでも適用場面を想定できる汎用的な表現・汎用サンプルに解釈し直してから登録する** (scope=repo のままなら repo 固有の具体的な記述・コード片で良い)
+- `RULE_TOO_LARGE` が返ったら、その呼出し分は全体として保存されていない。details の limit・actual・title を確かめ、該当候補の本文・例・出典を短くしてから同じ呼出しをやり直す。`update_rule` の `RULE_UPDATE_CONFLICT` は全文を読み直してから再試行する。
 - `RULE_LIMIT_REACHED` が返ったら投入を止める。個人ルールの保存数には上限があり、残りの枠が足りない `record_rules` はその呼出し分が全体として失敗し、一部も保存されない (件数を減らして一部だけ登録する手順へ自動では切り替えない)。それより前の呼出しで投入した分は保存されている。details の `limit` と `actual` から残りの枠を示し、投入する件数を絞るか既存ルールを整理するかのどちらにするかを利用者に確認する。以降のブロックの抽出・投入にも進まず、利用者の選択を待つ。
 - `RATE_LIMITED` (再試行可能) が返ったら、制限の時間枠が切り替わるまで待ってから、同じ呼出しを1回だけ再試行する。再び拒否されたら、連続して再試行せずに中断し、その状況を利用者に報告する。
-- 戻り値の `skipped: { title, existingRuleId, existingWhy, existingRecommend, existingAvoid, existingLabels, existingExamples, existingSourceUrls }[]` は「既存と title 重複して投入されなかった候補」。新しい why/recommend/avoid と existing* が異なるなら **ユーザーに diff を提示して同意を取る** (examples / sourceUrls の差分も同様):
+- 戻り値は入力の `rules` の位置と id だけ (`inserted: { index, ruleId }[]`、`skipped: { index, existingRuleId }[]`)。`skipped` は「既存と title 重複して投入されなかった候補」で、title は入力の `rules[index]` から分かる。`get_rules` で既存の全文を取得する。
+- 事前の照合で一致した候補と `skipped` の両方について、why/recommend/avoid/examples が既存と異なるなら **ユーザーに diff を提示して同意を取る**:
 
-> 既存 rule "no-unused-vars" が見つかりました。why/recommend/avoid の差分:
+> 既存 rule "no-unused-vars" が見つかりました。why/recommend/avoid/examples の差分:
 > ```
 > - 旧 why: ...
 > + 新 why: ...
 > ```
 > 上書きしますか? (yes / no / skip-all)
 
-- 同意なら `update_rule({ id: existingRuleId, why?, recommend?, avoid?, examples?, sourceUrls? })` を実行。`skip-all` を選ばれたら以降の skipped に対して確認をスキップする
+- 同意なら `update_rule({ id: <既存 rule の id>, why?, recommend?, avoid?, examples?, sourceUrls? })` を実行。sourceUrls は配列ごと置き換わるので、既存と新しい出典をまとめて渡す (上限を超えるなら切り詰めずに利用者へ確認する)。`skip-all` を選ばれたら以降の差分確認をスキップする
 
 ## Step 8. 100 PR ブロック確認
 
@@ -112,5 +116,5 @@ since 期間内の merged PR を消化し終えたら、以下を user に報告
 - 自動 Bot 除外 + ユーザー確認で除外した login 一覧
 - `record_rules` で新規投入した rule 件数 (inserted 合計) + タイトル一覧
 - `update_rule` で更新した rule 件数 + タイトル一覧
-- skip-all で残した候補件数 (あれば)
+- `no` または skip-all で残した候補件数 (あれば)
 - 保存上限 (`RULE_LIMIT_REACHED`)・回数制限 (`RATE_LIMITED`) によって投入できなかった候補の件数 (あれば)

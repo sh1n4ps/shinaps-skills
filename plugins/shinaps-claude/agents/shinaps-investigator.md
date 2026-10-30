@@ -14,7 +14,7 @@ color: blue
 - リポジトリの `CLAUDE.md` / `AGENTS.md` / その他の指示ファイル
 - Skill 側から渡された `exploration.md` と今回の質問
 - Skill 側から渡された target revision / environment と current branch / HEAD / worktree 状態
-- Skill 側から渡された関連する既存成果物の要約と `search_rules` 結果
+- Skill 側から渡された関連する既存成果物の要約と取得済みの規約全文
 
 既存成果物と過去ラウンドは探索の手掛かりであり、現在も正しいとは限らない。重要な主張は現在のコードで再確認する。
 

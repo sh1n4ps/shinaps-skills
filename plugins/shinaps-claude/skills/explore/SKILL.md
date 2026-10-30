@@ -77,7 +77,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 1. 最初の質問を受領する。引数が空、またはファイルパスだけなら、理解したいことを `AskUserQuestion` で 1 問だけ確認する
 2. git remoteから `repoOwner` / `repoName` を解決する。今回の依頼に関連する既存の spec・調査レポート・Git の変更履歴を確認し、引き継ぐ決定と根拠を要約する。既存成果物がなければ追加取得は不要。
-3. `list_search_facets()` と、最初の質問に対応する `search_rules({ repoOwner, repoName, ...推定 facet })` を呼ぶ。論点が別領域へ移ったら、その時点で facet を取り直す
+3. [Shinaps規約の取得](../../references/rules.md) に従い、最初の質問に対応する推定 facet で一覧を取り、必要な規約全文を取得する。論点が別領域へ移ったら、その時点で facet を取り直す
 4. リポジトリの `CLAUDE.md` / `AGENTS.md` / その他の指示ファイルを読む
 5. `git status --short --branch` と HEAD を記録する。調査対象の revision は未コミット変更を含む現在の worktree をデフォルトにし、production / PR / commit が明示された場合は対象 revision を特定して別に記録する。reset / stash / checkout / clean は行わない
 6. 作業ディレクトリを作り、最初の質問と調査基準を `exploration.md` / `question-log.md` に要約して保存する
@@ -100,7 +100,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 - `exploration.md` 全文と、必要な過去ラウンドの要点
 - target revision / environment と、現在の branch / HEAD / worktree 状態
 - 関連する既存成果物の要約
-- `search_rules` の userRules + officialRules 全文
+- 取得済みの規約全文
 - 関連するプロジェクト指示
 - 「今回の質問へ直接答え、confirmed / inference / unknown を混ぜない。一般的な設計案や修正案へ先回りしない」
 
@@ -217,6 +217,6 @@ dev の入口は「実装 handoff」の `status: ready` と `evidenceSnapshot` �
 - **質問ごとに調査する**: 過去の一般論だけで即答せず、そのラウンドの問いに必要な証拠を取り直す
 - **理解完了を代行しない**: 終了判定は人間が行う。回数制限を設けない
 - **生レポートを保存する**: subagent 応答は全文保存し、会話ログは要約だけ残す
-- **shinaps MCP はメインだけが呼ぶ**: subagent は `search_rules` / `list_search_facets` を直接呼ばない
+- **shinaps MCP はメインだけが呼ぶ**: subagent は `search_rules` / `get_rules` / `list_search_facets` を直接呼ばない
 
 Linear進行への成果引き渡しでは、確定済みの経路を維持する。autoは同じ[Claude CLI](../../references/linear/claude-cli.md)のsessionのresultへ返す。manualは同じ対話セッションで続け、[Bridge](../../references/linear/bridge.md)で依頼元のCodexへ報告する。調査スキルから経路を切り替えない。

@@ -4,7 +4,7 @@
 
 ## 検証CLIと契約版
 
-利用中のskillとCLIの版を確認し、0.39.1のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.39.1`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
+利用中のskillとCLIの版を確認し、0.40.0のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.40.0`）。pluginだけにはCLIは含まれない。導入・更新が必要ならその権限を確認し、検証のたびに `npx latest` を取得しない。
 
 0.35.0から通常設定の `review_flow.mode` に `ask` を受理する。`config_version` は2のままで、既存のauto・manualの設定は変更不要。0.33.0〜0.34.xのCLIと `$schema` のURLは `ask` を拒否するため、`ask` を使う設定では `$schema` も0.35.0以降のURLにする。
 

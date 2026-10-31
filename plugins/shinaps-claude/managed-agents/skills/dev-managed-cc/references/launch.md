@@ -71,3 +71,7 @@ PR: <draft PR の URL。無ければ なし>
 | hooks | 未対応 |
 | permission mode | 定義の `permission_policy` で固定 |
 | セッション予算 | セッション作成時の `max_list_cost` で付ける |
+
+## ローカルsnapshotで始める場合
+
+初回メッセージにsource.bundleが指定されている場合は、通常のHEAD確認より先に `/mnt/session/uploads/source.bundle` を指定された作業先へcloneする。比較元は初回メッセージのsnapshot SHAとし、GitHubへのアクセスや元の履歴を前提にしない。成果物は上記の一時indexで比較元からの全差分を出力する手順に従い、変更内容・検証結果・未完了事項を `/mnt/session/outputs/report.md` にも残す。

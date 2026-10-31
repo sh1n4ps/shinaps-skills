@@ -6,7 +6,7 @@ Shinaps AIのMCPから規約を取得する手順。取得は呼出し元（メ�
 
 `list_search_facets` を呼び、`languages`・`platforms`・`frameworks`・`topics` の語彙と `versionTargets` を確かめる。以降で渡すslugと版のtargetは、この応答にあるものだけにする。語彙に無いfacetのslugはエラーにならず、結果が黙って変わる。
 
-重複や件数の確認でfacetを渡さないときは、この節と次の節を省く。
+件数の確認でfacetを渡さないときは、この節と次の節を省く。
 
 ## 対象の技術を選ぶ
 
@@ -37,7 +37,7 @@ Shinaps AIのMCPから規約を取得する手順。取得は呼出し元（メ�
 - `nextCursor` がnullになるまで、他の入力を変えず `cursor` に渡す。途中で止めた範囲は未取得として扱う。
 - **渡せる軸が無いと公式ルールは0件で返り、照合したことにならない。** 不明なファイルを除いて選び直し、`filterUserRulesByLabels` なしで取得する（個人規約は全件返る）。除いたファイルの公式ルールは未照合になる。それでも渡せる軸が無ければ、全ての公式ルールが未照合になる。`topics` は一致必須なので、渡すと部分的な照合になる。
 - **版**: 対象が使う技術のうち `versionTargets` にあるものは、lockfile・compiler config・deployment target、または完全固定のmanifestで確定した版を `projectVersions` に渡す（`^19` のような範囲は渡さない）。渡していないtargetの条件付き公式ルールは全て除外される。同じtargetで対象ごとに版が違うなら、対象を分けて取得してidの和を取る。`VERSION_TARGET_NOT_FOUND` は全体の失敗なので、targetを直して先頭から取り直す。
-- 対象ファイルの技術が増えたら取り直す。件数で規約の登録の有無を判断するとき、既存規約との重複を確かめるときは、`filterUserRulesByLabels` なしの結果を使う。
+- 対象ファイルの技術が増えたら取り直す。件数で規約の登録の有無を判断するときは、`filterUserRulesByLabels` なしの結果を使う。既存規約との重複は「書き込む前に取得する」で確かめる。
 
 ## 全文を取る規約を選ぶ
 
@@ -55,6 +55,18 @@ Shinaps AIのMCPから規約を取得する手順。取得は呼出し元（メ�
 - `notFoundIds` は削除済みまたは参照できない規約なので、idを記録して照合の対象から外す。
 - 全件が必要と分かっているときは、`search_rules` の `fields: "full"` を `nextCursor` がnullになるまで辿ってもよい。
 - `RATE_LIMITED` は短い時間を置いて、同じ `cursor` または `remainingIds` から再開する。
+
+## 書き込む前に取得する
+
+[Shinaps規約の書き方](rule-writing.md)の比較に使う規約は、次の条件で取得する。
+
+- `search_rules` は `fields: "summary"` で全ページ取得し、`filterUserRulesByLabels` と `kind` を渡さない。`repoOwner`・`repoName` は、登録先のowner・repoがあればその値、無い分は現在のGit workspaceの値にする。
+- 公式規約も一覧に載るよう、`list_search_facets` の語彙が8件以内の技術軸（`languages` など）を一つ選び、その全slugを渡す。技術軸はその軸のlabelが無い公式規約にも一致する。`topics` は一致必須で別のtopicの公式規約が返らなくなるので渡さない。渡せる軸が無ければ公式規約の取得は未完了とする。
+- `projectVersions` には確定した版だけを渡す。渡しても渡さなくても、条件に合わない条件付きの公式規約は返らない。
+- 一覧のtitleとlabelから同じ場面を扱う可能性を否定できない規約を選び、「全文を取る」で全文を取得する。文字列の一致で選ばない（公式規約のtitleは英語）。「全文を取る規約を選ぶ」は対象ファイルとの照合の基準で、ここには適用しない。
+- 同じ条件の結果は、規約を書き込むまでの間、候補の間で再利用してよい。他の工程で `filterUserRulesByLabels`・`kind`・`topics` を使って絞った結果は使わない。
+
+選んだ条件の一覧と選んだ全文を読み終えていなければ未完了とする。他のリポジトリ・ownerの個人規約と版の条件で除かれた公式規約は検索で返らない範囲で、未完了に数えずに報告する。どちらの場合も「全体に重複が無い」とは言わない。
 
 ## 担当へ渡す
 

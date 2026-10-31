@@ -174,7 +174,7 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 
 1. **修正する** — どう直すかを 1-2 文で提案 (agent が返した `detail` を活用)。承認されたら `Edit` / `Write` で実行
 2. **このまま許容する** — 妥当な理由があるとき。理由を今回のローカル成果物（implementation.md / 調査・レビューレポート）に残す (後から「なぜ違反のままにしたか」を辿れるように)
-3. **ルールの方を修正する** — 規約自体が現実と乖離している場合。[Shinaps規約の書き方](../../references/rule-writing.md) に従って shinaps-ai MCP server の `record_rule` (新規) or `update_rule` (既存修正) を実行。新規 record_rule のときは scope (user / repo_owner / repo) も選ばせる (横断的なら user、この repo 限定なら repo)
+3. **ルールの方を修正する** — 規約自体が現実と乖離している場合。[Shinaps規約の書き方](../../references/rule-writing.md) に従って書き込む全文を作る。新規のときは scope (user / repo_owner / repo) も選ばせる (横断的なら user、この repo 限定なら repo)。同じ文書の「書き込む前に既存の規約と比べる」で比べ (Step 1 の結果はファイルの技術で絞っているので使わない)、結果と全文の差分を示して同意を受けてから shinaps-ai MCP server の `record_rule` (新規) or `update_rule` (既存修正) を実行
 4. **後回し** — 別タスクとして扱う。`TaskCreate` で TODO 化し、後の作業セッションで着手できるようにする
 
 **提示順は `changed` を先、`pre-existing` を後**。それぞれの中では Violation → Improvement → Question の順。各 finding には `pre-existing` かどうかを明示して提示する (ユーザーが「今回の commit に混ぜるか」を判断する材料になるため)。件数が少なければ 1 回の `AskUserQuestion` に複数 question をまとめてよい (各 finding には前提説明を添える)。

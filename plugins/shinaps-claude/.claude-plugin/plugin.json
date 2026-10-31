@@ -1,7 +1,7 @@
 {
   "name": "shinaps",
   "description": "Shinaps AIの開発ワークフロー。プロジェクトの指示から条件を読み、調査・設計・実装・簡素化・レビュー・コミット・PR・リリースとLinearでの開発進行を支援する。",
-  "version": "0.42.0",
+  "version": "0.43.0",
   "author": {
     "name": "shinaps"
   },

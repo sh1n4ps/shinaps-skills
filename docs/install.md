@@ -26,7 +26,7 @@ npx @shinaps/skills@latest recover codex
 設定の検証（`validate-linear-config`・`validate-managed-config`）と Managed Agents の操作（`managed`）には、配布 CLI `shinaps-skills` を使います。CLI は plugin に含まれないため、利用中のスキルと同じ版を導入します。
 
 ```sh
-npm install -g @shinaps/skills@0.42.0
+npm install -g @shinaps/skills@0.43.0
 shinaps-skills --version
 ```
 

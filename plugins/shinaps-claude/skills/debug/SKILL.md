@@ -77,7 +77,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 
 #### 前準備 (メインスレッド)
 
-[Shinaps規約の取得](../../references/rules.md) に従い、`topics: ["debugging", ...推定 topic]` で一覧を取って必要な規約全文を取得する。
+[Shinaps規約の取得](../../references/rules.md) に従い、症状と起点から確認・推定した技術の language / platform / framework で一覧を取って必要な規約全文を取得する。`topics` は論点を意図して絞るときだけ渡す。
 
 #### プロンプト
 

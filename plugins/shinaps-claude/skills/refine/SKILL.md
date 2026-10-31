@@ -53,12 +53,12 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 
 **ファイル数による一律の上限は設けない**。確定した対象集合を維持し、件数の多さだけを理由に対象の縮小やユーザーへの分割確認を求めない。対象の内容量が大きい場合は、ファイルの行数・内容量と関連性（ディレクトリ、機能、依存関係）を見て自動的にバッチへ分ける。小規模なら分割は不要。関連ファイルはできるだけ同じバッチにまとめ、バッチをまたぐ契約は集約時に照合する。
 
-## Step 1. 規約と context を集約する (並列取得)
+## Step 1. 規約と context を集約する
 
-以下を並列で取得:
+[Shinaps規約の取得](../../references/rules.md) に従い、対象ファイルについて規約全文を取得する。userRules と officialRules の両方を照合対象にする。`kind` は通常指定しない (対象ファイル全体を rule 集合と広く照合する用途のため、絞り込むと見落としが増える)。
 
-- shinaps-ai MCP server の `list_search_facets()` で公式カタログの facet (languages / platforms / frameworks / topics の登録済み slug) を取得 → [Shinaps規約の取得](../../references/rules.md) に従って対象ファイルについて確認できた技術の facet slug を確定
-- [Shinaps規約の取得](../../references/rules.md) に従って規約全文を取得する (`search_rules` の `fields: "summary"` を全ページ → `get_rules`)。対象ファイルの技術で `filterUserRulesByLabels: true` を指定する。userRules と officialRules の両方を照合対象にする。userRules は scope=user / repo_owner / repo の継承マージから対象の技術と明確に異なるものを除いて返り、officialRules は指定 facet とバージョン適用条件に一致するものへ絞られる。`kind` は通常指定しない (対象ファイル全体を rule 集合と広く照合する用途のため、絞り込むと見落としが増える)
+次の資料は検索と並行して取得してよい:
+
 - repo root の `AGENTS.md` / `CLAUDE.md` を Read (プロジェクト規約)
 - AGENTS.md が `docs/` 等を「source of truth」として参照していたら **その docs も Read** (今回変更した領域に関連するものに限定して良い)
 - グローバル `~/.claude/CLAUDE.md` の `## コメントルール` `## 実装・設計に関して` 等の節 (一度読んだセッションなら conversation history で代替可)
@@ -184,6 +184,7 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 処理が一巡したら、最後にユーザーへ箇条書きでサマリ報告する。
 
 - 対象ファイル数と、その決め方 (`git diff HEAD` の変更ファイル / PR / commit range / path 指定のどれか) を冒頭に明示
+- [Shinaps規約の取得](../../references/rules.md) の「照合結果に書くこと」
 - 実際の担当数・バッチ数と各担当の finding 件数、照合済みファイル数、非該当・未完了のファイルと理由
 - 検出 / 処理した finding の総数と内訳 (自動修正 X 件 / 確認の上修正 Y 件 / 許容 Z 件 / rule 更新 W 件 / 後回し V 件)
 - **`changed` と `pre-existing` の内訳** (既存箇所の指摘が何件あり、そのうち何件を今回直したか。今回の変更に無関係な修正がどれだけ混ざったかをユーザーが把握できるように)
@@ -201,4 +202,4 @@ shinaps-ai サーバは git / file / AI 推論を一切呼ばない。すべて 
 - **Agent への rule 受け渡しは full text**。id + title だけを渡して agent 側に再取得させると shinaps MCP を N 回呼ぶことになるため無駄。メインスレッドが 1 度取得したものを prompt に貼る
 - **根拠を確認する**: 担当は渡された規約と対象全体を照合し、規約や docs の根拠がある指摘だけを返す
 - finding 同士が重複していたら Step 4 の集約で統合する (「同じファイルで console.log 3 件、まとめて削除しますか?」等)
-- 規約が 0 件 (= `filterUserRulesByLabels` を指定しない `search_rules` の一覧でも userRules / officialRules が空) のとき: 「rule が登録されていません。今日の作業で rule 化したい習慣はありますか?」と逆に質問して、[Shinaps規約の書き方](../../references/rule-writing.md) に従う `record_rule` を引き出すきっかけにする (この場合 Step 2-4 はスキップ)
+- 照合する規約が無いときは Step 2-4 を省き、公式ルールの未照合を報告する。`filterUserRulesByLabels` なしの一覧で userRules が 0 件と確認できたときに限り、個人ルールが未登録であることも伝え、[Shinaps規約の書き方](../../references/rule-writing.md) に従う `record_rule` を希望するか質問する

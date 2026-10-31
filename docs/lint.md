@@ -4,7 +4,7 @@ Shinaps AIの規約が持つ機械検査（`checks`）を手元で実行し、�
 
 ## 前提と保証
 
-- プロジェクトの変更は要りません。プロジェクトのlint設定（`eslint.config.*`・`.oxlintrc.json`・`bunfig.toml` など）・`package.json` のscript・`node_modules` のパッケージは読み込みません。ESLintのNode APIを `overrideConfigFile: true` で使い、パーサーとプラグインはこのパッケージの依存から渡します。読むのは対象ファイルと、型情報を使うルールのための `tsconfig.json`・型宣言だけです（実行はしません）。
+- プロジェクトの変更は要りません。プロジェクトのlint設定（`eslint.config.*`・`.oxlintrc.json`・`bunfig.toml` など）・`package.json` のscript・`node_modules` のパッケージは読み込みません。ESLintのNode APIを `overrideConfigFile: true` で使い、パーサーとプラグインはこのパッケージの依存から渡します。読むのは対象ファイルと、型情報を使うルールのための `tsconfig.json`・型宣言だけです（実行はしません）。React のルール（react-x）が判定に使う React の版は、プロジェクトの `react` から検出させず `19.3.0` に固定します（React 18 のプロジェクトでも 19 の前提で判定するので、`<Context value>` の省略形を provider として扱うなど、報告が増える側に寄ります）。
 - 対象ファイルへ書き込みません（自動修正はしません）。結果はローカルのファイルに書き、サーバーへは送りません。
 - プロジェクトの `eslint-disable` コメントでは検査を抑止しません（`allowInlineConfig: false`）。プロジェクトの都合の例外は、指摘を確認する側で扱います。
 - 組をAI照合から外してよいのは、coverage が `full` の検査が、ESLintの判定でそのファイルに適用され、検査の実行単位が完了し、そのファイルに致命的な報告もruleIdの無い報告も無いときだけです。それ以外の組は `not-run`（または `partial`）として返し、合格にしません。coverage は検査を登録したときの判断で、このCLIは値を読むだけです。
@@ -44,7 +44,9 @@ shinaps-skills lint --checks <checks.json> --root <project> --out <result.json> 
 
 ## 実行の仕組み
 
-1. 各検査のルールを、ESLint core・`@typescript-eslint`・`vue`・同梱の `shinaps` から引きます。この版に無いルールの検査は `not-run` になり、他の検査は止まりません。
+1. 各検査のルールを、ESLint core・`@typescript-eslint`・`vue`・`react-x`（下の6ルールだけ）・`regexp`・同梱の `shinaps` から引きます。この版に無いルールの検査は `not-run` になり、他の検査は止まりません。
+   - `react-x`（eslint-plugin-react-x）: `rules-of-hooks`・`exhaustive-deps`・`no-array-index-key`・`no-missing-key`・`no-nested-component-definitions`・`no-unstable-context-value`。react-x には型情報を使うのに `meta.docs.requiresTypeChecking` を宣言しないルールがあり、型なしの実行単位に入ると単位の全ての検査を止めるため、型を使わないことをソースで確かめたルールだけを登録します（`lib/lint.ts` の `REACT_X_RULES`）。他の外部プラグインでも、型を使うのに宣言しないルールは登録しません。
+   - `regexp`（eslint-plugin-regexp）: 全てのルール。型情報は有無を確かめてから使います。
 2. 検査ごとに、その検査の設定だけを入れたESLintで `calculateConfigForFile` を呼び、ルールが有効なファイルを適用先にします。globの解釈はESLintだけが行います。ESLintが設定を拒否した検査（不正なoptionsなど）は、ここで `not-run` になります。
 3. 同じルール・同じoptionsの検査は1つの設定にまとめ、同じルールでoptionsが違うものだけを別の実行単位にします。型情報を使うルール（`meta.docs.requiresTypeChecking`）は `projectService` を使う単位に分けます。この単位は全てのファイルを typescript-eslint で読み、型の得られないファイル（`tsconfig.json` に含まれないTS・JS、Vue）はそのファイルだけが `not-run` になります。型なしの検査と、他のファイルの型付きの検査は影響を受けません。型情報を使うルールはVueのファイルでは実行できません。
 4. 実行単位ごとに `lintFiles` を1回呼び、組を分類します。指摘は、ESLintがそのファイルに適用すると判定した検査の規約にだけ付けます。
@@ -54,6 +56,7 @@ shinaps-skills lint --checks <checks.json> --root <project> --out <result.json> 
 | ルールID | 内容 | 型情報 |
 | --- | --- | --- |
 | `shinaps/prefer-promise-with-resolvers` | Promiseのexecutorが受け取る `resolve`・`reject` を、executorの外で使うために変数・プロパティへ代入する書き方（deferred promise）を報告する。`Promise.withResolvers()` で書ける。包んだ関数の代入や、値として渡す呼び出しは報告しない | 不要 |
+| `shinaps/vue-no-index-key` | Vueの `:key` が v-for の2番目以降の別名（配列の index）を参照する書き方を報告する。オブジェクトの反復の2番目（プロパティ名）も構文では区別できないので報告する。`items[i].id` のようにメンバーの計算プロパティとしてだけ使う参照は報告しない。HTML以外のテンプレート（`lang="pug"` など）は解析しないので何も報告しない | 不要 |
 
 ### 同梱ルールの追加
 
@@ -68,4 +71,4 @@ shinaps-skills lint --checks <checks.json> --root <project> --out <result.json> 
 
 ## 依存
 
-ESLint・typescript-eslint・TypeScript・vue-eslint-parser・eslint-plugin-vue を完全一致の版で依存に持ちます（パッケージの導入が約50MB増えます）。typescript-eslint は TypeScript 7 に対応していないため、TypeScript は6系です（開発用の `tsc` も同じ版を使います）。
+ESLint・typescript-eslint・TypeScript・vue-eslint-parser・eslint-plugin-vue・eslint-plugin-react-x・eslint-plugin-regexp を完全一致の版で依存に持ちます（パッケージの導入は約65MBになります）。外部プラグインの版を上げるときは、そのルールを使う公式規約の checks の coverage がルールの挙動を前提にしているので、規約の Good・Bad と見逃しの境界の例を同じ版で実行し直して確かめます。typescript-eslint は TypeScript 7 に対応していないため、TypeScript は6系です（開発用の `tsc` も同じ版を使います）。

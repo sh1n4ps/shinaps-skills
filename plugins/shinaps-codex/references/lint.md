@@ -28,7 +28,7 @@ Shinaps AIの規約は、機械検査（`checks`）を持てる。検査は配�
 
 [Shinaps規約の書き方](rule-writing.md)で書き込む規約に、検査を付けられるかを判断する。
 
-- **使えるルール**: ESLint core、`@typescript-eslint/*`（型情報を使うものを含む）、`vue/*`、同梱の `shinaps/*`（`docs/lint.md` の一覧）。版によって違うので、同じ版のCLIで確かめる。使えるルールが無い規約には検査を付けない（AI照合のまま）。同梱ルールの追加は `docs/lint.md` の手順で別の作業として提案する。
-- **coverageの判断**: 規約の全文（scope・labelsを含み、更新では更新後の全文）と、検査の `rule`・`options`・`files` を照らす。`files` の範囲で、規約が求めることへの違反をこのルールが全て報告すると言えるときだけ `full`、見逃しが一つでもありうれば `partial`。lintが規約より広く報告する（例外も報告する）ことは `full` の妨げにならない（指摘はメインが確認する）。例で通ることは根拠にならない。
+- **使えるルール**: ESLint core、`@typescript-eslint/*`（型情報を使うものを含む）、`vue/*`、`react-x/*` のうち `rules-of-hooks`・`exhaustive-deps`・`no-array-index-key`・`no-missing-key`・`no-nested-component-definitions`・`no-unstable-context-value`、`regexp/*`、同梱の `shinaps/*`（`docs/lint.md` の一覧）。版によって違うので、同じ版のCLIで確かめる。使えるルールが無い規約には検査を付けない（AI照合のまま）。同梱ルールの追加は `docs/lint.md` の手順で別の作業として提案する。
+- **coverageの判断**: 規約の全文（scope・labelsを含み、更新では更新後の全文）と、検査の `rule`・`options`・`files` を照らす。`files` の範囲で、規約が求めることへの違反をこのルールが全て報告すると言えるときだけ `full`、見逃しが一つでもありうれば `partial`。lintが規約より広く報告する（例外も報告する）ことは `full` の妨げにならない（指摘はメインが確認する）。例で通ることは根拠にならない。Vueのテンプレートを見るルール（`vue/*` のテンプレート用、`shinaps/vue-no-index-key`）は、HTML以外のテンプレート（`lang="pug"` など）を解析せず報告なしで終わるので、それだけでは `.vue` を対象に `full` にできない。
 - **補助の確認**: 規約のgood・badの例を一時ディレクトリにファイルとして書き、同じ入口で実行して、badで報告され、goodで報告されないことを確かめる。対象プロジェクトのコードを写さない。
 - **書き込み**: `record_rule`・`update_rule` の `checks` に渡す。一括の `record_rules` は `checks` を受け取らない（付けると呼出し全体が入力エラーになる）ので、検査は登録後に `update_rule` で付ける。`update_rule` は配列ごと置換し、`[]` で外す。検査を持つ規約の内容（出典とrepoの表示名以外。適用先はscope、repo_ownerのowner、repoのrepoIdで比べる）を変える更新では、更新後の全文で検査を見直し、同じ要求で `checks` を渡す。渡さないと `CHECKS_REQUIRED` で保存されない。見直した結果が同じなら同じ配列を渡す。

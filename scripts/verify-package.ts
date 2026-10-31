@@ -90,7 +90,7 @@ assert.throws(() =>
   }),
 );
 assert.equal(execFileSync(executable, ['--version'], { encoding: 'utf8' }).trim(), pkg.version);
-// 機械検査は ESLint・typescript-eslint・Vue のパーサーを動的に import する。配布物の dist/ から依存が解決でき、
+// 機械検査は lint が使うパーサーとプラグインを全て動的に import する。配布物の dist/ から依存が解決でき、
 // 導入先で実際に検査できることを、小さなプロジェクトで 1 回実行して確かめる。
 const lintProject = await mkdtemp(join(tmpdir(), 'shinaps-lint-project-'));
 await writeFile(

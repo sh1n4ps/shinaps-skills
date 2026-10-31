@@ -1,6 +1,6 @@
 {
   "name": "@shinaps/skills",
-  "version": "0.45.0",
+  "version": "0.46.0",
   "description": "Install Shinaps AI workflows and custom agents for Codex",
   "type": "module",
   "bin": {
@@ -41,6 +41,8 @@
   "dependencies": {
     "ajv": "^8.20.0",
     "eslint": "10.14.0",
+    "eslint-plugin-react-x": "5.28.8",
+    "eslint-plugin-regexp": "3.3.2",
     "eslint-plugin-vue": "10.12.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.1",

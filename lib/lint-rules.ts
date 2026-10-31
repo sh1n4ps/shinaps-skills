@@ -1,4 +1,5 @@
 import type { Rule } from 'eslint';
+import type { AST as VueAST } from 'vue-eslint-parser';
 
 /**
  * `shinaps-skills lint` に同梱するカスタムルール（プラグイン名 `shinaps`）。
@@ -55,6 +56,63 @@ const preferPromiseWithResolvers: Rule.RuleModule = {
   },
 };
 
+/**
+ * Vue の `:key` が v-for の index を使う書き方を報告する。index は v-for の 2 番目以降の別名
+ * (`(item, i) in items` の i、`(value, name, i) in object` の i) とする。オブジェクトの反復の 2 番目
+ * (`(value, name) in object` の name、プロパティ名) も構文では配列の index と区別できないので報告する。
+ * `items[i].id` のようにメンバーの計算プロパティとしてだけ使う参照は、index で引いた値の id なので報告しない。
+ * テンプレートを解析できないファイル (vue-eslint-parser 以外、HTML 以外のテンプレート) では何もしない。
+ */
+const vueNoIndexKey: Rule.RuleModule = {
+  meta: {
+    type: 'problem',
+    docs: {
+      description: 'Disallow v-for keys derived from the iteration index',
+    } satisfies Docs,
+    messages: {
+      indexKey:
+        "The key uses the v-for index '{{name}}'. Use a stable identifier of the item (an id or slug).",
+    },
+    schema: [],
+  },
+  create(context) {
+    // ESLint の parserServices は parser ごとに中身が違う。vue-eslint-parser で読んだときだけ
+    // defineTemplateBodyVisitor がある。
+    const services = context.sourceCode.parserServices as Partial<VueParserServices>;
+    if (!services.defineTemplateBodyVisitor) return {};
+    // defineTemplateBodyVisitor の戻り値は object 型だが、実体は ESLint に渡す visitor。
+    return services.defineTemplateBodyVisitor({
+      "VAttribute[directive=true][key.name.name='bind'][key.argument.name='key']"(
+        node: VueAST.VDirective,
+      ) {
+        for (const reference of node.value?.references ?? []) {
+          const variable = reference.variable;
+          if (variable?.kind !== 'v-for') continue;
+          const forExpression = variable.id.parent;
+          if (forExpression?.type !== 'VForExpression') continue;
+          if (forExpression.left.indexOf(variable.id) < 1) continue;
+          const parent = reference.id.parent;
+          if (
+            parent?.type === 'MemberExpression' &&
+            parent.computed &&
+            parent.property === reference.id
+          )
+            continue;
+          context.report({
+            node: reference.id,
+            messageId: 'indexKey',
+            data: { name: reference.id.name },
+          });
+        }
+      },
+    }) as Rule.RuleListener;
+  },
+};
+
+type VueParserServices = {
+  defineTemplateBodyVisitor: (visitor: Record<string, (node: VueAST.VDirective) => void>) => object;
+};
+
 function findVariable(
   scope: ReturnType<Rule.RuleContext['sourceCode']['getScope']> | null,
   name: string,
@@ -68,5 +126,8 @@ function findVariable(
 
 export const shinapsPlugin = {
   meta: { name: 'shinaps' },
-  rules: { 'prefer-promise-with-resolvers': preferPromiseWithResolvers },
+  rules: {
+    'prefer-promise-with-resolvers': preferPromiseWithResolvers,
+    'vue-no-index-key': vueNoIndexKey,
+  },
 };

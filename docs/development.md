@@ -7,7 +7,7 @@
 - Claude 版: `plugins/shinaps-claude/`、marketplace は `.claude-plugin/marketplace.json`
 - Codex 版: `plugins/shinaps-codex/`、marketplace は `.agents/plugins/marketplace.json`。サブエージェントは `plugins/shinaps-codex/agents/`
 - Claude Managed Agents 版: 両 plugin の `managed-agents/`。plugin と一緒に配布され、npm パッケージの `plugins/` にも含まれる
-- 配布 CLI: ソースは `bin/skills.ts` と `lib/*.ts`。`npm run build`（`tsc`）で `dist/` に JS を出力し、npm にはそれを配布する。Node.js は `node_modules` 配下の `.ts` に型除去を適用しないため、ソースのままは配布できない。checkout では型除去で直接実行するので、`enum` など型除去で消せない構文は使わない（`tsconfig.json` の `erasableSyntaxOnly`）
+- 配布 CLI: ソースは `bin/skills.ts` と `lib/*.ts`。規約の機械検査（`lint`）は ESLint の Node API を使い、仕組みと同梱ルールの追加手順は [規約の機械検査](lint.md) にある。TypeScript は typescript-eslint が対応する 6 系を実行時の依存に持ち、開発用の `tsc` も同じ版を使う（typescript-eslint が 7 に対応したら上げる）。`npm run build`（`tsc`）で `dist/` に JS を出力し、npm にはそれを配布する。Node.js は `node_modules` 配下の `.ts` に型除去を適用しないため、ソースのままは配布できない。checkout では型除去で直接実行するので、`enum` など型除去で消せない構文は使わない（`tsconfig.json` の `erasableSyntaxOnly`）
 
 品質基準とプロジェクト設定の方針は両版で揃え、クライアント固有の実行手順とエージェントの形式は別々に管理する。スキルを追加・変更したら各版への適用可否を判断する。
 

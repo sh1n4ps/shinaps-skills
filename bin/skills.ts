@@ -7,6 +7,7 @@ import { validateManagedConfig } from '../lib/managed-config.ts';
 import { managed } from '../lib/managed.ts';
 import { run } from '../lib/install.ts';
 import { autoUpdate } from '../lib/auto-update.ts';
+import { lint } from '../lib/lint.ts';
 import { errorMessage } from '../lib/fs.ts';
 
 const [command, ...rest] = process.argv.slice(2);
@@ -23,6 +24,7 @@ try {
     console.log('Managed configuration is valid (config_version: 2).');
   } else if (command === 'managed') await managed(rest);
   else if (command === 'auto-update') await autoUpdate(rest);
+  else if (command === 'lint') await lint(rest);
   else await run(process.argv.slice(2));
 } catch (error) {
   console.error(`Shinaps: ${errorMessage(error)}`);

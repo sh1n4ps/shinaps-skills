@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { errorMessage } from './fs.ts';
 import { managedAccountDir, managedRoot, packageRoot } from './layout.ts';
 import { type Account, type Ant, antCommand } from './managed-ant.ts';
@@ -7,6 +8,7 @@ import { validateManagedConfig } from './managed-config.ts';
 import {
   type RunRequest,
   collectOutputs,
+  importSession,
   permissions,
   replySession,
   runSession,
@@ -14,6 +16,7 @@ import {
   staffings,
 } from './managed-session.ts';
 import { setupAccount } from './managed-setup.ts';
+import { prepareSnapshot, readSnapshot } from './managed-snapshot.ts';
 
 export type ManagedOptions = {
   /** ホームディレクトリ。アカウントの状態は `managedRoot(home)/managed/` に置く。 */
@@ -29,15 +32,18 @@ export type ManagedOptions = {
 
 const managedUsage = [
   'Usage: shinaps-skills managed setup --account <name> [--account <name> ...] [--apply]',
-  '       shinaps-skills managed run <managed.json> --account <name> --base <branch> --base-sha <sha> --head <branch> --staffing <LITE|BASIC|ULTRA> --allow <none|commit,push,draft_pr> --budget-cents <n> --task-file <file> [--verify <command>] [--author "<name> <email>"] [--title <title>] [--claude-md <file>]',
+  '       shinaps-skills managed run <managed.json> --account <name> --base <branch> (--base-sha <sha> | --snapshot <manifest>) --head <branch> --staffing <LITE|BASIC|ULTRA> --allow <none|commit,push,draft_pr> --budget-cents <n> --task-file <file> [--verify <command>] [--author "<name> <email>"] [--title <title>] [--claude-md <file>]',
   '       shinaps-skills managed status --account <name> --session <id>',
   '       shinaps-skills managed reply --account <name> --session <id> --message-file <file>',
   '       shinaps-skills managed collect --account <name> --session <id>',
+  '       shinaps-skills managed prepare --source <local-checkout-root>',
+  '       shinaps-skills managed import --account <name> --session <id> --destination <new-directory>',
   'API keys: --api-key <name>=<key>, or SHINAPS_MANAGED_API_KEY_<NAME> (prefer the environment variable; arguments are visible to other processes).',
   'GitHub token for the mounted repository: SHINAPS_MANAGED_GITHUB_TOKEN.',
+  'Local source: prepare lists the frozen files and manifest; pass --snapshot <manifest> to run instead of --base-sha. Local snapshots do not push or create PRs.',
 ].join('\n');
 
-const accountName = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const accountName = /^[a-z0-9][a-z0-9-]*$/;
 const githubTokenVariable = 'SHINAPS_MANAGED_GITHUB_TOKEN';
 const valueFlags = new Set([
   'account',
@@ -55,6 +61,9 @@ const valueFlags = new Set([
   'claude-md',
   'session',
   'message-file',
+  'source',
+  'snapshot',
+  'destination',
 ]);
 const repeatableFlags = new Set(['account', 'api-key']);
 
@@ -63,7 +72,7 @@ const apiKeyVariable = (account: string): string =>
   `SHINAPS_MANAGED_API_KEY_${account.toUpperCase().replaceAll('-', '_')}`;
 
 /**
- * `shinaps-skills managed <setup|run|status|reply|collect>` を実行する。出力とエラー文から、渡された
+ * `shinaps-skills managed <setup|run|status|reply|collect|prepare|import>` を実行する。出力とエラー文から、渡された
  * APIキーと GitHub token の値を伏字にする。
  */
 export async function managed(args: string[], options: ManagedOptions = {}): Promise<void> {
@@ -102,6 +111,35 @@ async function dispatch(args: string[], context: Context): Promise<void> {
   const home = context.home ?? homedir();
   const ant = context.ant ?? antCommand(context.env);
   const accounts = flags.get('account') ?? [];
+  if (command === 'prepare') {
+    if (apply || positional.length || accounts.length) throw usageError();
+    const snapshot = await prepareSnapshot(
+      required(flags, 'source'),
+      join(managedRoot(home), 'snapshots'),
+    );
+    context.log(
+      JSON.stringify({ ...snapshot, manifest: join(snapshot.directory, 'snapshot.json') }, null, 2),
+    );
+    return;
+  }
+  if (command === 'import') {
+    if (apply || positional.length || accounts.length !== 1 || !accountName.test(accounts[0]))
+      throw usageError();
+    const account = { name: accounts[0], dir: managedAccountDir(managedRoot(home), accounts[0]) };
+    const sessionId = required(flags, 'session');
+    context.log(
+      JSON.stringify(
+        {
+          account: account.name,
+          session_id: sessionId,
+          directory: await importSession(account, sessionId, required(flags, 'destination')),
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
   if (command === 'setup') {
     if (positional.length || !accounts.length) throw usageError();
     // キーを先に全て解決する。途中のアカウントで欠けて止まると、一部だけが更新された状態になる。
@@ -202,12 +240,21 @@ async function run(
   }
   const optional = (flag: string) => flags.get(flag)?.[0] ?? null;
   const claudeMdPath = optional('claude-md');
+  const snapshotPath = optional('snapshot');
+  if (snapshotPath && flags.has('base-sha'))
+    throw new Error('Use either --base-sha or --snapshot.');
+  const snapshot = snapshotPath ? await readSnapshot(snapshotPath) : undefined;
+  if (snapshot && (allow.includes('push') || allow.includes('draft_pr'))) {
+    throw new Error(
+      'Local snapshots support local result recovery; push and draft_pr are not available.',
+    );
+  }
   const request: RunRequest = {
     account: account.name,
     repository: config.repository,
     vault_id: settings.vault_id,
     base: required(flags, 'base'),
-    base_sha: required(flags, 'base-sha'),
+    base_sha: snapshot?.id ?? required(flags, 'base-sha'),
     head: required(flags, 'head'),
     staffing: staffing as RunRequest['staffing'],
     allow,
@@ -217,6 +264,7 @@ async function run(
     author: optional('author'),
     title: optional('title'),
     claude_md: claudeMdPath === null ? null : await readFile(claudeMdPath, 'utf8'),
+    ...(snapshot ? { snapshot } : {}),
   };
   const sessionId = await runSession(account, request, {
     ant,
@@ -228,6 +276,7 @@ async function run(
   context.log(
     `Observe: shinaps-skills managed status --account ${account.name} --session ${sessionId}`,
   );
+  context.log(JSON.stringify({ account: account.name, session_id: sessionId }));
 }
 
 function resolveAccounts(
@@ -246,7 +295,7 @@ function resolveAccounts(
   const invalid = unique.filter((name) => !accountName.test(name));
   if (invalid.length) {
     throw new Error(
-      `Invalid account name: ${invalid.join(', ')}. Use lowercase letters, digits and single hyphens.`,
+      `Invalid account name: ${invalid.join(', ')}. Use lowercase letters, digits and hyphens, starting with a letter or digit.`,
     );
   }
   const missing = unique.filter((name) => !(keys.get(name) || env[apiKeyVariable(name)]));

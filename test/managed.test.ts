@@ -15,6 +15,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { managed } from '../lib/managed.ts';
 import { antEnvironment, antRequestBody, type AntCall } from '../lib/managed-ant.ts';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 
 // アカウントの状態の配置 (版をまたぐ約束なので実装の定数を使わない)。
 const accountDir = (home: string, name: string) =>
@@ -442,4 +444,103 @@ test('status and collect only handle sessions recorded for the account', async (
     /unsafe file name/,
   );
   assert.deepEqual(await readdir(join(outputs, '..')), ['outputs']);
+});
+
+test('local snapshot run uploads the frozen bundle and recovers changes without a key or touching ongoing work', async (t) => {
+  const { home, env, log, logs } = await temporary(t);
+  const execute = promisify(execFile);
+  const source = join(home, 'source');
+  await mkdir(source);
+  await execute('git', ['init'], { cwd: source });
+  await writeFile(join(source, 'file.txt'), 'sent\n');
+  await managed(['prepare', '--source', source], { home, env: {}, log });
+  const prepared = JSON.parse(logs.at(-1)!);
+  const remote = join(home, 'remote');
+  await execute('git', ['clone', prepared.bundle, remote]);
+  await writeFile(join(remote, 'file.txt'), 'agent change\n');
+  const patch = (await execute('git', ['diff', '--binary', 'HEAD'], { cwd: remote })).stdout;
+  const { calls, ant } = fakeAnt(async (call) => {
+    if (call.argv[0] === 'beta:files' && call.argv[1] === 'list') {
+      return JSON.stringify({
+        id: 'file_patch',
+        filename: 'changes.patch',
+        size_bytes: Buffer.byteLength(patch),
+        created_at: '2026-01-01T00:00:00Z',
+      });
+    }
+    if (call.argv[1] === 'download') {
+      await writeFile(call.argv[call.argv.indexOf('--output') + 1], patch);
+      return '';
+    }
+    return undefined;
+  });
+  await managed(['setup', '--account', 'personal', '--apply'], { home, env, ant, log });
+  const { config, task } = await writeRunInputs(home);
+  const args = [...runArgs(config, task), '--snapshot', prepared.manifest];
+  args[args.indexOf('--allow') + 1] = 'none';
+  // 比較元は snapshot から決まる。別の SHA を併記した依頼は、どちらを使うか曖昧なので止める。
+  await assert.rejects(managed(args, { home, env, ant, log }), /either --base-sha or --snapshot/);
+  args.splice(args.indexOf('--base-sha'), 2);
+  await managed(args, { home, env, ant, log });
+  const result = JSON.parse(logs.at(-1)!);
+  const created = calls.find(
+    (call) => call.argv[0] === 'beta:sessions' && call.argv[1] === 'create',
+  )!.body as any;
+  assert.deepEqual(created.resources, [
+    { type: 'file', file_id: 'file_claude', mount_path: '/source.bundle' },
+  ]);
+  assert.ok(!JSON.stringify(created).includes(TOKEN));
+  assert.ok(created.initial_events[0].content[0].text.includes(prepared.id));
+  await writeFile(join(source, 'file.txt'), 'later work\n');
+  await managed(['collect', '--account', result.account, '--session', result.session_id], {
+    home,
+    env,
+    ant,
+    log,
+  });
+  const destination = join(home, 'resumed');
+  await managed(
+    [
+      'import',
+      '--account',
+      result.account,
+      '--session',
+      result.session_id,
+      '--destination',
+      destination,
+    ],
+    { home, env: {}, log },
+  );
+  assert.equal(await readFile(join(destination, 'file.txt'), 'utf8'), 'agent change\n');
+  assert.equal(await readFile(join(source, 'file.txt'), 'utf8'), 'later work\n');
+  await assert.rejects(
+    managed(
+      [
+        'import',
+        '--account',
+        'work',
+        '--session',
+        result.session_id,
+        '--destination',
+        join(home, 'wrong'),
+      ],
+      { home, env: {}, log },
+    ),
+    /was not created/,
+  );
+});
+
+test('Router account names with consecutive or trailing hyphens work through setup, config and run', async (t) => {
+  const { home, log } = await temporary(t);
+  const { ant, calls } = fakeAnt();
+  const env = { SHINAPS_MANAGED_API_KEY_WORK__TEAM_: KEYS.work };
+  await managed(['setup', '--account', 'work--team-', '--apply'], { home, env, ant, log });
+  const { config, task } = await writeRunInputs(home);
+  const settings = JSON.parse(await readFile(config, 'utf8'));
+  settings.accounts = { 'work--team-': { vault_id: null } };
+  await writeFile(config, JSON.stringify(settings));
+  const args = runArgs(config, task, 'work--team-');
+  args[args.indexOf('--allow') + 1] = 'none';
+  await managed(args, { home, env, ant, log });
+  assert.ok(calls.some((call) => call.argv[1] === 'create' && call.apiKey === KEYS.work));
 });

@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path';
 import { readJson, readJsonIfExists, writeFileAtomic } from './fs.ts';
 import { withLock } from './lock.ts';
 import { type Account, type Ant, filesBeta, managedBeta } from './managed-ant.ts';
+import { type Snapshot, importSnapshot } from './managed-snapshot.ts';
 
 export const staffings = ['LITE', 'BASIC', 'ULTRA'] as const;
 export const permissions = ['commit', 'push', 'draft_pr'] as const;
@@ -26,6 +27,8 @@ export type RunRequest = {
   title: string | null;
   /** 利用者 CLAUDE.md の本文。無ければ null。 */
   claude_md: string | null;
+  /** ローカルで固定した比較元。GitHub の checkout を使う通常の実行では無い。 */
+  snapshot?: Snapshot;
 };
 
 /** `sessions/<request_id>.json`。`session_id` が null の記録は、作成の成否が分からない。 */
@@ -114,20 +117,21 @@ export async function runSession(
     };
     // 作成より前に記録する。作成後に記録できずに終わっても、次の実行は止まり、重複して作らない。
     await writeFileAtomic(recordPath, JSON.stringify(record, null, 2) + '\n');
-    const resources: unknown[] = [
-      {
-        type: 'github_repository',
-        url: request.repository.url,
-        mount_path: request.repository.mount_path,
-        ...(options.githubToken ? { authorization_token: options.githubToken } : {}),
-        checkout: { type: 'commit', sha: request.base_sha },
-      },
-    ];
-    if (options.claudeMdPath) {
-      // upload は記録の後に行う。記録の前だと、途中で止まった実行の再実行のたびに Files が増える。
-      let fileId: string;
+    const resources: unknown[] = request.snapshot
+      ? []
+      : [
+          {
+            type: 'github_repository',
+            url: request.repository.url,
+            mount_path: request.repository.mount_path,
+            ...(options.githubToken ? { authorization_token: options.githubToken } : {}),
+            checkout: { type: 'commit', sha: request.base_sha },
+          },
+        ];
+    // upload は記録の後に行う。記録の前だと、途中で止まった実行の再実行のたびに Files が増える。
+    const upload = async (file: string, mountPath: string) => {
       try {
-        fileId = await readId(
+        const fileId = await readId(
           ant({
             // セッションの Files と同じ beta の Files API に上げる。パスは絶対パスにする (ant は `-` を
             // stdin と解釈する)。
@@ -135,7 +139,7 @@ export async function runSession(
               'beta:files',
               'upload',
               '--file',
-              resolve(options.claudeMdPath),
+              resolve(file),
               ...filesBeta,
               '--transform',
               'id',
@@ -145,13 +149,15 @@ export async function runSession(
           }),
           'ant files upload',
         );
+        resources.push({ type: 'file', file_id: fileId, mount_path: mountPath });
       } catch (error) {
         // セッションはまだ作っていないので、記録を残すと同じ依頼の再実行が不要に止まる。
         await rm(recordPath, { force: true });
         throw error;
       }
-      resources.push({ type: 'file', file_id: fileId, mount_path: '/CLAUDE.md' });
-    }
+    };
+    if (request.snapshot) await upload(request.snapshot.bundle, '/source.bundle');
+    if (options.claudeMdPath) await upload(options.claudeMdPath, '/CLAUDE.md');
     const body = {
       agent,
       environment_id: environment,
@@ -199,6 +205,16 @@ function initialMessage(request: RunRequest): string {
     `必須検証（任意）: ${request.verify ?? '指定なし。リポジトリの規約に従う'}`,
     `author（任意）: ${request.author ?? '指定なし'}`,
     ...(request.claude_md === null ? [] : ['利用者 CLAUDE.md: /mnt/session/uploads/CLAUDE.md']),
+    ...(request.snapshot
+      ? [
+          'ローカルコードの受け渡し: GitHubのcheckoutの代わりに /mnt/session/uploads/source.bundle を使用する。',
+          `作業前に git clone /mnt/session/uploads/source.bundle ${JSON.stringify(request.repository.mount_path)} を実行する。`,
+          `比較元は送信時点のスナップショット ${request.snapshot.id}。このSHAからheadブランチを作り作業する。`,
+          'このスナップショットには元のGit履歴・remote・資格情報は含まれない。pushとPRは行わない。',
+          `完了時はlaunch.mdの一時indexによる出力手順に従い、新規ファイルを含む ${request.snapshot.id} からの全差分を /mnt/session/outputs/changes.patch に書く。`,
+          '変更内容・検証結果・未完了事項を /mnt/session/outputs/report.md に書き、ローカルで再開できるようにする。',
+        ]
+      : []),
   ].join('\n');
 }
 
@@ -206,15 +222,33 @@ function initialMessage(request: RunRequest): string {
  * このアカウントの記録にあるセッションか確かめる。別アカウントのキーや、CLI が作っていない
  * セッションを観測・操作しないため。
  */
-async function requireRecordedSession(account: Account, sessionId: string): Promise<void> {
+async function requireRecordedSession(
+  account: Pick<Account, 'name' | 'dir'>,
+  sessionId: string,
+): Promise<SessionRecord> {
   const directory = join(account.dir, 'sessions');
   const names = await readdir(directory).catch(() => [] as string[]);
   for (const name of names.filter((entry) => entry.endsWith('.json'))) {
     const record = await readJson<SessionRecord>(join(directory, name));
-    if (record.session_id === sessionId) return;
+    if (record.session_id === sessionId) return record;
   }
   throw new Error(
     `Session ${sessionId} was not created by managed run for account ${account.name}.`,
+  );
+}
+
+/** 回収済みのローカル snapshot のセッションを、APIキーを使わずに新しいディレクトリへ復元する。 */
+export async function importSession(
+  account: Pick<Account, 'name' | 'dir'>,
+  sessionId: string,
+  destination: string,
+): Promise<string> {
+  const record = await requireRecordedSession(account, sessionId);
+  if (!record.request.snapshot) throw new Error('This session did not use a local snapshot.');
+  return importSnapshot(
+    record.request.snapshot,
+    join(account.dir, 'sessions', sessionId, 'outputs', 'changes.patch'),
+    destination,
   );
 }
 

@@ -63,7 +63,7 @@ shinaps-skills managed collect --account <name> --session <ID>
 ```
 
 - セッションに紐づく Files（`changes.patch` と作業記録の tar）を、そのアカウントの `sessions/<ID>/outputs/` へ保存し、保存したパスを表示する。同じ名前のファイルは最新のものだけを保存する（lead は毎ターン `changes.patch` を比較元からの全体の差分で置き換える）。名前がファイル名だけでないものは保存せずに止まる。保存したサイズは一覧の値と比べる。
-- CLI は差分を適用しない。ローカルの CLI は git を呼ばず、自分では push しない。push と draft PR の作成は、許可した場合にセッション内の lead が行う。`changes.patch` は合意した base の SHA のチェックアウトで `git apply --check` してから、範囲と受入条件に対する差分を確かめる。適用するかは利用者と決める。
+- collect は差分を適用せず、保存だけを行い、自分では push しない。ローカルsnapshotのprepare・importはGitを使い、importは新しいディレクトリにだけ差分を適用する。既存の作業ツリーへは適用しない。push と draft PR の作成は、許可した場合にセッション内の lead が行う。`changes.patch` は合意した base の SHA のチェックアウトで `git apply --check` してから、範囲と受入条件に対する差分を確かめる。適用するかは利用者と決める。
 - `コミット:` と push 先がある場合は `git fetch origin <head>` で head ブランチを取得し、base の SHA からのコミットと差分を確かめる。
 - `PR:` がある場合は `gh pr view <PR の URL> --json isDraft,baseRefName,headRefName` または GitHub MCP の読み取りで、draft であること・base と head が合意どおりであることを確かめる。
 
@@ -74,9 +74,33 @@ shinaps-skills managed collect --account <name> --session <ID>
 ## 未検証の境界
 
 - `managed setup`・`run`・`status`・`reply`・`collect` のコマンド・フラグ・stdin の本文・出力の形は ant 2.4.0 の公式ソースで照合し、偽の `ant` を使うテストで確かめた。実際の `ant` とクラウドではまだ実行していない。
-- API の側で決まり、ant のソースでは確かめられないこと: 予算 `max_list_cost.amount` がセント単位か、`mount_path: /CLAUDE.md` が `/mnt/session/uploads/CLAUDE.md` に置かれるか、Files の upload・一覧・取得に `files-api-2025-04-14` と `managed-agents-2026-04-01` の両方の beta を付ければよいか（ant の `--beta` は既定の beta を置き換えるので、全ての呼び出しで明示している）、Files の応答の `filename`・`size_bytes`・`created_at`、events の一覧に役割のスレッドの `agent.message` が混ざるか。lock が無い状態での skill の重複は、同じ setup で作る lead の同名確認で止まる。
+- API の側で決まり、ant のソースでは確かめられないこと: `mount_path: /CLAUDE.md` が `/mnt/session/uploads/CLAUDE.md` に置かれるか、Files の upload・一覧・取得に `files-api-2025-04-14` と `managed-agents-2026-04-01` の両方の beta を付ければよいか（ant の `--beta` は既定の beta を置き換えるので、全ての呼び出しで明示している）、Files の応答の `filename`・`size_bytes`・`created_at`、events の一覧に役割のスレッドの `agent.message` が混ざるか。lock が無い状態での skill の重複は、同じ setup で作る lead の同名確認で止まる。
 - マウントしたリポジトリの remote へ `git push` できるか（`authorization_token` が push に使われるか）。最初のセッションで最優先に確かめ、できなければ GitHub MCP の push 用ツール（`create_branch`・`push_files`）を有効にするかを利用者と相談する。
 - commit をチェックアウトしてマウントした作業先から、origin の head ブランチを取得できるか（clone の深さと fetch の資格情報）。
 - GitHub MCP で draft PR を作れるか。`draft: true` は lead への指示でしか担保されない。
 - vault に資格情報を登録できたことは、上の3点の確認にならない。
 - 完了したスレッドが同時実行の枠（25本）を空けるか。ULTRAでは、ラウンドごとに新しく起動する担当を含めて、同時に保つスレッドが多い。
+
+## Routerとローカルコードの往復
+
+Claude Account Routerを使う場合は、アプリでAPIキーとクラウド用アカウントを登録し、アプリ内CLIの `cloud managed` 経由で同じmanagedコマンドを呼ぶ。setupとrunはRouterの選択アカウントを使える。status・reply・collect・importは作成結果のaccountとsession_idを明示し、途中の選択変更を引き継がない。キーを取得して会話や設定へ書き出さない。
+
+GitHubへpushしていないコードも渡す場合は、先にローカルで固定する。
+
+```sh
+shinaps-skills managed prepare --source /path/to/repository
+```
+
+戻り値のfilesとmanifestを確認する。追跡中の現在の内容と、Gitで無視されていない新規ファイルを含む。履歴・Git設定・node_modules・.local・.shinapsは含まない。資格情報ファイルやcheckout外へのシンボリックリンクは拒否する。内容の秘密検出は行わないので、送信対象の確認は必要。submoduleはこの方式では扱わない。
+
+合意済みのrunに `--snapshot <manifest>` を付ける。比較元のSHAは保存済みsnapshotから決まり、`--base-sha` は不要。体制・許可・予算・範囲は通常どおり明示する。ローカル方式はpush・draft_prを受理しない。snapshotはFiles APIで送り、GitHubリポジトリのマウントやGitHub tokenを使わない。元のGit履歴は含まれない。
+
+collectの後、保存されたセッションを新しいローカルcheckoutへ戻せる。
+
+```sh
+shinaps-skills managed import --account personal --session SESSION_ID --destination /path/to/new-checkout
+```
+
+importはAPIキー不要。保存された送信時点のコード（`~/.local/share/shinaps-ai/skills/snapshots/<SHA>/`。アカウントに属さない。prepareごとに複製とbundleが残るので、importと確認が済んだら削除してよい）を復元し、そのセッションのchanges.patchをindexへ適用する。既存のdestinationや元の作業ツリーは上書きしない。適用失敗時は作成したディレクトリを削除してエラーにする。復元先で差分とreport.mdの報告を読み、ローカルの検証を行って作業を再開する。元のブランチへの統合は別途差分を確認して行う。
+
+実クラウドへの送信・実行・回収は未検証。ローカルの代替antと実Gitでの往復テストは、クラウド環境でのgit利用や成果物生成の保証ではない。予算amountのセント単位は[公式仕様](https://platform.claude.com/docs/en/managed-agents/budgets)で確認済みで、リクエスト途中では停止しないため厳密な請求上限とは異なる。

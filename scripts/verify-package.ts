@@ -90,5 +90,60 @@ assert.throws(() =>
   }),
 );
 assert.equal(execFileSync(executable, ['--version'], { encoding: 'utf8' }).trim(), pkg.version);
+// 機械検査は ESLint・typescript-eslint・Vue のパーサーを動的に import する。配布物の dist/ から依存が解決でき、
+// 導入先で実際に検査できることを、小さなプロジェクトで 1 回実行して確かめる。
+const lintProject = await mkdtemp(join(tmpdir(), 'shinaps-lint-project-'));
+await writeFile(
+  join(lintProject, 'a.ts'),
+  'export interface Handler {\n  on: (event: string) => void\n}\n',
+);
+await writeFile(
+  join(lintProject, 'b.ts'),
+  'export interface Handler {\n  on(event: string): void\n}\n',
+);
+const lintChecks = join(consumer, 'lint-checks.json');
+const lintResult = join(consumer, 'lint-result.json');
+await writeFile(
+  lintChecks,
+  JSON.stringify({
+    rules: [
+      {
+        id: 'r',
+        checks: [
+          {
+            rule: '@typescript-eslint/method-signature-style',
+            files: ['**/*.ts'],
+            coverage: 'full',
+          },
+        ],
+      },
+    ],
+  }),
+);
+execFileSync(
+  executable,
+  [
+    'lint',
+    '--checks',
+    lintChecks,
+    '--root',
+    lintProject,
+    '--out',
+    lintResult,
+    '--',
+    'a.ts',
+    'b.ts',
+  ],
+  { cwd: consumer, stdio: 'pipe' },
+);
+assert.deepEqual(
+  JSON.parse(await readFile(lintResult, 'utf8')).pairs.map(
+    (pair: { file: string; state: string }) => [pair.file, pair.state],
+  ),
+  [
+    ['a.ts', 'covered'],
+    ['b.ts', 'violation'],
+  ],
+);
 console.log(`${pkg.name}@${pkg.version}: ${actual.length} files verified\n${tarball}`);
 if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `tarball=${tarball}\n`);

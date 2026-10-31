@@ -4,7 +4,7 @@ Claude Code 版の更新と、Codex 版の導入・更新・削除・macOS で�
 
 ## 導入・更新・削除
 
-Node.js 22 以上と、`plugin marketplace add` / `plugin add` に対応した Codex CLI が必要です。Codex のスキルだけを使う場合、Claude Code のインストールは不要です。
+Node.js 22.13 以上の 22 系または 24 以上と、`plugin marketplace add` / `plugin add` に対応した Codex CLI が必要です。Codex のスキルだけを使う場合、Claude Code のインストールは不要です。
 
 ```sh
 npx @shinaps/skills@latest install codex
@@ -23,10 +23,10 @@ npx @shinaps/skills@latest recover codex
 
 ## 配布 CLI
 
-設定の検証（`validate-linear-config`・`validate-managed-config`）と Managed Agents の操作（`managed`）には、配布 CLI `shinaps-skills` を使います。CLI は plugin に含まれないため、利用中のスキルと同じ版を導入します。
+設定の検証（`validate-linear-config`・`validate-managed-config`）、Managed Agents の操作（`managed`）、規約の機械検査（`lint`、[規約の機械検査](lint.md)）には、配布 CLI `shinaps-skills` を使います。CLI は plugin に含まれないため、利用中のスキルと同じ版を導入します。
 
 ```sh
-npm install -g @shinaps/skills@0.43.0
+npm install -g @shinaps/skills@0.44.0
 shinaps-skills --version
 ```
 

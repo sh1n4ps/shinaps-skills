@@ -64,6 +64,7 @@ const usage = [
   '       shinaps-skills validate-managed-config <file>',
   '       shinaps-skills managed <setup|run|status|reply|collect> (see managed --help)',
   '       shinaps-skills auto-update <enable|disable|status|check> codex',
+  '       shinaps-skills lint --checks <checks.json> --root <project> --out <result.json> -- <files...>',
   'Claude Code: /plugin marketplace add sh1n4ps/shinaps-skills',
   '             /plugin install shinaps@shinaps-skills',
 ].join('\n');

@@ -25,12 +25,25 @@ Shinaps AIのMCPから規約を取得する手順。取得は呼出し元（メ�
 
 対象が確定していない工程（devの入口・`spec`・`explore`・`debug`）は、論点の技術を語彙から推定してよい。`filterUserRulesByLabels` は指定しない。
 
+## リポジトリを特定する
+
+`scope: repo` の規約はGitHubのrepositoryの`id`で識別し、owner・名前は表示にだけ使う。名前は改名で変わり、旧名は別のrepositoryやforkが使えるので、名前の一致を同じrepositoryの根拠にしない。
+
+1. 対象のownerと名前を決める。既定は現在のGit workspaceの `git remote get-url origin`（`github.com/<owner>/<repo>(.git)?` の形）。登録先が別のrepositoryなら、その値にする。この形に当たらなければ（GitHub以外のremoteなど）、`repoOwner`・`repoName`・`repoId` のどれも渡さない。
+2. `gh api repos/<owner>/<repo> --jq '{id, full_name}'` を1回呼ぶ。改名前の名前でもGitHubは改名後のrepositoryを返すので、`id` を `repoId`、`full_name` の `/` の前後を `repoOwner`・`repoName` にする。
+3. 呼出しが失敗したら（`gh` が無い、認証が無い、404など。理由は区別しない）、`repoId`・`repoName` は渡さない。1で決めたownerだけを `repoOwner` にする。
+
+- **取得**: `search_rules` には `repoOwner` と `repoId` を渡し、`repoName` は渡さない（入力エラーになる）。`repoId` が無いときは `scope: repo` の規約が返らないので、「リポジトリを特定できず、このrepositoryの規約は取得していない」と1文で報告する。
+- **新規の書込み**: `scope: repo` の `record_rule`・`record_rules` には `repoOwner`・`repoName`・`repoId` をそろえて渡す。
+- **更新**: `update_rule` で `scope: "repo"` と3つをそろえて渡すのは、適用先を repo にするとき、別のrepositoryに変えるとき、表示名を現在の名前にするとき（2の `full_name` が規約の `repoOwner`・`repoName` と違うとき）だけ。内容だけの更新では適用先の項目を渡さない（`scope` なしで渡すと入力エラーになる）。
+- **`repoId` が得られないとき**: `scope: repo` では書き込まず、`scope: user`・`scope: repo_owner` に変えるか中止するかを利用者に確認する。範囲を変えるときは、[Shinaps規約の書き方](rule-writing.md)の比較をやり直す。
+
 ## 一覧を取る
 
-`search_rules` を `fields: "summary"` で呼ぶ。`repoOwner`・`repoName` は現在のGit workspaceから渡す。対象が確定した照合では `filterUserRulesByLabels: true` を渡す。
+`search_rules` を `fields: "summary"` で呼ぶ。`repoOwner`・`repoId` は「リポジトリを特定する」で決めた値を渡す。対象が確定した照合では `filterUserRulesByLabels: true` を渡す。
 
 ```json
-{ "fields": "summary", "repoOwner": "...", "repoName": "...", "languages": ["typescript", "javascript"], "platforms": ["cloudflare-workers"], "frameworks": ["hono"], "filterUserRulesByLabels": true }
+{ "fields": "summary", "repoOwner": "...", "repoId": 123456789, "languages": ["typescript", "javascript"], "platforms": ["cloudflare-workers"], "frameworks": ["hono"], "filterUserRulesByLabels": true }
 ```
 
 - サーバーは同じ軸をOR、指定した軸の間をANDで判定する。
@@ -60,7 +73,7 @@ Shinaps AIのMCPから規約を取得する手順。取得は呼出し元（メ�
 
 [Shinaps規約の書き方](rule-writing.md)の比較に使う規約は、次の条件で取得する。
 
-- `search_rules` は `fields: "summary"` で全ページ取得し、`filterUserRulesByLabels` と `kind` を渡さない。`repoOwner`・`repoName` は、登録先のowner・repoがあればその値、無い分は現在のGit workspaceの値にする。
+- `search_rules` は `fields: "summary"` で全ページ取得し、`filterUserRulesByLabels` と `kind` を渡さない。`repoOwner`・`repoId` は「リポジトリを特定する」で決めた値にする。
 - 公式規約も一覧に載るよう、`list_search_facets` の語彙が8件以内の技術軸（`languages` など）を一つ選び、その全slugを渡す。技術軸はその軸のlabelが無い公式規約にも一致する。`topics` は一致必須で別のtopicの公式規約が返らなくなるので渡さない。渡せる軸が無ければ公式規約の取得は未完了とする。
 - `projectVersions` には確定した版だけを渡す。渡しても渡さなくても、条件に合わない条件付きの公式規約は返らない。
 - 一覧のtitleとlabelから同じ場面を扱う可能性を否定できない規約を選び、「全文を取る」で全文を取得する。文字列の一致で選ばない（公式規約のtitleは英語）。「全文を取る規約を選ぶ」は対象ファイルとの照合の基準で、ここには適用しない。

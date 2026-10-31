@@ -28,7 +28,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 2. 失敗したら `git remote get-url origin` を parse (`github.com/<owner>/<repo>(.git)?` 形式)
 3. それでも決まらないなら **ユーザーにチャットで確認** (「対象は `<owner>/<repo>` でいいですか?」)
 
-解決した `<owner>/<repo>` をユーザーに **必ず提示** し、誤りなら別の repo を入力してもらう。
+解決した `<owner>/<repo>` をユーザーに **必ず提示** し、誤りなら別の repo を入力してもらう。確定した repo を [Shinaps規約の取得](../../references/rules.md) の「リポジトリを特定する」で特定し、`repoId` と現在の `repoOwner`・`repoName` を得る。`repoId` が得られなければ `scope: repo` では投入できないので、ここで止めて利用者に確認する。
 
 ## Step 1. since (期間) をチャットで確認
 
@@ -87,7 +87,7 @@ Good/Bad サンプルコード (examples) の付け方:
 
 投入手順:
 
-- 候補を確定してから、[Shinaps規約の書き方](../../references/rule-writing.md) の「書き込む前に既存の規約と比べる」で候補ごとに結果を決める。既存の規約への**更新**は下の差分確認へ進める。**提示** はブロックの終わりにまとめて利用者へ示し、残りの投入は止めない。**新規**候補だけを集めて `record_rules({ scope: 'repo', repoOwner, repoName, rules: [{ title, why, recommend?, avoid?, kind?, labels?, examples?, sourceUrls? }, ...] })` で **1 call bulk 投入** する。上限は MCP ツールの入力の説明に従う。`labels` は language / platform / framework / topic の slug 配列 (`list_search_facets` が返す公式カタログの slug のみ、language/platform/framework は 1 rule に各 1 つまで) (1 call 最大 100 件、超えたら分割。同一 title の重複は入力の schema 検証で拒否される)。
+- 候補を確定してから、[Shinaps規約の書き方](../../references/rule-writing.md) の「書き込む前に既存の規約と比べる」で候補ごとに結果を決める。既存の規約への**更新**は下の差分確認へ進める。**提示** はブロックの終わりにまとめて利用者へ示し、残りの投入は止めない。**新規**候補だけを集めて `record_rules({ scope: 'repo', repoOwner, repoName, repoId, rules: [{ title, why, recommend?, avoid?, kind?, labels?, examples?, sourceUrls? }, ...] })` で **1 call bulk 投入** する。上限は MCP ツールの入力の説明に従う。`labels` は language / platform / framework / topic の slug 配列 (`list_search_facets` が返す公式カタログの slug のみ、language/platform/framework は 1 rule に各 1 つまで) (1 call 最大 100 件、超えたら分割。同一 title の重複は入力の schema 検証で拒否される)。
 - extract-rules は対象 repo の PR レビューから抽出する性質上 scope=repo (当該 repo 限定) がデフォルト。横断ルールとして残したい場合だけユーザー判断で `scope: 'user'` に格上げし、書き直した全文で比べ直す。**格上げするときは why / recommend / avoid / examples を当該 repo の固有文脈 (内部 API 名・モジュール構成・ドメイン固有の識別子) から切り離し、他プロジェクトでも適用場面を想定できる汎用的な表現・汎用サンプルに解釈し直してから登録する** (scope=repo のままなら repo 固有の具体的な記述・コード片で良い)
 - `RULE_TOO_LARGE` が返ったら、その呼出し分は全体として保存されていない。details の limit・actual・title を確かめ、該当候補の本文・例・出典を短くしてから同じ呼出しをやり直す。`update_rule` の `RULE_UPDATE_CONFLICT` は全文を読み直してから再試行する。
 - `RULE_LIMIT_REACHED` が返ったら投入を止める。個人ルールの保存数には上限があり、残りの枠が足りない `record_rules` はその呼出し分が全体として失敗し、一部も保存されない (件数を減らして一部だけ登録する手順へ自動では切り替えない)。それより前の呼出しで投入した分は保存されている。details の `limit` と `actual` から残りの枠を示し、投入する件数を絞るか既存ルールを整理するかのどちらにするかを利用者に確認する。以降のブロックの抽出・投入にも進まず、利用者の選択を待つ。

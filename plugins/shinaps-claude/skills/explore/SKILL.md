@@ -76,7 +76,7 @@ Claude Codeの `Skill`・`Agent`・`AskUserQuestion`・`TaskCreate` を利用で
 ### Phase 1: セッション初期化
 
 1. 最初の質問を受領する。引数が空、またはファイルパスだけなら、理解したいことを `AskUserQuestion` で 1 問だけ確認する
-2. git remoteから `repoOwner` / `repoName` を解決する。今回の依頼に関連する既存の spec・調査レポート・Git の変更履歴を確認し、引き継ぐ決定と根拠を要約する。既存成果物がなければ追加取得は不要。
+2. [Shinaps規約の取得](../../references/rules.md) の「リポジトリを特定する」で `repoOwner` / `repoId` を解決する。今回の依頼に関連する既存の spec・調査レポート・Git の変更履歴を確認し、引き継ぐ決定と根拠を要約する。既存成果物がなければ追加取得は不要。
 3. [Shinaps規約の取得](../../references/rules.md) に従い、最初の質問に対応する推定 facet で一覧を取り、必要な規約全文を取得する。論点が別領域へ移ったら、その時点で facet を取り直す
 4. リポジトリの `CLAUDE.md` / `AGENTS.md` / その他の指示ファイルを読む
 5. `git status --short --branch` と HEAD を記録する。調査対象の revision は未コミット変更を含む現在の worktree をデフォルトにし、production / PR / commit が明示された場合は対象 revision を特定して別に記録する。reset / stash / checkout / clean は行わない

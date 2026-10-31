@@ -60,7 +60,7 @@ coding の規約は、使えるlintのルールで検査できるかを判断し
 
 ## scope
 
-全リポジトリに当てはまる判断だけ `scope: user` にして、他のプロジェクトでも通じる表現で書く。同じownerの配下に共通する判断は `scope: repo_owner`、特定のリポジトリの判断は `scope: repo` にして具体的に書く。
+全リポジトリに当てはまる判断だけ `scope: user` にして、他のプロジェクトでも通じる表現で書く。同じownerの配下に共通する判断は `scope: repo_owner`、特定のリポジトリの判断は `scope: repo` にして具体的に書く。`scope: repo` で書くには、[Shinaps規約の取得](rules.md)の「リポジトリを特定する」でrepositoryの `id` を得る。
 
 ## 目安と上限
 

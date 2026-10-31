@@ -191,18 +191,49 @@ function isActive(config: Linter.Config | undefined, rule: string): boolean {
   return severity !== undefined && severity !== 0 && severity !== 'off';
 }
 
+/**
+ * react-x から登録するルール。型情報を使うのに meta.docs.requiresTypeChecking を宣言しないルール
+ * (no-implicit-key、no-leaked-conditional-rendering など。ESLintUtils.getParserServices を呼ぶ) は、型なしの
+ * 実行単位に入って lintFiles を例外で止め、同じ単位の他の検査まで not-run にするので登録しない。
+ * 追加するときは、型を使わないことをソースで確かめる (docs/lint.md)。
+ */
+const REACT_X_RULES = [
+  'rules-of-hooks',
+  'exhaustive-deps',
+  'no-array-index-key',
+  'no-missing-key',
+  'no-nested-component-definitions',
+  'no-unstable-context-value',
+];
+
+/**
+ * react-x が判定の前提にする React の版。settings に版が無いと、react-x (@eslint-react/shared の
+ * getReactVersion) は `createRequire(process.cwd())("react")` でプロジェクトの react を読み込むため、固定して
+ * 呼ばせない。値は react-x が検出に失敗したときの既定と同じ。React 18 のプロジェクトでも 19 の前提で判定する
+ * (`<Context value>` の省略形を provider として扱うなど、報告が増える側に寄る)。
+ */
+const REACT_X_SETTINGS = { 'react-x': { version: '19.3.0' } };
+
 async function loadRegistry(): Promise<Registry> {
-  const [{ builtinRules }, tseslint, vue, vueParser] = await Promise.all([
+  const [{ builtinRules }, tseslint, vue, vueParser, reactX, regexp] = await Promise.all([
     import('eslint/use-at-your-own-risk'),
     import('typescript-eslint'),
     import('eslint-plugin-vue'),
     import('vue-eslint-parser'),
+    import('eslint-plugin-react-x'),
+    import('eslint-plugin-regexp'),
   ]);
-  // typescript-eslint と eslint-plugin-vue が公開する型は ESLint の Plugin・Parser・RuleModule の型と
-  // 細部が一致しない (どちらも実行時は ESLint の API に従う)。flat config に渡すために ESLint の型にする。
+  // typescript-eslint・eslint-plugin-vue・eslint-plugin-react-x が公開する型は ESLint の Plugin・Parser・
+  // RuleModule の型と細部が一致しない (どれも実行時は ESLint の API に従う)。flat config に渡すために ESLint の型にする。
+  const reactXRules = reactX.default.rules as Record<string, Rule.RuleModule>;
   const plugins: Record<string, ESLintType.Plugin> = {
     '@typescript-eslint': tseslint.default.plugin as ESLintType.Plugin,
     vue: vue.default as ESLintType.Plugin,
+    'react-x': {
+      meta: reactX.default.meta,
+      rules: Object.fromEntries(REACT_X_RULES.map((name) => [name, reactXRules[name]])),
+    },
+    regexp: regexp.default,
     shinaps: shinapsPlugin,
   };
   const rules = new Map<string, Rule.RuleModule>(builtinRules);
@@ -271,6 +302,7 @@ function unitConfig(
       (planned): Linter.Config => ({
         files: [...new Set(planned.bindings.flatMap((binding) => binding.check.files))],
         plugins: registry.plugins,
+        settings: REACT_X_SETTINGS,
         // options は JSON の配列 (unknown[]) で、ESLint の RuleEntry は要素の型を持たないので型だけを合わせる。
         rules: { [planned.rule]: ['error', ...planned.options] as Linter.RuleEntry },
       }),

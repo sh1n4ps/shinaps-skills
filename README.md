@@ -8,7 +8,7 @@ Claude Code と Codex で使う、開発ワークフローのスキル集です�
 ## 必要なもの
 
 - Claude Code または Codex CLI
-- Node.js 22.13 以上の 22 系、または 24 以上（Codex への導入と、設定の検証・Managed Agents の操作・規約の機械検査に使う[配布 CLI](docs/install.md#配布-cli)に必要。機械検査の ESLint の要件に合わせている）。配布 CLI は機械検査のために ESLint・typescript-eslint・TypeScript などを依存に持ち、導入に約 50MB を使います。
+- Node.js 22.13 以上の 22 系、または 24 以上（Codex への導入と、設定の検証・Managed Agents の操作・規約の機械検査に使う[配布 CLI](docs/install.md#配布-cli)に必要。機械検査の ESLint の要件に合わせている）。配布 CLI は機械検査のために ESLint・typescript-eslint・TypeScript などを依存に持ち、導入に約 65MB を使います。
 - 機能によって追加で必要なもの（Linear・Claude Managed Agents など）は、下の「機能別の資料」の各資料に書いています。
 
 ## インストール

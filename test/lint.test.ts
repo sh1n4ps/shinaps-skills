@@ -5,6 +5,7 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { RuleTester } from 'eslint';
+import vueParser from 'vue-eslint-parser';
 import { checkKey, classify, parseLintInput, planUnits } from '../lib/lint-plan.ts';
 import { runLint } from '../lib/lint.ts';
 import { shinapsPlugin } from '../lib/lint-rules.ts';
@@ -295,6 +296,8 @@ describe('runLint', () => {
   });
 
   // プロジェクトの設定・script・node_modules を読み込むと、利用者のコードを実行し、規約以外の結果が混ざる。
+  // react-x は React の版を settings で渡さないと process.cwd() から react を require するので、cwd を
+  // プロジェクトにして実行する（利用者はプロジェクトのルートで実行する）。
   it('does not load the project lint config, scripts or packages and leaves files unchanged', async (t) => {
     const markers = await mkdtemp(join(tmpdir(), 'shinaps-lint-markers-'));
     t.after(() => rm(markers, { recursive: true, force: true }));
@@ -321,7 +324,18 @@ describe('runLint', () => {
         exports: './index.js',
       }),
       'node_modules/typescript-eslint/index.js': `${marker('typescript-eslint')}export default {}\n`,
+      'src/b.tsx':
+        "import { useEffect } from 'react'\nexport function Log({ id }: { id: string }) {\n  useEffect(() => console.log(id), [])\n  return null\n}\n",
+      'node_modules/react/package.json': JSON.stringify({
+        name: 'react',
+        version: '18.0.0',
+        main: 'index.js',
+      }),
+      'node_modules/react/index.js': `require('node:fs').writeFileSync(${JSON.stringify(join(markers, 'react'))}, '1')\nmodule.exports = { version: '18.0.0' }\n`,
     });
+    const cwd = process.cwd();
+    process.chdir(root);
+    t.after(() => process.chdir(cwd));
     const digest = async () => {
       const hash = createHash('sha256');
       const walk = async (dir: string): Promise<void> => {
@@ -346,12 +360,18 @@ describe('runLint', () => {
               { rule: '@typescript-eslint/no-explicit-any', files: ['**/*.ts'], coverage: 'full' },
             ],
           },
+          {
+            id: 'react',
+            checks: [{ rule: 'react-x/exhaustive-deps', files: ['**/*.tsx'], coverage: 'partial' }],
+          },
         ],
       }),
       root,
-      ['src/a.ts'],
+      ['src/a.ts', 'src/b.tsx'],
     );
     assert.deepEqual(await readdir(markers), []);
+    // react-x の検査はこのパッケージの依存から読み込まれて実行される。
+    assert.equal(stateOf(pairs, 'react', 'src/b.tsx')?.findings.length, 1);
     assert.equal(await digest(), before);
     // プロジェクトの eslint-disable では個人の検査を抑止しない。no-console（プロジェクトの設定）は報告しない。
     assert.deepEqual(
@@ -548,3 +568,42 @@ new RuleTester({ languageOptions: { ecmaVersion: 'latest', sourceType: 'module' 
     ],
   },
 );
+
+// index の key を見逃すと、行の挿入・削除で入力の値やコンポーネントの状態が別の行に移る。逆に index で引いた
+// 値の id（items[i].id）まで報告すると、正しい書き方を指摘にする。
+new RuleTester({
+  languageOptions: { parser: vueParser, ecmaVersion: 'latest', sourceType: 'module' },
+}).run('shinaps/vue-no-index-key', shinapsPlugin.rules['vue-no-index-key'], {
+  valid: [
+    { code: '<template><li v-for="item in items" :key="item.id" /></template>', filename: 'a.vue' },
+    {
+      code: '<template><li v-for="(item, i) in items" :key="items[i].id" /></template>',
+      filename: 'a.vue',
+    },
+    // 外側の index と同じ名前でも、内側の v-for の 1 番目の別名（値）は index ではない（名前ではなく scope で解決する）
+    {
+      code: '<template><li v-for="(item, i) in items" :key="item.id"><span v-for="i in item.tags" :key="i" /></li></template>',
+      filename: 'a.vue',
+    },
+    // 範囲の v-for の 1 番目の別名は値そのもの
+    { code: '<template><li v-for="n in 10" :key="n" /></template>', filename: 'a.vue' },
+  ],
+  invalid: [
+    {
+      code: '<template><li v-for="(item, i) in items" :key="i" /></template>',
+      filename: 'a.vue',
+      errors: [{ messageId: 'indexKey', data: { name: 'i' } }],
+    },
+    {
+      code: '<template><li v-for="(value, name, position) in groups" :key="`row-${position}`" /></template>',
+      filename: 'a.vue',
+      errors: [{ messageId: 'indexKey', data: { name: 'position' } }],
+    },
+    // 内側の要素の key に外側の v-for の index を使う形も、外側の行の入れ替えで key が変わる
+    {
+      code: '<template><section v-for="(group, groupIndex) in groups" :key="group.id"><p v-for="item in group.items" :key="groupIndex + item.name" /></section></template>',
+      filename: 'a.vue',
+      errors: [{ messageId: 'indexKey', data: { name: 'groupIndex' } }],
+    },
+  ],
+});

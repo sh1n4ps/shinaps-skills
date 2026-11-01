@@ -8,6 +8,7 @@
 ## 設定に付記していた合意・条件
 
 - 2026-10-15: 利用者と合意したshinaps-skills専用設定。
-- 2026-10-19: 利用者と合意し、開発をClaude Codeへ一本化した（auto=ローカルClaude CLI、manual=WebStormの対話Claude CodeセッションへBridge）。通常設定はautoのため経路の許可 `claude_cli` を加え、`codex_task`・`managed_session` を除いた。`bridge_request` は任意の引き渡し用途で維持する。
+- 2026-10-19: 利用者と合意し、開発をClaude Codeへ一本化した（auto=ローカルClaude CLI、manual=WebStormの対話Claude CodeセッションへBridge）。通常設定はauto。
 - 2026-10-20: 利用者の明示依頼で、上のshinaps-skills固有の終了条件を定めた。
-- 2026-10-28: 利用者と合意し、auto経路のClaude CLIの起動と同じsessionのresumeを `--permission-mode bypassPermissions` にする継続的な同意として、許可 `claude_cli_bypass_permissions` を加えた（SHINAPS-242）。
+- 2026-10-28: 利用者と合意し、auto経路のClaude CLIの起動と同じsessionのresumeを `--permission-mode bypassPermissions` にした（SHINAPS-242）。0.48.0からはauto経路の手順として常に指定する。
+- 2026-11-01: 利用者と合意し、設定を `config_version: 3` へ移行した（SHINAPS-254）。操作ごとの許可の一覧を廃止し、`constraints: []` とした。終了地点 `stop_after: issue_done`・`review_flow.mode: auto`・上の固有の運用と終了条件は変えない。

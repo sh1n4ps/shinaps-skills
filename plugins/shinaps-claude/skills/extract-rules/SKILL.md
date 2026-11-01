@@ -80,16 +80,13 @@ Good/Bad サンプルコード (examples) の付け方:
 - good / bad の大きさは [Shinaps規約の書き方](../../references/rule-writing.md) の目安に従う。language は shiki の言語 id 小文字 (`typescript` / `tsx` / `python` / `go` 等)
 - good / bad / language は 3 つセットでしか登録できない (揃っていないと入力の schema 検証で拒否される)
 
-出典 URL (sourceUrls) の付け方:
-
-- 根拠になったレビューコメントの HTML URL (`#discussion_r...` / `#issuecomment-...`) を優先し、特定できなければ PR URL にフォールバック。http(s) のみ。上限は MCP ツールの入力の説明に従う
-- **出典素材が無い rule に URL を捏造しない** (省略可 = 出典なしで保存される)
+出典 URL の一覧は保存しない (本文にも移さない)。判断の根拠や適用範囲の理解に要る経緯・PR 番号は、[Shinaps規約の書き方](../../references/rule-writing.md) に従って本文に必要な分だけ残す。
 
 投入手順:
 
-- 候補を確定してから、[Shinaps規約の書き方](../../references/rule-writing.md) の「書き込む前に既存の規約と比べる」で候補ごとに結果を決める。既存の規約への**更新**は下の差分確認へ進める。**提示** はブロックの終わりにまとめて利用者へ示し、残りの投入は止めない。**新規**候補だけを集めて `record_rules({ scope: 'repo', repoOwner, repoName, repoId, rules: [{ title, why, recommend?, avoid?, kind?, labels?, examples?, sourceUrls? }, ...] })` で **1 call bulk 投入** する。上限は MCP ツールの入力の説明に従う。`labels` は language / platform / framework / topic の slug 配列 (`list_search_facets` が返す公式カタログの slug のみ、language/platform/framework は 1 rule に各 1 つまで) (1 call 最大 100 件、超えたら分割。同一 title の重複は入力の schema 検証で拒否される)。
+- 候補を確定してから、[Shinaps規約の書き方](../../references/rule-writing.md) の「書き込む前に既存の規約と比べる」で候補ごとに結果を決める。既存の規約への**更新**は下の差分確認へ進める。**提示** はブロックの終わりにまとめて利用者へ示し、残りの投入は止めない。**新規**候補だけを集めて `record_rules({ scope: 'repo', repoOwner, repoName, repoId, rules: [{ title, why, recommend?, avoid?, kind?, labels?, examples? }, ...] })` で **1 call bulk 投入** する。上限は MCP ツールの入力の説明に従う。`labels` は language / platform / framework / topic の slug 配列 (`list_search_facets` が返す公式カタログの slug のみ、language/platform/framework は 1 rule に各 1 つまで) (1 call 最大 100 件、超えたら分割。同一 title の重複は入力の schema 検証で拒否される)。
 - extract-rules は対象 repo の PR レビューから抽出する性質上 scope=repo (当該 repo 限定) がデフォルト。横断ルールとして残したい場合だけユーザー判断で `scope: 'user'` に格上げし、書き直した全文で比べ直す。**格上げするときは why / recommend / avoid / examples を当該 repo の固有文脈 (内部 API 名・モジュール構成・ドメイン固有の識別子) から切り離し、他プロジェクトでも適用場面を想定できる汎用的な表現・汎用サンプルに解釈し直してから登録する** (scope=repo のままなら repo 固有の具体的な記述・コード片で良い)
-- `RULE_TOO_LARGE` が返ったら、その呼出し分は全体として保存されていない。details の limit・actual・title を確かめ、該当候補の本文・例・出典を短くしてから同じ呼出しをやり直す。`update_rule` の `RULE_UPDATE_CONFLICT` は全文を読み直してから再試行する。
+- `RULE_TOO_LARGE` が返ったら、その呼出し分は全体として保存されていない。details の limit・actual・title を確かめ、該当候補の本文・例を短くしてから同じ呼出しをやり直す。`update_rule` の `RULE_UPDATE_CONFLICT` は全文を読み直してから再試行する。
 - `RULE_LIMIT_REACHED` が返ったら投入を止める。個人ルールの保存数には上限があり、残りの枠が足りない `record_rules` はその呼出し分が全体として失敗し、一部も保存されない (件数を減らして一部だけ登録する手順へ自動では切り替えない)。それより前の呼出しで投入した分は保存されている。details の `limit` と `actual` から残りの枠を示し、投入する件数を絞るか既存ルールを整理するかのどちらにするかを利用者に確認する。以降のブロックの抽出・投入にも進まず、利用者の選択を待つ。
 - `RATE_LIMITED` (再試行可能) が返ったら、制限の時間枠が切り替わるまで待ってから、同じ呼出しを1回だけ再試行する。再び拒否されたら、連続して再試行せずに中断し、その状況を利用者に報告する。
 - 戻り値は入力の `rules` の位置と id だけ (`inserted: { index, ruleId }[]`、`skipped: { index, existingRuleId }[]`)。`skipped` は「既存と title 重複して投入されなかった候補」で、title は入力の `rules[index]` から分かる。上書きせず**提示**へ進める。
@@ -102,7 +99,7 @@ Good/Bad サンプルコード (examples) の付け方:
 > ```
 > 上書きしますか? (yes / no / skip-all)
 
-- 同意なら `update_rule({ id: <既存 rule の id>, why?, recommend?, avoid?, examples?, sourceUrls? })` を実行。sourceUrls は配列ごと置き換わるので、既存と新しい出典をまとめて渡す (上限を超えるなら切り詰めずに利用者へ確認する)。`skip-all` を選ばれたら以降の差分確認をスキップする
+- 同意なら `update_rule({ id: <既存 rule の id>, why?, recommend?, avoid?, examples? })` を実行。`skip-all` を選ばれたら以降の差分確認をスキップする
 
 ## Step 8. 100 PR ブロック確認
 

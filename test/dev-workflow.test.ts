@@ -86,6 +86,35 @@ test('every runtime ships the Claude references except the launch procedure', as
   );
 });
 
+// 0.48.0 で操作ごとの許可一覧（`permissions`）を廃止し、依頼範囲と `constraints` で判断する契約にした。
+// 廃止した許可名が文書に残ると、読んだ AI がその許可の有無で止まったり、bypassPermissions への個別の同意を
+// 求めたりする。両版は手作業で複製するので、両方に同じ旧文面が入ると一致テストでは検出できない。
+// 旧契約を説明してよいのは、configuration.md の「旧設定の移行」節だけにする。
+test('distributed documents describe retired Linear permissions only in the migration section', async () => {
+  const retired = [
+    /[`"]permissions[`"]/,
+    /\b(?:claude_cli|claude_cli_bypass_permissions|bridge_request|dev_delegation|issue_update|development_operations|pr_create)\b/,
+    /`(?:deploy|publish|evidence):/,
+  ];
+  const documents: Record<string, string> = {};
+  for (const root of [CLAUDE, CODEX, 'docs']) {
+    for (const [path, text] of Object.entries(await readTree(root))) {
+      if (/\.(?:md|json|toml|ya?ml)$/.test(path)) documents[`${root}/${path}`] = text;
+    }
+  }
+  documents['README.md'] = await readFile('README.md', 'utf8');
+  for (const root of [CLAUDE, CODEX]) {
+    const path = `${root}/references/linear/configuration.md`;
+    const migration = /^## 旧設定の移行\n[\s\S]*?(?=^## )/m;
+    assert.match(documents[path], migration, `${path} に「旧設定の移行」節がない`);
+    documents[path] = documents[path].replace(migration, '');
+  }
+  const found = Object.entries(documents).flatMap(([path, text]) =>
+    retired.filter((pattern) => pattern.test(text)).map((pattern) => `${path}: ${pattern}`),
+  );
+  assert.deepEqual(found, []);
+});
+
 // Managed の共通定義は、各 runtime の managed-setup が自分の plugin 内から読んで利用者の組織へ適用する。
 // Claude 版だけを直すと、Codex から導入した lead・役割の定義が古いまま適用される。
 test('every runtime ships the Claude Managed definitions', async () => {

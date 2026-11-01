@@ -2,7 +2,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { packageRoot } from '../lib/layout.ts';
-import { validateLinearConfig } from '../lib/linear-config.ts';
+import { LINEAR_CONFIG_VERSION, validateLinearConfig } from '../lib/linear-config.ts';
 import { validateManagedConfig } from '../lib/managed-config.ts';
 import { managed } from '../lib/managed.ts';
 import { run } from '../lib/install.ts';
@@ -17,7 +17,7 @@ try {
   } else if (command === 'validate-linear-config') {
     if (rest.length !== 1) throw new Error('Usage: shinaps-skills validate-linear-config <file>');
     await validateLinearConfig(rest[0]);
-    console.log('Linear configuration is valid (config_version: 2).');
+    console.log(`Linear configuration is valid (config_version: ${LINEAR_CONFIG_VERSION}).`);
   } else if (command === 'validate-managed-config') {
     if (rest.length !== 1) throw new Error('Usage: shinaps-skills validate-managed-config <file>');
     await validateManagedConfig(rest[0]);

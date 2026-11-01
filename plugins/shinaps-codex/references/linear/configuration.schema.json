@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://cdn.jsdelivr.net/npm/@shinaps/skills@0.39.0/plugins/shinaps-claude/references/linear/configuration.schema.json",
-  "title": "Shinaps Linear configuration v2",
+  "$id": "https://cdn.jsdelivr.net/npm/@shinaps/skills@0.48.0/plugins/shinaps-claude/references/linear/configuration.schema.json",
+  "title": "Shinaps Linear configuration v3",
   "type": "object",
   "properties": {
     "$schema": {
@@ -9,7 +9,7 @@
     },
     "config_version": {
       "type": "integer",
-      "const": 2
+      "const": 3
     },
     "config_storage": {
       "enum": ["shared", "local"]
@@ -133,28 +133,11 @@
         "additionalProperties": false
       }
     },
-    "permissions": {
+    "constraints": {
       "type": "array",
       "items": {
-        "anyOf": [
-          {
-            "enum": [
-              "issue_update",
-              "development_operations",
-              "claude_cli",
-              "claude_cli_bypass_permissions",
-              "bridge_request",
-              "dev_delegation",
-              "push",
-              "pr_create",
-              "merge"
-            ]
-          },
-          {
-            "type": "string",
-            "pattern": "^(deploy|publish|evidence):[^\\s]+$"
-          }
-        ]
+        "type": "string",
+        "pattern": "\\S"
       }
     },
     "references": {
@@ -260,7 +243,7 @@
     "stop_after",
     "review_flow",
     "path_policy_overrides",
-    "permissions",
+    "constraints",
     "references",
     "cycle_report"
   ],

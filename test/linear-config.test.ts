@@ -6,14 +6,15 @@ import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { validateLinearConfig } from '../lib/linear-config.ts';
 
-// 人が設定を保存しても、未知キーや廃止した実装経路の指定が許可として解釈されないことを保証する。
+// 人が設定を保存しても、未知キーや廃止した実装経路・許可一覧が設定として解釈されないことを保証する。
 // askはIssueごとに経路を選ぶための通常設定の値であり、パス別で受理するとIssueごとの選択にならないため拒否する。
+// constraintsは自然文の禁止事項で、欠落を「制約なし」と補えば利用者が書き忘れた禁止が黙って消えるため、明示を必須にする。
 test('configuration accepts complete review policies and rejects incomplete, retired or unknown contracts without changing input', async (context) => {
   const directory = await mkdtemp(join(tmpdir(), 'linear-config-'));
   context.after(() => rm(directory, { recursive: true, force: true }));
   const path = join(directory, 'config.json');
   const config = {
-    config_version: 2,
+    config_version: 3,
     config_storage: 'shared',
     target: { workspace: 'shinaps', team: 'SHINAPS', project: null },
     team_settings: 'existing_only',
@@ -21,16 +22,7 @@ test('configuration accepts complete review policies and rejects incomplete, ret
     stop_after: 'pre_push_qa',
     review_flow: { mode: 'auto' },
     path_policy_overrides: [],
-    permissions: [
-      'issue_update',
-      'claude_cli',
-      'claude_cli_bypass_permissions',
-      'bridge_request',
-      'dev_delegation',
-      'deploy:staging',
-      'publish:npm',
-      'evidence:drive',
-    ],
+    constraints: [],
     references: {
       specifications: [],
       validation: [],
@@ -53,6 +45,14 @@ test('configuration accepts complete review policies and rejects incomplete, ret
       assert.equal(await readFile(path, 'utf8'), before);
     }
   }
+  // 自然文の制約は前後の空白も含めてそのまま保存され、CLIは整形しない。
+  const constrained = JSON.stringify({
+    ...config,
+    constraints: ['本番環境へは配備しない', ' 共有のstaging DBは読み取りだけにする '],
+  });
+  await writeFile(path, constrained);
+  await validateLinearConfig(path);
+  assert.equal(await readFile(path, 'utf8'), constrained);
   const invalid = [
     { ...config, review_flow: 'auto' },
     { ...config, review_flow: { mode: 'manual', tool: 'webstorm' } },
@@ -71,9 +71,13 @@ test('configuration accepts complete review policies and rejects incomplete, ret
     { ...config, implementation_skill: 'dev-claude' },
     { ...config, target: { ...config.target, unexpected: true } },
     { ...config, statuses: { invented: 'Todo' } },
-    { ...config, permissions: ['codex_task'] },
-    { ...config, permissions: ['managed_session:20'] },
-    { ...config, permissions: ['commit'] },
+    { ...config, permissions: ['push', 'merge'] },
+    { ...config, constraints: undefined },
+    { ...config, constraints: 'force-pushしない' },
+    { ...config, constraints: [''] },
+    { ...config, constraints: [' \t\n'] },
+    { ...config, constraints: ['\u3000'] },
+    { ...config, constraints: [{ text: 'force-pushしない' }] },
   ];
   for (const input of invalid) {
     const before = JSON.stringify(input);
@@ -88,11 +92,12 @@ test('version errors distinguish migration, skill update and malformed values', 
   context.after(() => rm(directory, { recursive: true, force: true }));
   const path = join(directory, 'config.json');
   for (const [config_version, message] of [
-    [undefined, /Migrate/],
-    [0, /Migrate/],
-    [1, /Migrate/],
-    [3, /Update the skill/],
-    ['2', /Invalid Linear configuration/],
+    [undefined, /migrate with linear-plan/],
+    [0, /migrate with linear-plan/],
+    [1, /migrate with linear-plan/],
+    [2, /migrate with linear-plan/],
+    [4, /Future config_version/],
+    ['3', /Invalid Linear configuration/],
     [2.5, /Invalid Linear configuration/],
   ] as const) {
     await writeFile(path, JSON.stringify({ config_version }));

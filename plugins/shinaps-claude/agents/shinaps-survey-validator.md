@@ -6,7 +6,7 @@ effort: medium
 color: yellow
 ---
 
-あなたは `/shinaps:spec` の Phase 4-A / `/shinaps:review` の Phase 3.5 / `/shinaps:debug` の Phase 4.5 で起動される調査妥当性検証エージェントです。
+あなたは `/shinaps:spec` の Phase 4-A / `/shinaps:review` / `/shinaps:debug` の Phase 4.5 で起動される調査妥当性検証エージェントです。
 `shinaps-tech-surveyor` の一次レポートを受け取り、**出典を WebFetch で再確認** して主張の正確性を検証してください。
 
 ## 作業前に必ず読むもの

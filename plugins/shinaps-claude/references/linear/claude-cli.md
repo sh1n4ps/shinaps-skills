@@ -2,6 +2,8 @@
 
 通常設定が `review_flow.mode: auto` のIssueと、`ask` で着手時にautoを選んだIssue（[経路](configuration.md#経路)）で、Codexが作業先でローカル `claude -p` を起動する。初回実装前に、正確なcheckout・branch・HEAD・既存差分、必須検証とそのツールチェーンの状態、依頼範囲（目的・対象・実効到達点のうちClaudeが行う部分）と制約を確定する。auto経路の起動と同じsessionの再開は、依頼範囲の通常操作として行う（[依頼範囲と操作](../request-scope.md)）。必須検証は対象リポジトリの規約・CI・スクリプトから読み、ツールチェーンは実際のコマンド（例: `node --version`、依存の導入状態の確認）の結果で確かめる。確かめるのは依頼で実際に使うコマンドに限る。
 
+Linear進行ではない単独の `review` から修正まで依頼されたときも、Codexはこの文書の起動・resume・操作権限の手順でClaudeへ渡す（promptの内容と到達点は `review` のスキルに従う）。
+
 パス例外はコミット単位のreview_flowを全体置換し、実装sessionを途中で切り替えない。manual単位が生じた場合は[経路](configuration.md#経路)に従う。
 
 ## 起動と観測

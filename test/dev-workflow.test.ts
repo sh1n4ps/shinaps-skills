@@ -15,22 +15,25 @@ const RUNTIME_SPECIFIC_REFERENCE = 'dev/launch.md';
 // テスト方針の段落を写す定義。Codex には dev 専用の役割を配布しないので、対象は runtime ごとに違う。
 // Managed の lead はメインとして実装と検証を行うので、lead の定義にも写す。
 const TESTING_POLICY_DEFINITIONS = [
-  ...[
-    'shinaps-architect',
-    'shinaps-plan-reviewer',
-    'shinaps-reviewer',
-    'shinaps-refine-agent',
-    'shinaps-simplifier',
-  ].map((role) => `${CLAUDE}/agents/${role}.md`),
+  ...['shinaps-architect', 'shinaps-plan-reviewer', 'shinaps-reviewer'].map(
+    (role) => `${CLAUDE}/agents/${role}.md`,
+  ),
   MANAGED_LEAD,
-  ...['shinaps-reviewer', 'shinaps-refine-agent'].map((role) => `${CODEX}/agents/${role}.toml`),
+  `${CODEX}/agents/shinaps-reviewer.toml`,
 ];
-// 設計の観点を写す先（役割定義と skill の reference）。Claude ではメインが design.md を読み、独立設計担当は
-// 定義の写しで同じ観点を使う。Managed の lead は自分の skill の中の写しを読む（Managed の architect は
-// Claude 版との本文一致で結ばれる）。
-const DESIGN_COPIES = [
-  `${CLAUDE}/agents/shinaps-architect.md`,
-  `${MANAGED_SKILL}/references/design.md`,
+// 本文を写す先。担当は plugin 内の資料を読めるとは限らず、Managed の skill は plugin の外の資料を読めない。
+// 設計の観点: Claude ではメインが design.md を読み、独立設計担当は定義の写しで同じ観点を使う。Managed の lead は
+// 自分の skill の中の写しを読む（Managed の architect は Claude 版との本文一致で結ばれる）。
+// レビューの共通契約: dev と単独の review で担当の構成と採否の基準を揃える。Codex へは references の一致で届く。
+const REFERENCE_COPIES = [
+  {
+    source: `${CLAUDE}/references/dev/design.md`,
+    copies: [`${CLAUDE}/agents/shinaps-architect.md`, `${MANAGED_SKILL}/references/design.md`],
+  },
+  {
+    source: `${CLAUDE}/references/review.md`,
+    copies: [`${MANAGED_SKILL}/references/review.md`],
+  },
 ];
 
 async function readTree(root: string): Promise<Record<string, string>> {
@@ -183,19 +186,88 @@ test('role definitions contain the testing policy paragraph verbatim', async () 
   assert.deepEqual(stale, []);
 });
 
-// メインの案と独立設計担当の案は、同じ観点と書式で比べる。担当は plugin 内の資料を読めるとは
-// 限らず、Managed の skill は plugin の外の資料を読めないので、design.md の本文を写す。正本だけを
-// 直すと、独立案や Managed の計画が古い観点で作られ、比べる基準が揃わない。
-test('design copies in role definitions and the Managed skill contain the design reference body verbatim', async () => {
-  const design = (await readFile(`${CLAUDE}/references/dev/design.md`, 'utf8'))
-    .replace(/^# .*\n/, '')
-    .trim();
-  assert.ok(design);
+// 正本だけを直すと、独立案や Managed の計画・レビューが古い基準で行われ、runtime によって結果の基準が変わる。
+test('copies in role definitions and the Managed skill contain the reference body verbatim', async () => {
   const stale: string[] = [];
-  for (const path of DESIGN_COPIES) {
-    if (!(await readFile(path, 'utf8')).includes(design)) stale.push(path);
+  for (const { source, copies } of REFERENCE_COPIES) {
+    const body = (await readFile(source, 'utf8')).replace(/^# .*\n/, '').trim();
+    assert.ok(body);
+    for (const path of copies) {
+      if (!(await readFile(path, 'utf8')).includes(body)) stale.push(`${path} <- ${source}`);
+    }
   }
   assert.deepEqual(stale, []);
+});
+
+// Codex の担当は plugin の Claude 版の定義を読めないので、種類ごとの手順を同じ文で持つ。片方だけを直すと、
+// 同じ「規約照合」の依頼で runtime によって手順と重要度の基準が変わる。
+test('the Codex reviewer carries the Claude review kinds verbatim', async () => {
+  const definition = await readFile(`${CLAUDE}/agents/shinaps-reviewer.md`, 'utf8');
+  const start = definition.indexOf('## レビューの種類');
+  const end = definition.indexOf('## テスト方針');
+  assert.ok(start >= 0 && end > start);
+  const codex = await readFile(`${CODEX}/agents/shinaps-reviewer.toml`, 'utf8');
+  // TOML の basic string は改行を \n で書くので、戻してから本文全体を比べる。
+  assert.ok(codex.replaceAll('\\n', '\n').includes(definition.slice(start, end).trim()));
+});
+
+// 廃止した入口・担当が配布物に残ると、更新後も古い手順で動き続ける。移行案内として旧名を説明することは
+// 別の話なので、文書の語ではなく配布するファイルを検査する。
+test('retired review entrypoints and roles are not distributed', async () => {
+  const distributed = [
+    ...Object.keys(await readTree(`${CLAUDE}`)),
+    ...Object.keys(await readTree(`${CODEX}`)),
+  ];
+  const retired =
+    /^(?:skills\/(?:refine|simplify|extract-rules)\/|(?:managed-agents\/)?agents\/shinaps-(?:refine-agent|simplifier|review-validator)\.)/;
+  assert.deepEqual(
+    distributed.filter((path) => retired.test(path)),
+    [],
+  );
+});
+
+// 文書が呼び出しとして書いた `shinaps:<名前>` の先が配布されていないと、読んだ AI が存在しない入口や担当を
+// 起動しようとして止まる。Codex の文書は Claude の dev-claude も案内するので、両版の和と比べる。
+test('skill and role invocations in distributed documents resolve', async () => {
+  const skills = new Set([
+    ...(await readdir(`${CLAUDE}/skills`)),
+    ...(await readdir(`${CODEX}/skills`)),
+  ]);
+  const roles = (await readdir(`${CLAUDE}/agents`)).map((name) => name.slice(0, -'.md'.length));
+  const known = new Set([...skills, ...roles]);
+  const documents: Record<string, string> = { 'README.md': await readFile('README.md', 'utf8') };
+  for (const root of [CLAUDE, CODEX, 'docs']) {
+    for (const [path, text] of Object.entries(await readTree(root))) {
+      documents[`${root}/${path}`] = text;
+    }
+  }
+  const broken = Object.entries(documents).flatMap(([path, text]) =>
+    [...text.matchAll(/shinaps:([a-z][a-z-]*)/g)]
+      .filter(([, name]) => !known.has(name))
+      .map(([reference]) => `${path}: ${reference}`),
+  );
+  assert.deepEqual(broken, []);
+});
+
+// 工程の文書やスキルが挙げた担当の定義が無いと、読んだ AI がその担当を起動できずに止まる。Codex の担当は
+// `Codex ships exactly the roles its skills name` が別に確かめる。
+test('every role named in distributed documents is defined', async () => {
+  // 担当ではない名前: 配布 CLI のコマンドと Managed の環境。
+  const notRoles = new Set(['shinaps-skills', 'shinaps-dev']);
+  const defined = new Set(
+    [...(await readdir(`${CLAUDE}/agents`)), ...(await readdir(`${MANAGED}/agents`))].map((name) =>
+      name.slice(0, -'.md'.length),
+    ),
+  );
+  const documents = await Promise.all([CLAUDE, CODEX, 'docs'].map((root) => readTree(root)));
+  const named = documents
+    .flatMap((tree) => Object.values(tree))
+    .flatMap((text) => [...text.matchAll(/`(shinaps-[a-z-]+)`/g)].map(([, role]) => role));
+  assert.ok(named.length > 0);
+  assert.deepEqual(
+    [...new Set(named)].filter((role) => !notRoles.has(role) && !defined.has(role)),
+    [],
+  );
 });
 
 // Claude の dev 入口は、Codex がローカル CLI または Bridge で依頼して Skill ツールから起動する。

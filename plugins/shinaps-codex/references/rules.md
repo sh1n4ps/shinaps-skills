@@ -1,6 +1,6 @@
 # Shinaps規約の取得
 
-Shinaps AIのMCPから規約を取得する手順。取得は呼出し元（メイン）だけが行い、担当へは全文を渡す。保存できる規約は必ず1応答に収まり、1応答は100件かつ32,000 bytes（MCPのcontent textのUTF-8）までに分かれるので、下の順に全件を辿る。
+Shinaps AIのMCPから規約を取得する手順。取得は呼出し元（メイン）だけが行い、担当はMCPを呼ばない。対象ファイルが確定した規約照合の担当には、[照合のために取得する](#照合のために取得する)で保存した同じ snapshot を読ませる。保存できる規約は必ず1応答に収まり、1応答は100件かつ32,000 bytes（MCPのcontent textのUTF-8）までに分かれるので、下の順に全件を辿る。
 
 ## 語彙を確認する
 
@@ -21,6 +21,8 @@ Shinaps AIのMCPから規約を取得する手順。取得は呼出し元（メ�
 - **語彙外の技術**: 語彙のslugと同じ役割なら不明にする（Prisma、Kotlin、Android、Nodeのサーバー、フレームワークなしのサーバー実装、生SQLなど。類似のslugで置き換えない）。役割が重ならない補助ライブラリは数えない。
 - 辿っていない・確かめられない軸は不明にする。
 
+**領域**: 技術や実装慣習が違う領域（Web・APIなど）が複数あるときは、領域ごとにこの判定と合成を行い、取得も領域ごとに行う。共通の規約は、label の無い軸が不一致にならないので全領域に入る。
+
 **合成**: 全ファイルが確定で、和が1〜8件の軸だけを検索に渡す。不明なファイルがある軸と9件以上の軸は省略する。和が空の軸は検索で表せないので、全文の選択で使う。
 
 対象が確定していない工程（devの入口・`spec`・`explore`・`debug`）は、論点の技術を語彙から推定してよい。`filterUserRulesByLabels` は指定しない。
@@ -38,7 +40,28 @@ Shinaps AIのMCPから規約を取得する手順。取得は呼出し元（メ�
 - **更新**: `update_rule` で `scope: "repo"` と3つをそろえて渡すのは、適用先を repo にするとき、別のrepositoryに変えるとき、表示名を現在の名前にするとき（2の `full_name` が規約の `repoOwner`・`repoName` と違うとき）だけ。内容だけの更新では適用先の項目を渡さない（`scope` なしで渡すと入力エラーになる）。
 - **`repoId` が得られないとき**: `scope: repo` では書き込まず、`scope: user`・`scope: repo_owner` に変えるか中止するかを利用者に確認する。範囲を変えるときは、[Shinaps規約の書き方](rule-writing.md)の比較をやり直す。
 
+## 照合のために取得する
+
+対象ファイルが確定した照合の手順。応答をモデルが書き写すと本文や `checks` が欠けうるので、plugin の hook（PostToolUse）が応答をそのまま `<Gitのルート>/.shinaps/work/rule-captures/` へ保存し、そこから `shinaps-skills rule-snapshot` が担当と機械検査の読むファイルを作る。保存先はGit管理の外のローカルで、サーバーへは送らない。
+
+1. 取得の前の時刻を `date +%s000` で記録する。
+2. 領域ごとに入力を作業記録の下（例: `rules/<領域>/input.json`）へ書く。「一覧を取る」と同じ条件で、`fields` だけ `"full"` にする。
+3. その入力のまま `search_rules` を呼び、`nextCursor` がnullになるまで `cursor` だけ足して続ける。モデルに見える応答は切り詰められることがあるが、続きの `nextCursor` だけ読めばよい。`RATE_LIMITED` は短い時間を置いて同じ `cursor` から再開する。
+4. 領域ごとに実行する。版の違いで入力を分けたときは `--input` を並べ、idの和にする。
+
+   ```sh
+   shinaps-skills rule-snapshot --since <時刻> --input <input.json> [--exclude-label <slug>] --out <作業記録>/rules/<領域>
+   ```
+
+   取得と同じGitのルートで実行する（別の場所なら `--captures <dir>` で保存先を渡す）。`rule-snapshot` が無いときは、利用中のスキルと同じ版のCLIを導入する。`--exclude-label` には、「全文を取る規約を選ぶ」の除外の条件に当たる軸のlabelだけを渡す（CLIはこの条件を判定しない）。除外した規約はidと理由が `manifest.json` に残る。
+
+出力は `manifest.json`（`contentHash`、入力、`ruleIds`、除外、partのhash）、`parts/part-NNN.json`（全文）、`lint-checks.json`（全文の `checks` そのまま）。
+
+**失敗したとき**: 欠けたcursorや「捕捉が無い」というエラーで非0終了し、snapshotを作らない。`--since` より前の捕捉は使わない。hookの未信頼・無効、途中で止まった取得がこの形で現れる。Codexでは更新のたびに `/hooks` で信頼し直す必要があり、未信頼でも `exec` は何も表示しない。原因を直して取り直す。直せなければ、その領域の規約照合を未完了として報告し、全文の書き写しで代えない。
+
 ## 一覧を取る
+
+対象が確定していない工程と書込みの前の比較では、この節から「全文を取る」までの手順で取得する。照合の条件の決め方もこの節の規則を使う。
 
 `search_rules` を `fields: "summary"` で呼ぶ。`repoOwner`・`repoId` は「リポジトリを特定する」で決めた値を渡す。対象が確定した照合では `filterUserRulesByLabels: true` を渡す。
 
@@ -83,12 +106,41 @@ Shinaps AIのMCPから規約を取得する手順。取得は呼出し元（メ�
 
 ## 担当へ渡す
 
-`checks` を持つ規約がある照合では、渡す前に[規約の機械検査](lint.md)の「照合で使う」を行い、照合から外す組を決める。全文は取得した応答の単位で、続きのバッチとして渡す。1回の依頼に全件をまとめない。担当には読み終えた規約のidを報告させ、報告の無い範囲は同じ担当へ戻す。
+対象ファイルが確定した照合の担当へは、全文を依頼文に書き写さず、snapshot のファイルを読ませる。渡す前に[規約の機械検査](lint.md)の「照合で使う」を行う。依頼文には次を書く（全領域を見る担当には領域ごとに）。
+
+> 規約は `<manifest.json>` の `parts` の全ファイルを読む（MCPは呼ばない）。切り詰めの表示が出たら行範囲を指定して読み直す。対象の版は `<版>`、対象ファイルは `<対象ファイルの一覧>`。機械検査の結果は `<lint-result.json>` にある。報告の末尾に次のJSONを付ける。`completedFiles` には全文の照合を終えたファイルだけを書く（`path` は対象ファイルと同じ基準のパス）。読めなかった規約は `unchecked` に、途中までのファイルは `incompleteFiles` に理由を付けて入れる。
+>
+> ```json
+> [{ "contentHash": "<manifestの値>", "targetVersion": "<版>", "completedFiles": ["..."], "unchecked": [{ "id": "...", "reason": "..." }], "incompleteFiles": [{ "path": "...", "reason": "..." }] }]
+> ```
+
+担当の報告を受けたら、末尾のJSONをファイルに保存し、manifest ごとに、領域の全担当の報告を `--report` に並べて実行する。
+
+```sh
+shinaps-skills rule-coverage --manifest <manifest.json> --target-version <版> [--lint <lint-result.json>] [--report <report.json> ...] --out <coverage.json> -- <対象ファイル...>
+```
+
+組は `machine`（機械検査で確定）・`reported`（この snapshot と版の報告がそのファイルを `completedFiles` に挙げ、その規約を未照合としていない担当の申告）・`unconfirmed`（それ以外。報告に書かれていないファイルを含む）のどれか一つに入る。機械が保証するのは同じ snapshot と、id・保存データ・対象の版の整合までで、読了と理解は担当の申告である。snapshot が変わったときは `rule-snapshot` から、lint の結果が別の snapshot のもの、lint の後にファイルが変わった、対象が lint の対象に無いときは lint からやり直す。領域内のファイルを担当に分けて渡すときも、対象ファイル全体と全担当の報告で実行する（誰も照合しなかったファイルは `unconfirmed` に残る）。
+
+修正の後は固定版を更新し、機械検査を対象全体でやり直す。規約を取り直して `contentHash` が変わった領域は、AIの照合もやり直す。AIの照合の範囲は呼び出す入口の手順に従う。
+
+独立設計・計画レビューの担当へは、これまでどおり全文を応答の単位で渡す（照合の完了の判定には使わない）。
+
+## 適用結果を記録する
+
+全指摘の採否が確定したら、規約の改善の材料として確定した結果を `report_rule_outcomes` で既定で記録する。記録は照合の結果を変えない。
+
+- **OFF**: 依頼に「規約の適用結果を記録しない」があれば、依頼を受けた時点で `rule-outcomes.json` に `"off": true` を書く。送信の前に必ずこのファイルを読み、`off` が true なら送らない（後の修正サイクルの依頼にOFFの語が無くても同じ）。
+- **作業記録**: 作業記録の下の `rule-outcomes.json` に `{ "reportKey": "...", "off": false }` を書く。key は最初の送信の前に `node -p "Date.now() + '-' + crypto.randomUUID()"` で作る。同じ作業の修正サイクルと再送は同じ値を使う。単独の `review` から開発の担当へ修正を渡すときは、この2つも渡す。
+- **送るもの**: 規約のidを根拠に持つ指摘だけを、`violation`（採用した規約違反）・`improvement`（採用した改善）・`false_positive`（事実で反証して退けた）・`accepted_as_is`（妥当だが現状を許容した）へ対応づけ、100件ずつ送る。機械検査の `covered` と、指摘の無かった規約は送らない。コード・差分・会話・ファイル名・repositoryは送らない（入力に項目が無い）。
+- **失敗**: `RATE_LIMITED` は短い時間を置いて同じ内容で最大2回まで送り直す。それ以外は送り直さない。`RULE_OUTCOME_LIMIT_REACHED` は同じ呼出しの新規を1件も記録しない。`REPORT_KEY_EXPIRED` では新しいkeyを作らない（同じ作業を二重に数える）。読取り専用のsandboxなどで承認が得られないときも失敗として扱う。どの場合も作業は止めず、未記録の規約のidと理由を報告する。
+- **報告**: 記録した件数・重複の件数・`notFoundIds`・未記録の範囲を書く。OFFならOFFと書く。集計は `get_rule` の `outcomes` で本人の分だけを見られ、直近90日で削除される。
 
 ## 照合結果に書くこと
 
-- 渡した全てのfacet・`projectVersions`・`filterUserRulesByLabels`。サーバーが除外した規約のidは返らないので、除外の条件として残す。
-- 全文の選択で除外した規約のidと理由、`notFoundIds`。
+- `manifest.json` のパスと `contentHash`。渡した全てのfacet・`projectVersions`・`filterUserRulesByLabels`。サーバーが除外した規約のidは返らないので、除外の条件として残す。
+- 除外した規約のidと理由。`get_rules` を使ったときは `notFoundIds`。
+- `rule-coverage` の状態ごとの組の数と、`unconfirmed` の規約・ファイルと理由。`reported` を照合の証明として書かない。
 - 省略した軸・版と理由、未照合になった公式ルールの範囲。
 - 取得・受渡し・読了のいずれかが終わらなかった規約のidまたは条件。これらは照合済みにしない。
 

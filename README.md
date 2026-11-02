@@ -88,7 +88,7 @@ dev の実装後レビューでは、規約に機械検査があるときに配�
 
 ## Shinaps AI との接続
 
-`review` や `dev-claude` の規約照合など rule を使う工程に必要です。規約の登録・更新はその場で AI に依頼します（[規約の書き方](plugins/shinaps-claude/references/rule-writing.md)）。導入とは別に設定し、既存の登録があれば再利用します。同じサーバーを plugin とグローバル設定の両方に登録しないでください。認証情報は各クライアントの認証で管理し、このリポジトリの CLI では扱いません。
+`review` や `dev-claude` の規約照合など rule を使う工程に必要です。確定した規約の適用結果は既定で本人の集計へ記録します（送るのは規約の id、作業の key、結果の別だけで、作業ごとに OFF にでき、90 日で削除されます。[導入と更新](docs/install.md#規約の適用結果の記録)）。規約の全文は plugin の hook が応答をそのまま保存した snapshot から担当へ渡します。Codex では hook の信頼が要り、plugin の更新のたびに信頼し直します（[導入と更新](docs/install.md#規約の-hook)）。規約の登録・更新はその場で AI に依頼します（[規約の書き方](plugins/shinaps-claude/references/rule-writing.md)）。導入とは別に設定し、既存の登録があれば再利用します。同じサーバーを plugin とグローバル設定の両方に登録しないでください。認証情報は各クライアントの認証で管理し、このリポジトリの CLI では扱いません。
 
 ```sh
 # Claude Code（登録後、Claude Code 内の /mcp から認証）

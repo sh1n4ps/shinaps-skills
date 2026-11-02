@@ -1,6 +1,6 @@
 # 担当の起動（Claude Code）
 
-[工程](workflow.md)の体制で選んだ担当を Claude Code で起動・継続する手順。
+devの[工程](workflow.md)の体制で選んだ担当と、単独の `review` の担当を Claude Code で起動・継続する手順。
 
 - 担当は Agent ツールで登録エージェントを起動する。`subagent_type` は `shinaps:` に役割定義名を付けたもの（例 `shinaps:shinaps-architect`）にする。model・effort は定義（Opus / medium）のまま使い、起動時に上書きしない。
 - 同じ役割の複数担当 は、同じ登録エージェントを別々に起動する。呼び出しごとに別のコンテキストになるので、互いの結果は共有されない。担当番号は起動前に固定し、返された ID と対応づけて保持する。

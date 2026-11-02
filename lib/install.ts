@@ -4,7 +4,6 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 import {
-  digest,
   registerPlugin,
   replaceInstallation,
   restore,
@@ -13,7 +12,7 @@ import {
   type Target,
 } from './transaction.ts';
 import { withLock } from './lock.ts';
-import { readTextIfExists, writeFileAtomic } from './fs.ts';
+import { readTextIfExists, sha256, writeFileAtomic } from './fs.ts';
 import {
   codexHomeMismatch,
   codexHomeOf,
@@ -240,7 +239,7 @@ async function readVerifiedState(
     if (!managedAgent.test(name)) throw new Error(`Invalid agent filename "${name}" in ${path}.`);
     const current = await readTextIfExists(join(agentsDir, name));
     if (current === null) continue;
-    const currentHash = digest(current);
+    const currentHash = sha256(current);
     if (currentHash !== hash && currentHash !== state.pending?.[name]) {
       throw new Error(
         `Modified agent preserved: ${join(agentsDir, name)}. Move the edited file elsewhere or restore its content, then retry.`,
@@ -266,7 +265,7 @@ async function readPackagedAgents(
         `Unmanaged agent preserved: ${join(agentsDir, name)}. Shinaps did not install this file. Move or rename it, then retry.`,
       );
     }
-    agents[name] = { content, hash: digest(content) };
+    agents[name] = { content, hash: sha256(content) };
   }
   return agents;
 }

@@ -13,6 +13,7 @@ import {
   type UnitOutcome,
 } from './lint-plan.ts';
 import { shinapsPlugin } from './lint-rules.ts';
+import { splitFiles } from './args.ts';
 import { errorMessage } from './fs.ts';
 
 const USAGE =
@@ -39,9 +40,7 @@ export async function lint(args: string[]): Promise<void> {
 }
 
 function parseArgs(args: string[]) {
-  const separator = args.indexOf('--');
-  const flags = separator === -1 ? args : args.slice(0, separator);
-  const files = separator === -1 ? [] : args.slice(separator + 1);
+  const { flags, files } = splitFiles(args);
   const value = (name: string) => {
     const index = flags.indexOf(name);
     const found = index === -1 ? undefined : flags[index + 1];

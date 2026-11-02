@@ -1,5 +1,5 @@
 import { lstat, readFile, rename, rm, writeFile } from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { basename, dirname, join } from 'node:path';
 
 /** OS エラーの code (ENOENT など)。Error 以外や code を持たないエラーは undefined。 */
@@ -8,6 +8,9 @@ export const errorCode = (error: unknown): string | undefined =>
 
 export const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
+
+export const sha256 = (text: string | Buffer): string =>
+  createHash('sha256').update(text).digest('hex');
 
 export const readJson = async <T = unknown>(path: string): Promise<T> =>
   JSON.parse(await readFile(path, 'utf8'));

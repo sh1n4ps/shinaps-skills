@@ -1,5 +1,4 @@
 import { mkdir, rm, rename, cp } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { managedAgent, marketplaceName, payloadDir, pluginId, statePath } from './layout.ts';
 import {
@@ -8,6 +7,7 @@ import {
   readJsonIfExists,
   readTextIfExists,
   writeFileAtomic,
+  sha256,
 } from './fs.ts';
 
 /** 外部コマンド (codex CLI、launchctl) を argv で実行する関数。失敗したら throw する。テストでは差し替える。 */
@@ -33,9 +33,6 @@ type SavedJournal = Journal & {
   /** 変更前に配布物が存在したか。初回 install では false。 */
   hadPayload: boolean;
 };
-
-/** エージェント内容の sha256。state.json と journal の `nextHashes` はこの形式で記録する。 */
-export const digest = (text: string): string => createHash('sha256').update(text).digest('hex');
 
 /** 配布物を Codex に登録する。install と restore で同じ手順を使う。 */
 export async function registerPlugin(command: Command, payload: string): Promise<void> {
@@ -123,7 +120,7 @@ export async function restore(target: Target): Promise<void> {
     }
     const current = await readTextIfExists(join(agentsDir, name));
     if (current === null) continue;
-    if (current !== priorContent && digest(current) !== journal.nextHashes[name]) {
+    if (current !== priorContent && sha256(current) !== journal.nextHashes[name]) {
       throw new Error(
         `Modified agent preserved during recovery: ${join(agentsDir, name)}. Move the edited file elsewhere, then run "shinaps-skills recover codex".`,
       );

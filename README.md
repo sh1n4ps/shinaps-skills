@@ -73,6 +73,11 @@ Claude Code では `/shinaps:<スキル名>`（例 `/shinaps:review`）で呼び
 
 旧版の設定は自動では変換しません。Linear は [旧設定の移行](plugins/shinaps-claude/references/linear/configuration.md#旧設定の移行)（0.48.0 から `config_version: 3`。操作ごとの許可の一覧を廃止し `constraints` に置き換え）、Managed Agents は [version 1 からの移行](plugins/shinaps-claude/references/managed/configuration.md#version-1-からの移行)に従ってください。
 
+### 0.50.0 の変更
+
+- 規約の照合は、plugin の hook が保存した応答から作る snapshot を担当と機械検査が読みます。Codex では hook の信頼が要り、plugin の更新のたびに `/hooks` で信頼し直します（[導入と更新](docs/install.md#規約の-hook)）。
+- 確定した規約の適用結果を既定で本人の集計へ記録します。作業ごとに OFF にでき、直近 90 日で集計から外れて削除されます（[導入と更新](docs/install.md#規約の適用結果の記録)）。Shinaps AI 側の配備が先に要ります。
+
 ### 0.49.0 の変更
 
 `refine`・`simplify`・`extract-rules` のスキルを廃止しました。規約照合と簡素化は `review` に依頼します（「規約照合だけ」「簡素化だけ」と限定できます）。規約の登録はその場で AI に依頼します。PR からの一括抽出の代わりになるスキルはありません。計画の簡素化だけを単独で起動する手段も無くなり、dev の計画レビューに含まれます。

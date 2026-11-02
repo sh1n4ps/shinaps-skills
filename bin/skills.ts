@@ -8,6 +8,8 @@ import { managed } from '../lib/managed.ts';
 import { run } from '../lib/install.ts';
 import { autoUpdate } from '../lib/auto-update.ts';
 import { lint } from '../lib/lint.ts';
+import { ruleCoverage } from '../lib/rule-coverage.ts';
+import { ruleSnapshot } from '../lib/rule-snapshot.ts';
 import { errorMessage } from '../lib/fs.ts';
 
 const [command, ...rest] = process.argv.slice(2);
@@ -25,6 +27,8 @@ try {
   } else if (command === 'managed') await managed(rest);
   else if (command === 'auto-update') await autoUpdate(rest);
   else if (command === 'lint') await lint(rest);
+  else if (command === 'rule-snapshot') await ruleSnapshot(rest);
+  else if (command === 'rule-coverage') await ruleCoverage(rest);
   else await run(process.argv.slice(2));
 } catch (error) {
   console.error(`Shinaps: ${errorMessage(error)}`);

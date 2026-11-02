@@ -1,6 +1,6 @@
 import { lstat, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
-import { basename, dirname, join } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 
 /** OS エラーの code (ENOENT など)。Error 以外や code を持たないエラーは undefined。 */
 export const errorCode = (error: unknown): string | undefined =>
@@ -11,6 +11,23 @@ export const errorMessage = (error: unknown): string =>
 
 export const sha256 = (text: string | Buffer): string =>
   createHash('sha256').update(text).digest('hex');
+
+/**
+ * ファイルの内容の sha256。
+ * @param root files の基準のディレクトリ
+ * @param files root からの相対パス。無いファイルは結果に含めない
+ */
+export async function hashFiles(root: string, files: string[]): Promise<Record<string, string>> {
+  const hashes: Record<string, string> = {};
+  for (const file of files) {
+    try {
+      hashes[file] = sha256(await readFile(resolve(root, file)));
+    } catch (error) {
+      if (errorCode(error) !== 'ENOENT') throw error;
+    }
+  }
+  return hashes;
+}
 
 export const readJson = async <T = unknown>(path: string): Promise<T> =>
   JSON.parse(await readFile(path, 'utf8'));

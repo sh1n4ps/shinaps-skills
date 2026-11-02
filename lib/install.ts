@@ -13,6 +13,8 @@ import {
 } from './transaction.ts';
 import { withLock } from './lock.ts';
 import { readTextIfExists, sha256, writeFileAtomic } from './fs.ts';
+import { RULE_COVERAGE_COMMAND } from './rule-coverage.ts';
+import { RULE_SNAPSHOT_COMMAND } from './rule-snapshot.ts';
 import {
   codexHomeMismatch,
   codexHomeOf,
@@ -64,6 +66,8 @@ const usage = [
   '       shinaps-skills managed <setup|run|status|reply|collect> (see managed --help)',
   '       shinaps-skills auto-update <enable|disable|status|check> codex',
   '       shinaps-skills lint --checks <checks.json> --root <project> --out <result.json> -- <files...>',
+  `       ${RULE_SNAPSHOT_COMMAND}`,
+  `       ${RULE_COVERAGE_COMMAND}`,
   'Claude Code: /plugin marketplace add sh1n4ps/shinaps-skills',
   '             /plugin install shinaps@shinaps-skills',
 ].join('\n');

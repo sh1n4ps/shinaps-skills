@@ -29,7 +29,7 @@ type PlannedRule = { rule: string; options: unknown[]; bindings: Binding[] };
 export type Unit = { id: string; typed: boolean; rules: PlannedRule[] };
 
 type Finding = { rule: string; line: number; column: number; message: string };
-type PairState = 'covered' | 'violation' | 'partial' | 'not-run';
+export type PairState = 'covered' | 'violation' | 'partial' | 'not-run';
 type Pair = {
   ruleId: string;
   file: string;

@@ -324,6 +324,22 @@ test('Managed role definitions are exactly the roles the lead registers', async 
   assert.deepEqual(await managedRoleDefinitions(), await managedLeadRoles());
 });
 
+// hook の本文が版でずれると、片方のホストだけ捕捉の形式や保存先が変わる。設定はプラグインのルートの環境変数だけが違う。
+test('rule capture hook is the same in both plugins', async () => {
+  const hook = 'hooks/capture-rule-response.mjs';
+  assert.equal(
+    await readFile(`${CODEX}/${hook}`, 'utf8'),
+    await readFile(`${CLAUDE}/${hook}`, 'utf8'),
+  );
+  assert.equal(
+    await readFile(`${CODEX}/hooks/hooks.json`, 'utf8'),
+    (await readFile(`${CLAUDE}/hooks/hooks.json`, 'utf8')).replace(
+      'CLAUDE_PLUGIN_ROOT',
+      'PLUGIN_ROOT',
+    ),
+  );
+});
+
 // Managed の役割定義は Claude 版の name・description・本文を写し、runtime 固有の部分は frontmatter の
 // 他の項目だけに持つ。Claude 版だけを直すと、クラウドで動く担当の判断基準が PC と変わる。
 test('Managed role definitions copy the Claude name, description and body', async () => {

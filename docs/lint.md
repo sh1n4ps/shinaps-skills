@@ -35,6 +35,8 @@ shinaps-skills lint --checks <checks.json> --root <project> --out <result.json> 
 }
 ```
 
+結果には他に `checksSha256`（`--checks` のファイルの sha256）と `files`（相対パス → 内容の sha256）が付きます。`rule-coverage` が、別の検査や変更前の内容から作られた結果を拒否するために使います。
+
 | state | 意味 | 照合 |
 | --- | --- | --- |
 | `covered` | `full` の検査が実行され、違反が無い | 外す |

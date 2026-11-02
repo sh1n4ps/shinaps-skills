@@ -5,3 +5,8 @@ export function splitFiles(args: string[]): { flags: string[]; files: string[] }
     ? { flags: args, files: [] }
     : { flags: args.slice(0, separator), files: args.slice(separator + 1) };
 }
+
+/** `--name value` を、繰り返しも含めて読む。 */
+export function flagValues(args: string[], name: string): string[] {
+  return args.flatMap((arg, index) => (arg === name && args[index + 1] ? [args[index + 1]] : []));
+}

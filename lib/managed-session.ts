@@ -1,7 +1,7 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { mkdir, readdir, rename, rm, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { readJson, readJsonIfExists, writeFileAtomic } from './fs.ts';
+import { readJson, readJsonIfExists, sha256, writeFileAtomic } from './fs.ts';
 import { withLock } from './lock.ts';
 import { type Account, type Ant, filesBeta, managedBeta } from './managed-ant.ts';
 import { type Snapshot, importSnapshot } from './managed-snapshot.ts';
@@ -49,7 +49,6 @@ const permissionLabels: Record<Permission, string> = {
   push: 'headへのpush',
   draft_pr: 'draft PRの作成',
 };
-const sha256 = (text: string): string => createHash('sha256').update(text).digest('hex');
 
 /**
  * `--transform id -r` の出力から ID を取り出す。ant は transform のパスが応答に無いと応答の全体を

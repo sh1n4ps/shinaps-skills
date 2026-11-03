@@ -6,13 +6,13 @@ Shinaps AIの規約は、機械検査（`checks`）を持てる。検査は配�
 
 ## 照合で使う
 
-[Shinaps規約の取得](rules.md)で全文を取得した後、照合の担当へ渡す前に行う。
+[Shinaps規約の取得](rules.md)の「照合のために取得する」で snapshot を作った後、照合の担当へ渡す前に領域ごとに行う。
 
-1. 全文の `checks` を持つ規約を、`{ "rules": [{ "id": "<規約id>", "checks": [<全文のchecksのまま>] }] }` の形で作業記録の下（例: `.shinaps/work/<作業>/lint-checks.json`）に書く。checksを書き換えない。持つ規約が無ければこの節を省く。
-2. 対象ファイル（照合の対象として確定したもの。削除されたファイルを除く）を付けて1回実行する。
+1. snapshot の `lint-checks.json` を使う。`rule-snapshot` が応答の `checks` から生成したもので、手で写したり書き換えたりしない。`rules` が空ならこの節を省く。
+2. 領域の対象ファイル（照合の対象として確定したもの。削除されたファイルを除く）を付けて1回実行する。
 
    ```sh
-   shinaps-skills lint --checks <lint-checks.json> --root <リポジトリのルート> --out <lint-result.json> -- <対象ファイル...>
+   shinaps-skills lint --checks <snapshot>/lint-checks.json --root <リポジトリのルート> --out <lint-result.json> -- <対象ファイル...>
    ```
 
    コマンドが無い、終了コードが0でない、または結果を読めないときは、全ての規約をAI照合に回し、理由を報告する。CLIは利用中のスキルと同じ版を使う。
@@ -22,7 +22,8 @@ Shinaps AIの規約は、機械検査（`checks`）を持てる。検査は配�
    - `partial`: 一部だけを検査する検査だけが実行された。`findings` を指摘にし、規約はそのファイルの照合に残す（担当にはlintの指摘も渡す）。
    - `not-run`: 実行していない（対象外、この版に無いルール、ESLintが設定を拒否した、型が得られない、致命的な報告など）。照合に残し、`reason` を記録する。
 4. lint由来の指摘は、根拠に規約idとルールID（`findings[].rule`）を付けて集約に入れる。誤報告がありうるので自動修正にせず、メインがその位置を読んで確認してから扱う。
-5. 報告に、状態ごとの組の数、`not-run` の理由、`units[].error` を書く。照合から外した組を「AIが照合した」と書かない。
+5. 結果は `checksSha256` とファイルごとの内容のhashを持つ。`rule-coverage` はこれで、別の snapshot の結果と、実行の後にファイルが変わった結果を拒否する。
+6. 報告に、状態ごとの組の数、`not-run` の理由、`units[].error` を書く。照合から外した組を「AIが照合した」と書かない。
 
 ## 検査を登録・更新する
 

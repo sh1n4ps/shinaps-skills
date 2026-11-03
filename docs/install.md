@@ -23,12 +23,23 @@ npx @shinaps/skills@latest recover codex
 
 ## 配布 CLI
 
-設定の検証（`validate-linear-config`・`validate-managed-config`）、Managed Agents の操作（`managed`）、規約の機械検査（`lint`、[規約の機械検査](lint.md)）には、配布 CLI `shinaps-skills` を使います。CLI は plugin に含まれないため、利用中のスキルと同じ版を導入します。
+設定の検証（`validate-linear-config`・`validate-managed-config`）、Managed Agents の操作（`managed`）、規約の機械検査と受け渡し（`lint`・`rule-snapshot`・`rule-coverage`、[規約の機械検査](lint.md)）には、配布 CLI `shinaps-skills` を使います。CLI は plugin に含まれないため、利用中のスキルと同じ版を導入します。
 
 ```sh
-npm install -g @shinaps/skills@0.49.0
+npm install -g @shinaps/skills@0.50.0
 shinaps-skills --version
 ```
+
+## 規約の hook
+
+規約の照合では、plugin の hook が Shinaps AI の `search_rules` の応答をプロジェクトの `.shinaps/work/rule-captures/` へ保存します。送信はしません。保存先の `.gitignore` で Git の対象外にし、24 時間より古いものは `rule-snapshot` の実行時に消します。
+
+- **Codex**: hook は信頼するまで動きません。plugin の導入と**更新のたびに**、CLI の `/hooks`（または起動時の確認）で内容を確かめて信頼してください。未信頼でも `codex exec` は何も表示せず、`rule-snapshot` が「捕捉が無い」で失敗し、規約照合は未完了になります。
+- **Claude Code**: plugin を有効にすると動きます。`disableAllHooks` や `allowManagedHooksOnly` の環境では動かず、同じく未完了になります。
+
+## 規約の適用結果の記録
+
+dev と `review` は、確定した適用結果（規約の id、作業の key、違反・改善・誤検知・許容の別）を既定で Shinaps AI の本人の集計へ記録します。コード・差分・会話・ファイル名・repository は送りません。集計は `get_rule` で本人の分だけを見られ、他の利用者には返りません。直近 90 日で削除されます。作業ごとに「規約の適用結果を記録しない」と依頼すれば送りません。送信に失敗しても作業の結果は変わらず、未記録として報告します。Codex の読取り専用の sandbox で承認が得られないときも未記録になります。
 
 ## Claude Code の更新
 

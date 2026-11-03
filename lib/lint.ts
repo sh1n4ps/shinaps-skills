@@ -13,7 +13,8 @@ import {
   type UnitOutcome,
 } from './lint-plan.ts';
 import { shinapsPlugin } from './lint-rules.ts';
-import { errorMessage } from './fs.ts';
+import { splitFiles } from './args.ts';
+import { errorMessage, hashFiles, sha256 } from './fs.ts';
 
 const USAGE =
   'Usage: shinaps-skills lint --checks <checks.json> --root <project> --out <result.json> -- <files...>';
@@ -26,9 +27,16 @@ const USAGE =
  */
 export async function lint(args: string[]): Promise<void> {
   const options = parseArgs(args);
-  const input = parseLintInput(JSON.parse(await readFile(options.checks, 'utf8')));
+  const checksText = await readFile(options.checks);
+  const input = parseLintInput(JSON.parse(checksText.toString('utf8')));
+  const files = await hashFiles(
+    options.root,
+    options.files.map((file) => toRelative(options.root, file)),
+  );
   const result = await runLint(input, options.root, options.files);
-  await writeFile(options.out, `${JSON.stringify(result, null, 2)}\n`);
+  // 結果がどの検査とどの内容のファイルから作られたかを残し、古い結果を機械確認として使わないようにする。
+  const output = { ...result, checksSha256: sha256(checksText), files };
+  await writeFile(options.out, `${JSON.stringify(output, null, 2)}\n`);
   const counts = Object.fromEntries(
     (['covered', 'violation', 'partial', 'not-run'] as const).map((state) => [
       state,
@@ -39,9 +47,7 @@ export async function lint(args: string[]): Promise<void> {
 }
 
 function parseArgs(args: string[]) {
-  const separator = args.indexOf('--');
-  const flags = separator === -1 ? args : args.slice(0, separator);
-  const files = separator === -1 ? [] : args.slice(separator + 1);
+  const { flags, files } = splitFiles(args);
   const value = (name: string) => {
     const index = flags.indexOf(name);
     const found = index === -1 ? undefined : flags[index + 1];

@@ -2,16 +2,17 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { access, readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
+import {
+  CLAUDE,
+  CODEX,
+  MANAGED_SKILL,
+  RUNTIME_SPECIFIC_REFERENCE,
+} from '../scripts/distribution-copies.ts';
 
-const CLAUDE = 'plugins/shinaps-claude';
-const CODEX = 'plugins/shinaps-codex';
 const MANAGED = `${CLAUDE}/managed-agents`;
 const MANAGED_LEAD = `${MANAGED}/agents/shinaps-dev-managed-cc.md`;
-const MANAGED_SKILL = `${MANAGED}/skills/dev-managed-cc`;
 // 探索は必須担当ではなく、Managed では lead と独立設計担当が自分で調べるので、探索担当は lead に登録しない。
 const MANAGED_UNREGISTERED_ROLES = ['shinaps-explorer'];
-// 起動手順は runtime ごとの機構で書くので、references の中でこれだけは複製しない。
-const RUNTIME_SPECIFIC_REFERENCE = 'dev/launch.md';
 // テスト方針の段落を写す定義。Codex には dev 専用の役割を配布しないので、対象は runtime ごとに違う。
 // Managed の lead はメインとして実装と検証を行うので、lead の定義にも写す。
 const TESTING_POLICY_DEFINITIONS = [

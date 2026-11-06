@@ -16,6 +16,7 @@
 - Managed の共通定義は `plugins/shinaps-claude/managed-agents/` を編集元として Codex 版へ複製し、テストで一致を確認する。Managed の skill の `staffing.md`・`workflow.md`・`launch.md` は Claude 版を写した適応版で一致はテストしないため（`review.md`・`design.md` は下の正本の複製でテストする）、Claude 版の工程・体制の基準を変えたら Managed への適用可否を判断する。
 - レビューの共通契約は `references/review.md` を正本とし、本文を Managed の skill の `references/review.md` に複製してテストで一致を確認する。Codex の `shinaps-reviewer` は、Claude 版の「レビューの種類」以降の本文を同じ文で持ち、テストで一致を確認する。担当の構成・対象の固定・完了の判定・採否は契約に、種類ごとの作業手順は役割の定義に、単独起動の対象・体制・到達点は `references/review-standalone.md` に、担当の起動と修正の引き継ぎ先だけを両版の `review` の `SKILL.md` に書く。
 - テスト方針は各版の `references/testing.md` を正本とし、その段落を役割定義と Managed の lead の定義に複製する。設計の観点は `references/dev/design.md` を正本とし、本文を独立設計担当（`shinaps-architect`）の定義と Managed の skill の `references/design.md` に複製する。どちらもテストで一致を確認する。
+- 上の完全一致の複製（`references`・Managed の共通定義・Managed の skill の `review.md`・`design.md`）は、編集元を直した後に `npm run sync:copies` で依存の順に上書きできる（編集元で消したファイルは写しからも手で消す）。役割定義の本文やテスト方針の段落のような部分の写しは対象外で、手で揃える。
 - 役割の定義は Claude 版が Markdown、Codex 版が TOML、Managed 版が `ant apply` 用の frontmatter を付けた Markdown。サブエージェント内では shinaps MCP を直接呼ばず、rule の全文はスキル側から渡すか、スキル側が機械保存した snapshot のファイルを読ませる（MCP の利用量が重複せず、全文をモデルに書き写させないため）。この原則を全ての役割定義に書く。
 - `autonomous-commit-review` の役割は `commit` に統合した。旧 `linear` の入口は廃止し、`linear-plan`・`linear-execute` に分けた。規約照合と簡素化の独立した入口は `review` に統合し、規約の一括抽出の入口は廃止した（規約の登録は利用者がその場で依頼する）。個人用の別 AI 呼び出し・ブラウザ管理・ゴール管理・動画制作はこの plugin に含めない。Bridge 本体は同梱せず、導入済みの MCP と WebStorm プラグインを使う。
 

@@ -4,7 +4,7 @@
 
 ## 検証CLIと契約版
 
-利用中のskillとCLIの版を確認し、0.50.0のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.50.0`）。pluginだけにはCLIは含まれない。導入・更新は検証に必要な準備として行い、検証のたびに `npx latest` を取得しない。
+利用中のskillとCLIの版を確認し、0.50.1のskillには同じ版のnpm CLIを導入する（`npm install -g @shinaps/skills@0.50.1`）。pluginだけにはCLIは含まれない。導入・更新は検証に必要な準備として行い、検証のたびに `npx latest` を取得しない。
 
 0.48.0から `config_version: 3`（操作ごとの許可の一覧を廃止し `constraints` を必須にした契約）だけを受理する。0.47.x以前のCLIと `$schema` のURLはv3を拒否し、0.48.0以降はv2を拒否するため、skill・CLI・`$schema` の版を揃えてから下の[旧設定の移行](#旧設定の移行)を行う。
 

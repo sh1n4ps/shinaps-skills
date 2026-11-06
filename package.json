@@ -1,6 +1,6 @@
 {
   "name": "@shinaps/skills",
-  "version": "0.50.1",
+  "version": "0.50.2",
   "description": "Install Shinaps AI workflows and custom agents for Codex",
   "type": "module",
   "bin": {
@@ -23,6 +23,7 @@
     "test": "node --test \"test/*.test.ts\"",
     "check": "npm run format:check && tsc --noEmit",
     "verify:package": "node scripts/verify-package.ts",
+    "sync:copies": "node scripts/sync-copies.ts",
     "format": "biome format --write .",
     "format:check": "biome format ."
   },

@@ -13,8 +13,6 @@ import {
 } from './transaction.ts';
 import { withLock } from './lock.ts';
 import { readTextIfExists, sha256, writeFileAtomic } from './fs.ts';
-import { RULE_COVERAGE_COMMAND } from './rule-coverage.ts';
-import { RULE_SNAPSHOT_COMMAND } from './rule-snapshot.ts';
 import {
   codexHomeMismatch,
   codexHomeOf,
@@ -59,18 +57,7 @@ const actions = ['install', 'update', 'uninstall', 'recover'] as const;
 type Action = (typeof actions)[number];
 const isAction = (value: string): value is Action => (actions as readonly string[]).includes(value);
 
-const usage = [
-  'Usage: shinaps-skills <install|update|uninstall|recover> codex',
-  '       shinaps-skills validate-linear-config <file>',
-  '       shinaps-skills validate-managed-config <file>',
-  '       shinaps-skills managed <setup|run|status|reply|collect> (see managed --help)',
-  '       shinaps-skills auto-update <enable|disable|status|check> codex',
-  '       shinaps-skills lint --checks <checks.json> --root <project> --out <result.json> -- <files...>',
-  `       ${RULE_SNAPSHOT_COMMAND}`,
-  `       ${RULE_COVERAGE_COMMAND}`,
-  'Claude Code: /plugin marketplace add sh1n4ps/shinaps-skills',
-  '             /plugin install shinaps@shinaps-skills',
-].join('\n');
+export const INSTALL_COMMAND = 'shinaps-skills <install|update|uninstall|recover> codex';
 
 const installGuidance = [
   'No Shinaps AI account is required to install. For MCP features, create an account at https://app.shinaps.ai and use your client’s authentication flow.',
@@ -85,14 +72,9 @@ const installGuidance = [
  * @param options 動作環境の指定。`auto-update check` とテストが使う。
  */
 export async function run(args: string[], options: RunOptions = {}): Promise<void> {
-  const log = options.log ?? console.log;
   const [action, target, ...extra] = args;
-  if (!action || action === '--help' || action === 'help') {
-    log(usage);
-    return;
-  }
-  if (!isAction(action) || target !== 'codex' || extra.length) {
-    throw new Error(`Unknown command: ${args.join(' ')}. ${usage.split('\n')[0]} (see --help).`);
+  if (!action || !isAction(action) || target !== 'codex' || extra.length) {
+    throw new Error(`Unknown command: ${args.join(' ')}. Usage: ${INSTALL_COMMAND} (see --help).`);
   }
   const installation = openInstallation(options);
   switch (action) {

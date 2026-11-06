@@ -42,7 +42,7 @@ Shinaps AIのMCPから規約を取得する手順。取得は呼出し元（メ�
 
 ## 照合のために取得する
 
-対象ファイルが確定した照合の手順。応答をモデルが書き写すと本文や `checks` が欠けうるので、plugin の hook（PostToolUse）が応答をそのまま `<Gitのルート>/.shinaps/work/rule-captures/` へ保存し、そこから `shinaps-skills rule-snapshot` が担当と機械検査の読むファイルを作る。保存先はGit管理の外のローカルで、サーバーへは送らない。
+対象ファイルが確定した照合の手順。応答をモデルが書き写すと本文や `checks` が欠けうるので、plugin の hook（PostToolUse）が応答をそのまま `<セッションの作業ディレクトリのGitのルート（無ければ作業ディレクトリ）>/.shinaps/work/rule-captures/` へ保存し、そこから `shinaps-skills rule-snapshot` が担当と機械検査の読むファイルを作る。保存先はGit管理の外のローカルで、サーバーへは送らない。
 
 1. 取得の前の時刻を `date +%s000` で記録する。
 2. 領域ごとに入力を作業記録の下（例: `rules/<領域>/input.json`）へ書く。「一覧を取る」と同じ条件で、`fields` だけ `"full"` にする。
@@ -53,7 +53,7 @@ Shinaps AIのMCPから規約を取得する手順。取得は呼出し元（メ�
    shinaps-skills rule-snapshot --since <時刻> --input <input.json> [--exclude-label <slug>] --out <作業記録>/rules/<領域>
    ```
 
-   取得と同じGitのルートで実行する（別の場所なら `--captures <dir>` で保存先を渡す）。`rule-snapshot` が無いときは、利用中のスキルと同じ版のCLIを導入する。`--exclude-label` には、「全文を取る規約を選ぶ」の除外の条件に当たる軸のlabelだけを渡す（CLIはこの条件を判定しない）。除外した規約はidと理由が `manifest.json` に残る。
+   取得と同じGitのルートで実行する。それと違う場所（プロジェクトを開かずに始めたチャットから対象のリポジトリで実行するときなど）では、捕捉はチャット側にあるので、その保存先を `--captures <dir>` で渡す。`rule-snapshot` が無いときは、利用中のスキルと同じ版のCLIを導入する。`--exclude-label` には、「全文を取る規約を選ぶ」の除外の条件に当たる軸のlabelだけを渡す（CLIはこの条件を判定しない）。除外した規約はidと理由が `manifest.json` に残る。
 
 出力は `manifest.json`（`contentHash`、入力、`ruleIds`、除外、partのhash）、`parts/part-NNN.json`（全文）、`lint-checks.json`（全文の `checks` そのまま）。
 

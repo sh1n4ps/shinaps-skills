@@ -5,16 +5,31 @@ import { packageRoot } from '../lib/layout.ts';
 import { LINEAR_CONFIG_VERSION, validateLinearConfig } from '../lib/linear-config.ts';
 import { validateManagedConfig } from '../lib/managed-config.ts';
 import { managed } from '../lib/managed.ts';
-import { run } from '../lib/install.ts';
+import { INSTALL_COMMAND, run } from '../lib/install.ts';
 import { autoUpdate } from '../lib/auto-update.ts';
 import { lint } from '../lib/lint.ts';
-import { ruleCoverage } from '../lib/rule-coverage.ts';
-import { ruleSnapshot } from '../lib/rule-snapshot.ts';
+import { RULE_COVERAGE_COMMAND, ruleCoverage } from '../lib/rule-coverage.ts';
+import { RULE_SNAPSHOT_COMMAND, ruleSnapshot } from '../lib/rule-snapshot.ts';
 import { errorMessage } from '../lib/fs.ts';
+
+const usage = [
+  `Usage: ${INSTALL_COMMAND}`,
+  '       shinaps-skills validate-linear-config <file>',
+  '       shinaps-skills validate-managed-config <file>',
+  '       shinaps-skills managed <setup|run|status|reply|collect> (see managed --help)',
+  '       shinaps-skills auto-update <enable|disable|status|check> codex',
+  '       shinaps-skills lint --checks <checks.json> --root <project> --out <result.json> -- <files...>',
+  `       ${RULE_SNAPSHOT_COMMAND}`,
+  `       ${RULE_COVERAGE_COMMAND}`,
+  'Claude Code: /plugin marketplace add sh1n4ps/shinaps-skills',
+  '             /plugin install shinaps@shinaps-skills',
+].join('\n');
 
 const [command, ...rest] = process.argv.slice(2);
 try {
-  if (command === '--version') {
+  if (!command || command === 'help' || command === '--help') {
+    console.log(usage);
+  } else if (command === '--version') {
     console.log(JSON.parse(await readFile(join(packageRoot, 'package.json'), 'utf8')).version);
   } else if (command === 'validate-linear-config') {
     if (rest.length !== 1) throw new Error('Usage: shinaps-skills validate-linear-config <file>');

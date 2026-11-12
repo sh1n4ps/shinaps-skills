@@ -41,6 +41,7 @@ Issueの責務・受入条件・ステータスを、実際の成果と一致さ
 | auto経路の起動・観測・resume | [references/claude-cli.md](../../references/linear/claude-cli.md) |
 | manual経路の宛先・依頼・報告 | [references/bridge.md](../../references/linear/bridge.md) |
 | QAの実施・記録・素材 | [references/qa.md](../../references/linear/qa.md) |
+| リリースQAの方式を採用した作業先での引継ぎの記録と、リリースIssueの進行（5工程とは別） | [references/release-qa.md](../../references/linear/release-qa.md) |
 | Cycle完了QA・報告 | [references/cycle-report.md](../../references/linear/cycle-report.md) |
 
 コミットはClaudeへ差分確定を依頼して `shinaps:commit` で行い（manualは上の経路の項に従う）、Codexは各コミットの単位照合と全体照合を行う。pushとPRの作成は `shinaps:create-pr`、公開は `shinaps:release` に従い、このスキルで手順を持たない。これらのスキルには実効到達点・`constraints` と前工程の結果を渡す。必要な条件が揃えば再確認せずに進み、個別スキルの完了だけで進行を終えず、[終了条件](../../references/linear/execution.md)まで継続する。

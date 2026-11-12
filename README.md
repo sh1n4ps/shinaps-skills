@@ -66,12 +66,17 @@ Claude Code では `/shinaps:<スキル名>`（例 `/shinaps:review`）で呼び
 | `dev-claude` の体制と工程 | [実装体制の判断](plugins/shinaps-claude/references/dev/staffing.md)・[dev の工程](plugins/shinaps-claude/references/dev/workflow.md) |
 | レビューの担当の構成と指摘の採否・単独起動の手順 | [レビューの共通契約](plugins/shinaps-claude/references/review.md)・[単独レビューの手順](plugins/shinaps-claude/references/review-standalone.md) |
 | Linear での開発進行（`.shinaps/linear.json` の書き方・終了地点と制約・auto と manual） | [プロジェクト設定](plugins/shinaps-claude/references/linear/configuration.md)・[担当と工程](plugins/shinaps-claude/references/linear/workflow.md) |
+| develop → main の release PR へ開発 Issue の確認を集めて配布する方式（引継ぎの書き方・リリース Issue の進め方） | [リリース QA の引継ぎと進行](plugins/shinaps-claude/references/linear/release-qa.md) |
 | Claude Managed Agents（必要なもの・導入・依頼） | [設定とアカウント](plugins/shinaps-claude/references/managed/configuration.md)・[導入と更新](plugins/shinaps-claude/references/managed/setup.md)・[依頼と観測](plugins/shinaps-claude/references/managed/execute.md) |
 | スキルが使う担当（サブエージェント）の一覧 | [サブエージェント](docs/agents.md) |
 | 作業記録の保存先 | [作業記録](plugins/shinaps-claude/references/work-records.md) |
 | このリポジトリの開発と npm への公開 | [開発と配布](docs/development.md) |
 
 旧版の設定は自動では変換しません。Linear は [旧設定の移行](plugins/shinaps-claude/references/linear/configuration.md#旧設定の移行)（0.48.0 から `config_version: 3`。操作ごとの許可の一覧を廃止し `constraints` に置き換え）、Managed Agents は [version 1 からの移行](plugins/shinaps-claude/references/managed/configuration.md#version-1-からの移行)に従ってください。
+
+### 0.51.0 の変更
+
+develop → main の release PR ごとに開発 Issue の確認をリリース Issue へ集めて配布する方式の手順を追加しました（[リリース QA の引継ぎと進行](plugins/shinaps-claude/references/linear/release-qa.md)）。作業先の資料がこの方式を定めているときだけ使い、定めていない作業先の進め方は変わりません。設定ファイルの形式は変わりません。
 
 ### 0.50.0 の変更
 

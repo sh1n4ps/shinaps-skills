@@ -17,6 +17,8 @@ description: プロジェクトの公開手順と完了条件に従ってリリ�
 
 操作の判断は[依頼範囲と操作](../../references/request-scope.md)に従う。Linearの開発進行から受けた依頼では、実効到達点・`constraints` と[担当・工程](../../references/linear/workflow.md)を引き継ぐ。操作後は進行役へ結果を返し、[終了条件](../../references/linear/execution.md)に従って次工程を判断する。単独の依頼にはLinear進行や新しいゴールを必須にしない。
 
+作業先が[リリースQAの方式](../../references/linear/release-qa.md)を採用している場合、release PR のmergeと配布はその手順に従う（mergeはwrapperの `merge`、配布の事実は `record-deployment` で記録する）。リリースIssueの計画と完了の判断は進行役が行う。
+
 ## 公開前に条件を確定する
 
 対象環境・配布先・ソースrevision・成果物のバージョンと、成功を判断する操作・証拠を確定する。リポジトリのリリース手順を使い、既存CIや証拠形式があれば再利用する。専用のJSON形式や新しい検証基盤を導入すること自体を必須にしない。
